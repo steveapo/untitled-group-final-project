@@ -40,8 +40,8 @@ public class Files {
 
     public boolean checkFile(){
         try{
-            File BookingsFile = new File("/Users/milto/IdeaProjects/Hotel_reservation/src/Bookings");
-            File RoomsFiles = new File("/Users/milto/IdeaProjects/Hotel_reservation/src/Rooms");
+            File BookingsFile = new File("Bookings");
+            File RoomsFiles = new File("Rooms");
             if(!BookingsFile.exists() || !RoomsFiles.exists()){
                 System.out.println("Either both or one of the files was not found");
                 return false;
