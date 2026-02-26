@@ -2,7 +2,7 @@ Start
   |
   ├── Register
   |
-  ├── Login -> Authentication -> User Authorization 
+  ├── Login 
   |      ↓
   |   Authenticate
   |      ↓
@@ -47,6 +47,7 @@ Start
 “Manage Rooms”		*AVAILABLE TO EMPLOYEE & MANAGER
 
 “Administration(Manage User Privileges)”	*AVAILABLE TO MANAGER
+
 
 
 	
