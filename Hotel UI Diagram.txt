@@ -1,0 +1,52 @@
+Start
+  |
+  ├── Register
+  |
+  ├── Login -> Authentication -> User Authorization 
+  |      ↓
+  |   Authenticate
+  |      ↓
+  |   Identify Role
+  |      ↓
+  |   Redirect to Dashboard
+  |          ├── Customer Dashboard
+  |          |       ├── Browse Rooms -> Select dates -> Check availability -> Create booking (pending) -> Go to payment -> Payment success, Confirm booking
+  |          |       ├── Edit/Cancel Current Bookings
+  |          |       └── Payment
+  |          |
+  |          ├── Employee Dashboard
+  |          |       ├── Manage Rooms - Add, Remove, Edit Rooms
+  |          |       └── Finances/Statistics - See payment per date, user statistics
+  |          |
+  |          └── Manager Dashboard
+  |                  ├── Manage Rooms
+  |                  ├── Finances/Statistics
+  |                  └── Manage Users - Change user privileges(?)
+  |
+  └── Browse (Guest Access)
+          ↓
+      Select Room
+          ↓
+      Login/Register (Required?)
+          ↓
+      Booking → Payment → Confirmation
+
+
+“Register"  *AVAILABLE TO ALL
+
+“Login”	*AVAILABLE TO ALL
+
+“Browse Rooms”	*AVAILABLE TO ALL
+
+“Edit/Cancel Current Bookings”	*AVAILABLE TO CUSTOMER, EMPLOYEE & MANAGER
+						 
+“Payment”	*AVAILABLE TO CUSTOMER, EMPLOYEE & MANAGER
+
+“Finances/Statistics”	*AVAILABLE TO EMPLOYEE & MANAGER
+
+“Manage Rooms”		*AVAILABLE TO EMPLOYEE & MANAGER
+
+“Administration(Manage User Privileges)”	*AVAILABLE TO MANAGER
+
+
+	
