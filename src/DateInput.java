@@ -15,60 +15,88 @@ public class DateInput {
     Scanner scanner = new Scanner(System.in);
 
     public LocalDate checkInDate() {
+        int lineNumber;
+        Files file = new Files();
         while (true) {
+
             System.out.println("Enter the check in date (dd-MM-yyyy): ");
             String userDate = scanner.nextLine();
+
             try {
                 userDateFormattedCheckIn = LocalDate.parse(userDate, formatter);
                 LocalDate currentDate = LocalDate.now();
                 if (userDateFormattedCheckIn.isBefore(currentDate)) {
-                    System.out.println("Check-In Date cannot be prior to current date.");
+                    System.err.println("Check-In Date cannot be prior to current date.");
+                    lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
+                    file.writeErrors("Check-In Date cannot be prior to current date." + " - " + getClass() + " - Line: " + lineNumber);
                 } else {
                     System.out.println("Date has been selected");
                     break;
                 }
             } catch (DateTimeParseException e) {
-                System.out.println("Invalid date or invalid format. Please use the following format dd-MM-yyyy");
+                System.err.println("Invalid date or invalid format. Please use the following format dd-MM-yyyy");
+                lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
+                file.writeErrors("Invalid date or invalid format. Please use the following format dd-MM-yyyy" + " - " + getClass() + " - Line: " + lineNumber);
             }
+
         }
+
         return userDateFormattedCheckIn;
 
     }
 
     public LocalDate checkOutDate(){
+
+        int lineNumber;
+        Files file = new Files();
+
         while(true) {
+
             System.out.println("Enter the check out date (dd-MM-yyyy): ");
             String userDate = scanner.nextLine();
+
             try {
                 userDateFormattedCheckOut = LocalDate.parse(userDate, formatter);
                 LocalDate currentDate = LocalDate.now();
                 if (userDateFormattedCheckOut.isBefore(currentDate)) {
-                    System.out.println("Check-Out Date cannot be prior to current date.");
+                    System.err.println("Check-Out Date cannot be prior to current date.");
+                    lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
+                    file.writeErrors("Check-Out Date cannot be prior to current date." +  " - " + getClass() + " - Line: " + lineNumber);
                 } else {
                     System.out.println("Date has been selected");
                     break;
                 }
             } catch (DateTimeParseException e) {
-                System.out.println("Invalid date or invalid format. Please use the following format dd-MM-yyyy");
+                System.err.println("Invalid date or invalid format. Please use the following format dd-MM-yyyy");
+                lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
+                file.writeErrors("Invalid date or invalid format. Please use the following format dd-MM-yyyy" + " - " + getClass() + " - Line: " + lineNumber);
 
             }
+
         }
+
         return userDateFormattedCheckOut;
     }
+
     public Vector<Room> checkBookingsDate(LocalDate date1, LocalDate date2, Vector<Room> available, Vector<Room> rooms){
         // Open the booking file and get the dates.
         Vector<String> added = new Vector<>();
         Vector<String> Bookings_Room = new Vector<>();
+        int lineNumber;
+        Files file = new Files();
+
         try (Scanner scanner1 = new Scanner(new File("Bookings"))) {
 
             // First, read all bookings into a list
             Vector<String[]> allBookings = new Vector<>();
+
             while (scanner1.hasNextLine()) {
                 String line = scanner1.nextLine().trim();
-                if (line.isEmpty()) continue;
+
+                if (line.isEmpty()) continue; //Check if line is empty
 
                 String[] data = line.split(",");
-                if (data.length != 3) continue; // skip malformed lines
+                if (data.length != 3) continue; // skip lines that don't contain the required number of attributes
 
                 allBookings.add(data);
                 Bookings_Room.add(data[0].trim());
@@ -112,7 +140,10 @@ public class DateInput {
             }
 
         } catch (FileNotFoundException e) {
-            System.out.println("Could not open file");
+            System.err.println("Could not open file");
+            lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
+            file.writeErrors("Could not open file" + " - " + getClass() + " - Line: " + lineNumber);
+
         }
 
         return available;
