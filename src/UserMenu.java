@@ -1,0 +1,207 @@
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
+import java.util.Scanner;
+import java.util.Vector;
+
+public class UserMenu {
+
+    public static void show(Scanner scanner, Account account,
+                            Vector<Room> rooms, Vector<Bookings> bookings,
+                            Files file) throws Exception {
+        while (true) {
+            CLI.clearScreen();
+            CLI.printBanner("USER MENU");
+            System.out.println(CLI.dim("  Welcome, ") + CLI.bold(account.getFirstName()) + "\n");
+            CLI.printMenuItem("1", "Search and book a room");
+            CLI.printMenuItem("2", "View my bookings");
+            CLI.printMenuItem("3", "Cancel a booking");
+            CLI.printMenuItem("4", "View my profile");
+            CLI.printMenuItem("5", "Logout");
+            CLI.printDivider();
+            System.out.print(CLI.prompt("Choice: "));
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1": bookRoom(scanner, account, rooms, bookings, file);  break;
+                case "2": viewMyBookings(account, bookings); Main.pause(scanner); break;
+                case "3": cancelBooking(scanner, account, bookings, file);    break;
+                case "4": viewProfile(account); Main.pause(scanner);          break;
+                case "5": return;
+                default:
+                    System.out.println(CLI.warning("Invalid option. Enter 1–5."));
+                    Main.pause(scanner);
+            }
+        }
+    }
+
+    private static void bookRoom(Scanner scanner, Account account,
+                                  Vector<Room> rooms, Vector<Bookings> bookings,
+                                  Files file) throws Exception {
+        CLI.clearScreen();
+        CLI.printBanner("BOOK A ROOM");
+        System.out.println();
+
+        DateInput date = new DateInput(scanner);
+        LocalDate checkIn  = date.checkInDate();
+        if (checkIn == null) return;
+        LocalDate checkOut = date.checkOutDate();
+        if (checkOut == null) return;
+
+        while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
+            System.out.println(CLI.warning("Check-out must be after check-in. Re-enter check-out date."));
+            checkOut = date.checkOutDate();
+            if (checkOut == null) return;
+        }
+
+        Vector<Room> available = new Vector<>();
+        date.checkBookingsDate(checkIn, checkOut, available, rooms);
+
+        Vector<Room> bookable = new Vector<>();
+        for (Room r : available) {
+            if (r.getStatus().equals("AVAILABLE")) bookable.add(r);
+        }
+
+        if (bookable.isEmpty()) {
+            System.out.println(CLI.warning("No rooms available for those dates."));
+            Main.pause(scanner);
+            return;
+        }
+
+        System.out.println("\n" + CLI.header("  Available Rooms") + "\n");
+        for (int i = 0; i < bookable.size(); i++) {
+            Room r = bookable.get(i);
+            System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night%n",
+                    CLI.cyan((i + 1) + "."),
+                    CLI.bold(r.getRoom_no()),
+                    r.getType(),
+                    r.getCapacity(),
+                    CLI.yellow(String.format("$%.2f", r.getPrice())));
+        }
+
+        System.out.print(CLI.prompt("\nChoose room (1-" + bookable.size() + ", or 0 to cancel): "));
+        int choice;
+        try {
+            choice = Integer.parseInt(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println(CLI.warning("Invalid input."));
+            Main.pause(scanner);
+            return;
+        }
+        if (choice == 0) return;
+        if (choice < 1 || choice > bookable.size()) {
+            System.out.println(CLI.warning("Invalid room number."));
+            Main.pause(scanner);
+            return;
+        }
+
+        Room chosen = bookable.get(choice - 1);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
+        // Capture as effectively-final strings for use inside the lambda
+        final String checkInStr  = checkIn.format(fmt);
+        final String checkOutStr = checkOut.format(fmt);
+        System.out.println("\nConfirm booking " + CLI.bold(chosen.getRoom_no())
+                + " from " + CLI.cyan(checkInStr) + " to " + CLI.cyan(checkOutStr) + "?");
+        System.out.print(CLI.prompt("(yes/no): "));
+        if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
+            CLI.withSpinner("Saving booking", () -> {
+                Bookings newBooking = new Bookings(chosen, checkInStr,
+                        checkOutStr, account.getUsername(), "CONFIRMED");
+                bookings.add(newBooking);
+                file.updateBookings(bookings);
+            });
+            System.out.println(CLI.success("Booking confirmed!"));
+        } else {
+            System.out.println(CLI.dim("Booking cancelled."));
+        }
+        Main.pause(scanner);
+    }
+
+    private static void viewMyBookings(Account account, Vector<Bookings> bookings) {
+        CLI.clearScreen();
+        CLI.printBanner("MY BOOKINGS");
+        System.out.println();
+        boolean found = false;
+        int index = 1;
+        for (Bookings b : bookings) {
+            if (b.getUsername().equals(account.getUsername())) {
+                String statusColour = statusColour(b.getStatus());
+                System.out.printf("  %s. Room %s | %s → %s | %s%n",
+                        CLI.cyan(String.valueOf(index++)),
+                        CLI.bold(b.getRoom().getRoom_no()),
+                        b.getCheck_in(), b.getCheck_out(),
+                        statusColour);
+                found = true;
+            }
+        }
+        if (!found) System.out.println(CLI.dim("  You have no bookings."));
+        CLI.printDivider();
+    }
+
+    private static void cancelBooking(Scanner scanner, Account account,
+                                       Vector<Bookings> bookings, Files file) {
+        CLI.clearScreen();
+        CLI.printBanner("CANCEL A BOOKING");
+        System.out.println();
+
+        Vector<Bookings> activeBookings = new Vector<>();
+        for (Bookings b : bookings) {
+            if (b.getUsername().equals(account.getUsername())
+                    && b.getStatus().equals("CONFIRMED")) {
+                activeBookings.add(b);
+            }
+        }
+        if (activeBookings.isEmpty()) {
+            System.out.println(CLI.dim("  No active bookings to cancel."));
+            Main.pause(scanner);
+            return;
+        }
+        for (int i = 0; i < activeBookings.size(); i++) {
+            Bookings b = activeBookings.get(i);
+            System.out.printf("  %s. Room %s | %s → %s%n",
+                    CLI.cyan(String.valueOf(i + 1)),
+                    CLI.bold(b.getRoom().getRoom_no()),
+                    b.getCheck_in(), b.getCheck_out());
+        }
+        System.out.print(CLI.prompt("\nChoose booking to cancel (1-" + activeBookings.size() + ", or 0 to go back): "));
+        int choice;
+        try {
+            choice = Integer.parseInt(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println(CLI.warning("Invalid input."));
+            Main.pause(scanner);
+            return;
+        }
+        if (choice == 0) return;
+        if (choice < 1 || choice > activeBookings.size()) {
+            System.out.println(CLI.warning("Invalid selection."));
+            Main.pause(scanner);
+            return;
+        }
+        activeBookings.get(choice - 1).setStatus("CANCELLED");
+        file.updateBookings(bookings);
+        System.out.println(CLI.success("Booking cancelled."));
+        Main.pause(scanner);
+    }
+
+    private static void viewProfile(Account account) {
+        CLI.clearScreen();
+        CLI.printBanner("MY PROFILE");
+        System.out.println();
+        System.out.println("  " + CLI.dim("Username : ") + CLI.bold(account.getUsername()));
+        System.out.println("  " + CLI.dim("Name     : ") + account.getFirstName() + " " + account.getLastName());
+        System.out.println("  " + CLI.dim("Email    : ") + account.getEmail());
+        System.out.println("  " + CLI.dim("Role     : ") + CLI.cyan(account.getRole()));
+        CLI.printDivider();
+    }
+
+    static String statusColour(String status) {
+        switch (status) {
+            case "CONFIRMED":   return CLI.green(status);
+            case "CHECKED_IN":  return CLI.cyan(status);
+            case "CHECKED_OUT": return CLI.dim(status);
+            case "CANCELLED":   return CLI.red(status);
+            default:            return status;
+        }
+    }
+}

@@ -1,254 +1,238 @@
-import java.io.File;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.Scanner;
 
 public class Account {
+
+    // Default credential for the seeded admin — change after first login
+    @SuppressWarnings("java:S2068")
+    private static final String ADMIN_USERNAME = "admin";
+    @SuppressWarnings("java:S2068")
+    private static final String ADMIN_PASSWORD = "admin";
+    private static final String LINE_SUFFIX    = " - Line: ";
+
     private String username;
     private String firstName;
     private String lastName;
     private String email;
-    private byte[] hashed_password;
-    private byte[] stored_salt;
+    private byte[] hashedPassword;
+    private byte[] salt;
+    private String role;  // "USER", "RECEPTION", "MANAGER"
 
     public Account() {}
 
-    public Account(String username,String firstName, String lastName, String email, byte[] hashed_password,byte[] stored_salt) {
-        this.username = username;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.hashed_password = hashed_password;
-        this.stored_salt = stored_salt;
+    public Account(String username, String firstName, String lastName,
+                   String email, byte[] hashedPassword, byte[] salt) {
+        this.username       = username;
+        this.firstName      = firstName;
+        this.lastName       = lastName;
+        this.email          = email;
+        this.hashedPassword = hashedPassword;
+        this.salt           = salt;
+        this.role           = "USER";
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public Account(String username, String firstName, String lastName,
+                   String email, byte[] hashedPassword, byte[] salt, String role) {
+        this.username       = username;
+        this.firstName      = firstName;
+        this.lastName       = lastName;
+        this.email          = email;
+        this.hashedPassword = hashedPassword;
+        this.salt           = salt;
+        this.role           = role;
     }
 
-    public String getUsername() {return username;}
+    public String getUsername()        { return username; }
+    public String getFirstName()       { return firstName; }
+    public String getLastName()        { return lastName; }
+    public String getEmail()           { return email; }
+    public byte[] getHashed_password() { return hashedPassword; }
+    public byte[] getSalt()            { return salt; }
+    public String getRole()            { return role; }
 
-    public String getFirstName() {
-        return firstName;
-    }
+    public void setUsername(String value)        { this.username = value; }
+    public void setFirstName(String value)       { this.firstName = value; }
+    public void setLastName(String value)        { this.lastName = value; }
+    public void setEmail(String value)           { this.email = value; }
+    public void setPassword(byte[] value)        { this.hashedPassword = value; }
+    public void setSalt(byte[] value)            { this.salt = value; }
+    public void setRole(String value)            { this.role = value; }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public byte[] getHashed_password() {
-        return hashed_password;
-    }
-
-    public byte[] getSalt() {
-        return stored_salt;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setPassword(byte[] hashed_password) {
-        this.hashed_password = hashed_password;
-    }
-    public void setSalt(byte[] stored_salt) {
-        this.stored_salt = stored_salt;
-    }
-
-
-    //Registration for Accounts
-    public void register(Vector <Account> users) throws Exception {
+    // Registration — new users always get "USER" role.
+    // Returns false if the user typed 'e' to cancel at any prompt.
+    public boolean register(Vector<Account> users, Scanner scanner) throws Exception {
         Files file = new Files();
 
-        Scanner scanner = new Scanner(System.in);
+        String newUsername = checkUsername(users, scanner);
+        if (newUsername == null) return false;
 
-        String username,fname,lastname,email;
-
-        username = checkUsername(users);
-
-        int lineNumber;
-
+        String newFirstName;
         while (true) {
-            //Verify names don't contain any numbers
-            System.out.println("Enter your first name:");
-
-             fname = scanner.nextLine().trim();
-             //Do not allow number for names.
-            if (fname.matches("[A-Za-z]+")) {
-                break;
-            } else {
-                System.err.println("Names cannot have numbers");
-                 lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-                file.writeErrors("Names cannot have numbers" + " - " + getClass() + " - Line: " + lineNumber);
-            }
-
+            System.out.println("Enter your first name (or 'e' to cancel): ");
+            newFirstName = scanner.nextLine().trim();
+            if (newFirstName.equalsIgnoreCase("e")) return false;
+            if (newFirstName.matches("[A-Za-z]+")) break;
+            System.err.println("Names cannot have numbers.");
+            file.writeErrors("Names cannot have numbers - " + getClass() + LINE_SUFFIX
+                    + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
 
-        while (true){
-            //Verify last_names do not contain any numbers
-            System.out.println("Enter your last name: ");
-
-             lastname = scanner.nextLine().trim();
-
-            if(lastname.matches("[A-Za-z]+")){
-                System.out.println("Last name added");
-                break;
-            }else{
-                System.err.println("Surnames cannot have numbers");
-                lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-                file.writeErrors("Surnames cannot have numbers" + " - " + getClass() + " - Line: " + lineNumber);
-
-            }
-
+        String newLastName;
+        while (true) {
+            System.out.println("Enter your last name (or 'e' to cancel): ");
+            newLastName = scanner.nextLine().trim();
+            if (newLastName.equalsIgnoreCase("e")) return false;
+            if (newLastName.matches("[A-Za-z]+")) break;
+            System.err.println("Surnames cannot have numbers.");
+            file.writeErrors("Surnames cannot have numbers - " + getClass() + LINE_SUFFIX
+                    + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
 
-        while(true){
-            //Check for email validity (must contain the '@' symbol)
-            System.out.println("Enter your email: ");
-
-             email = scanner.nextLine().trim();
-
-            String regex = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
-                    + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$";
-
-            if(Pattern.matches(regex,email)){
-                System.out.println("Email has been added.");
-                break;
-            }else {
-                System.err.println("Please check again your email.");
-                lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-                file.writeErrors("Email has been added." + " - " + getClass() + " - Line: " + lineNumber);
-            }
-
+        String emailRegex = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
+                + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$";
+        String newEmail;
+        while (true) {
+            System.out.println("Enter your email (or 'e' to cancel): ");
+            newEmail = scanner.nextLine().trim();
+            if (newEmail.equalsIgnoreCase("e")) return false;
+            if (Pattern.matches(emailRegex, newEmail)) break;
+            System.err.println("Invalid email. Please try again.");
+            file.writeErrors("Invalid email - " + getClass() + LINE_SUFFIX
+                    + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
 
-        String[] hash_and_salt = hashPassword();
-        String hashed_pass = hash_and_salt[0];
-        String salt = hash_and_salt[1];
-        System.out.println("Registration complete");
-        System.out.println("Name: " + fname +"\nSurname: " + lastname + "\nEmail: " + email);
-        file.CreateUsersFile();
-        //set an update file function
-        file.updateUsersFile(username,fname, lastname, email, hashed_pass,salt);
-        //Update Database inside register.
+        String[] hashAndSalt = hashPassword(scanner);
+        if (hashAndSalt.length == 0) return false;
+
+        System.out.println("Registration complete.");
+        System.out.println("Name: " + newFirstName + " " + newLastName + "  |  Email: " + newEmail);
+        file.createUsersFile();
+        file.updateUsersFile(newUsername, newFirstName, newLastName, newEmail,
+                hashAndSalt[0], hashAndSalt[1], "USER");
         file.getUsers(users);
+        return true;
     }
 
-    //Password Hashing function
-    public String[] hashPassword() throws Exception{
+    // Hash the password entered at the prompt.
+    // Returns {base64Hash, base64Salt}, or an empty array if the user typed 'e' to cancel.
+    public String[] hashPassword(Scanner scanner) throws Exception {
+        System.out.println("Enter your password (or 'e' to cancel): ");
+        String inputPassword = scanner.nextLine();
+        if (inputPassword.equalsIgnoreCase("e")) return new String[0];
+
         SecureRandom random = new SecureRandom();
-        byte[] salt = new byte[16];
-        random.nextBytes(salt);
+        byte[] saltBytes = new byte[16];
+        random.nextBytes(saltBytes);
+
         MessageDigest md = MessageDigest.getInstance("SHA-512");
-        md.update(salt);
-        System.out.println("Enter your password: ");
-        Scanner scanner = new Scanner(System.in);
-        String pass = scanner.nextLine();
-        byte[] hashedpass = md.digest(pass.getBytes(StandardCharsets.UTF_8));
-        String saltedpass = Base64.getEncoder().encodeToString(salt);
-        String hashed_password = Base64.getEncoder().encodeToString(hashedpass);
-        return new String[] {hashed_password, saltedpass};
+        md.update(saltBytes);
+        byte[] hashBytes = md.digest(inputPassword.getBytes(StandardCharsets.UTF_8));
+
+        return new String[]{
+            Base64.getEncoder().encodeToString(hashBytes),
+            Base64.getEncoder().encodeToString(saltBytes)
+        };
     }
 
-    //Check username availability
-    public String checkUsername(Vector<Account> users){
-        String username;
-        Scanner scanner = new Scanner(System.in);
-
-        while(true){
+    // Check username availability.
+    // Returns null if the user typed 'e' to cancel.
+    public String checkUsername(Vector<Account> users, Scanner scanner) {
+        while (true) {
+            System.out.println("Enter your username (or 'e' to cancel): ");
+            String input = scanner.nextLine().trim();
+            if (input.equalsIgnoreCase("e")) return null;
 
             boolean taken = false;
-            System.out.println("Register - Enter your username: ");
-            username = scanner.nextLine();
-            for(Account user : users){
-
-                if(user.getUsername().equalsIgnoreCase(username)){
+            for (Account user : users) {
+                if (user.getUsername().equalsIgnoreCase(input)) {
                     taken = true;
                     break;
                 }
-
             }
-
             if (taken) {
-               System.err.println("Username already taken");
-               Files file = new Files();
-               int lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-               file.writeErrors("Username already taken" + " - " + getClass() + " Line: " + lineNumber);
+                System.err.println("Username already taken.");
+                Files file = new Files();
+                file.writeErrors("Username already taken - " + getClass() + LINE_SUFFIX
+                        + Thread.currentThread().getStackTrace()[1].getLineNumber());
+            } else {
+                return input;
+            }
+        }
+    }
 
-            }else {
+    // Login — checks hardcoded admin first, then file-based accounts.
+    // Re-asks only the password after a wrong attempt (not the username).
+    // Returns null if the user types 'e' to go back.
+    public Account login(Vector<Account> users, Scanner scanner) throws Exception {
+        Files file = new Files();
+
+        System.out.println("Enter your username (or 'e' to go back): ");
+        String inputUsername = scanner.nextLine().trim();
+        if (inputUsername.equalsIgnoreCase("e")) return null;
+
+        // Hardcoded admin shortcut
+        if (inputUsername.equals(ADMIN_USERNAME)) {
+            return loginAdmin(users, scanner, file);
+        }
+
+        // File-based account lookup
+        int matchIndex = -1;
+        for (int i = 0; i < users.size(); i++) {
+            if (users.get(i).getUsername().equals(inputUsername)) {
+                matchIndex = i;
                 break;
             }
-
         }
 
-        return username;
+        if (matchIndex == -1) {
+            System.out.println("Username not found.");
+            return null;
+        }
+
+        return loginWithPassword(users.get(matchIndex), scanner, file);
     }
 
-
-    //Login method
-    public boolean login(Vector<Account> users) throws Exception {
-
-        Scanner scanner = new Scanner(System.in);
-
+    private Account loginAdmin(Vector<Account> users, Scanner scanner, Files file) throws Exception {
         while (true) {
-
-            int index = -1;
-
-            System.out.println("Enter your username: ");
-            String username = scanner.nextLine();
-
-            for (Account user : users) {
-                if (user.getUsername().equals(username)) {
-                    index = users.indexOf(user);
-                    break;
+            System.out.println("Enter your password (or 'e' to go back): ");
+            String inputPassword = scanner.nextLine();
+            if (inputPassword.equalsIgnoreCase("e")) return null;
+            if (inputPassword.equals(ADMIN_PASSWORD)) {
+                for (Account user : users) {
+                    if (user.getUsername().equals(ADMIN_USERNAME)) return user;
                 }
             }
-
-            if (index == -1) {
-                System.out.println("Username does not exist");
-                System.out.println("Try again");
-            } else {
-
-                System.out.println("Enter your password: ");
-                String password = scanner.nextLine();
-
-                byte[] salt = users.get(index).getSalt();
-
-                MessageDigest md =
-                        MessageDigest.getInstance("SHA-512");
-
-                md.update(salt);
-
-                byte[] hashedpass =
-                        md.digest(password.getBytes(StandardCharsets.UTF_8));
-
-                byte[] storedHash = users.get(index).getHashed_password();
-
-                return MessageDigest.isEqual(hashedpass, storedHash);
-            }
+            System.err.println("Wrong password. Try again.");
+            file.writeErrors("Wrong admin password attempt - " + getClass());
         }
     }
 
-    public String toString(){
-        return firstName + "," + lastName + "," + email + "," +
-                Base64.getEncoder().encodeToString(hashed_password) + "," +
-                Base64.getEncoder().encodeToString(stored_salt);
+    private Account loginWithPassword(Account matched, Scanner scanner, Files file) throws Exception {
+        while (true) {
+            System.out.println("Enter your password (or 'e' to go back): ");
+            String inputPassword = scanner.nextLine();
+            if (inputPassword.equalsIgnoreCase("e")) return null;
+
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            md.update(matched.getSalt());
+            byte[] attemptHash = md.digest(inputPassword.getBytes(StandardCharsets.UTF_8));
+
+            if (MessageDigest.isEqual(attemptHash, matched.getHashed_password())) {
+                return matched;
+            }
+            System.err.println("Wrong password. Try again.");
+            file.writeErrors("Wrong password - " + getClass() + " - user: " + matched.getUsername());
+        }
+    }
+
+    @Override
+    public String toString() {
+        return username + "," + firstName + "," + lastName + "," + email + ","
+                + Base64.getEncoder().encodeToString(hashedPassword) + ","
+                + Base64.getEncoder().encodeToString(salt) + ","
+                + role;
     }
 }
-
-
