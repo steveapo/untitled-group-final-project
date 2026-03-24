@@ -23,6 +23,7 @@ public class Account {
 
     public Account() {}
 
+    // New user constructor
     public Account(String username, String firstName, String lastName,
                    String email, byte[] hashedPassword, byte[] salt) {
         this.username       = username;
@@ -34,6 +35,7 @@ public class Account {
         this.role           = "USER";
     }
 
+    // User constructor
     public Account(String username, String firstName, String lastName,
                    String email, byte[] hashedPassword, byte[] salt, String role) {
         this.username       = username;
