@@ -14,3 +14,7 @@ Names cannot have numbers - class Account - Line: 72
 Names cannot have numbers - class Account - Line: 72
 Invalid email - class Account - Line: 104
 Check-Out Date cannot be prior to current date. - class DateInput - Line: 59
+Invalid date format - class DateInput - Line: 41
+Check-In Date cannot be prior to current date. - class DateInput - Line: 33
+Check-In Date cannot be prior to current date. - class DateInput - Line: 33
+Invalid email - class Account - Line: 104
