@@ -52,11 +52,10 @@ public class GuestMenu {
         boolean found = false;
         for (Room r : rooms) {
             if (r.getStatus().equals("AVAILABLE")) {
-                System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night%n",
+                System.out.printf("  %s  %-6s | %-8s | %s/night%n",
                         CLI.green("●"),
                         CLI.bold(r.getRoomNumber()),
                         r.getType(),
-                        r.getCapacity(),
                         CLI.yellow(String.format("$%.2f", r.getPrice())));
                 found = true;
             }

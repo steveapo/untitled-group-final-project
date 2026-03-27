@@ -66,11 +66,10 @@ public class ManagerMenu {
         System.out.println();
         for (Room r : rooms) {
             String dot = r.getStatus().equals("AVAILABLE") ? CLI.green("●") : CLI.red("●");
-            System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night | %s%n",
+            System.out.printf("  %s  %-6s | %-8s | %s/night | %s%n",
                     dot,
                     CLI.bold(r.getRoomNumber()),
                     r.getType(),
-                    r.getCapacity(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())),
                     UserMenu.statusColour(r.getStatus()));
         }

@@ -52,11 +52,11 @@ public class ReceptionMenu {
         System.out.println();
         for (Room r : rooms) {
             String dot = r.getStatus().equals("AVAILABLE") ? CLI.green("●") : CLI.red("●");
-            System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night | %s%n",
+            System.out.printf("  %s  %-6s | %-8s | %s/night | %s%n",
                     dot,
                     CLI.bold(r.getRoomNumber()),
                     r.getType(),
-                    r.getCapacity(),
+
                     CLI.yellow(String.format("$%.2f", r.getPrice())),
                     UserMenu.statusColour(r.getStatus()));
         }
@@ -88,7 +88,7 @@ public class ReceptionMenu {
                         CLI.green("●"),
                         CLI.bold(r.getRoomNumber()),
                         r.getType(),
-                        r.getCapacity(),
+    
                         CLI.yellow(String.format("$%.2f", r.getPrice())));
                 found = true;
             }
@@ -149,7 +149,7 @@ public class ReceptionMenu {
                     CLI.cyan(String.valueOf(i + 1)),
                     CLI.bold(r.getRoomNumber()),
                     r.getType(),
-                    r.getCapacity(),
+
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
         System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", or 'e' to cancel): "));
@@ -255,20 +255,52 @@ public class ReceptionMenu {
         CLI.clearScreen();
         CLI.printBanner("CHECK IN");
         System.out.println();
-        System.out.print(CLI.prompt("Guest username (or 'e' to cancel): "));
-        String username = scanner.nextLine().trim();
-        if (username.equalsIgnoreCase("e")) return;
+
+        // Collect unique guests with CONFIRMED bookings
+        Vector<String> guestNames = new Vector<>();
         for (Bookings b : bookings) {
-            if (b.getUsername().equals(username) && b.getStatus().equals("CONFIRMED")) {
-                b.setStatus("CHECKED_IN");
-                file.updateBookings(bookings);
-                CLI.randomSpinner("Checking in");
-                System.out.println(CLI.success("Guest '" + username + "' checked in to room " + b.getRoom().getRoomNumber() + "."));
-                Main.pause(scanner);
-                return;
+            if (b.getStatus().equals("CONFIRMED") && !guestNames.contains(b.getUsername())) {
+                guestNames.add(b.getUsername());
             }
         }
-        System.out.println(CLI.warning("No CONFIRMED booking found for that guest."));
+        if (guestNames.isEmpty()) {
+            System.out.println(CLI.warning("No guests with CONFIRMED bookings."));
+            Main.pause(scanner);
+            return;
+        }
+
+        // Arrow-key selector for guest
+        int guestIdx = CLI.selectFromList(guestNames.toArray(new String[0]), "Select guest to check in", scanner);
+        if (guestIdx == -1) return;
+        String username = guestNames.get(guestIdx);
+
+        // Collect that guest's CONFIRMED bookings
+        Vector<Bookings> confirmed = new Vector<>();
+        for (Bookings b : bookings) {
+            if (b.getUsername().equals(username) && b.getStatus().equals("CONFIRMED")) {
+                confirmed.add(b);
+            }
+        }
+
+        // If only one booking, check in directly; otherwise let receptionist pick
+        Bookings toCheckIn;
+        if (confirmed.size() == 1) {
+            toCheckIn = confirmed.get(0);
+        } else {
+            String[] bookingLabels = new String[confirmed.size()];
+            for (int i = 0; i < confirmed.size(); i++) {
+                Bookings b = confirmed.get(i);
+                bookingLabels[i] = "Room " + b.getRoom().getRoomNumber() + " | " + b.getCheckIn() + " → " + b.getCheckOut();
+            }
+            int bookingIdx = CLI.selectFromList(bookingLabels, "Select booking", scanner);
+            if (bookingIdx == -1) return;
+            toCheckIn = confirmed.get(bookingIdx);
+        }
+
+        toCheckIn.setStatus("CHECKED_IN");
+        file.updateBookings(bookings);
+        CLI.randomSpinner("Checking in");
+        System.out.println(CLI.success("Guest '" + username + "' checked in to room " + toCheckIn.getRoom().getRoomNumber() + "."));
         Main.pause(scanner);
     }
 
@@ -276,20 +308,52 @@ public class ReceptionMenu {
         CLI.clearScreen();
         CLI.printBanner("CHECK OUT");
         System.out.println();
-        System.out.print(CLI.prompt("Guest username (or 'e' to cancel): "));
-        String username = scanner.nextLine().trim();
-        if (username.equalsIgnoreCase("e")) return;
+
+        // Collect unique guests with CHECKED_IN bookings
+        Vector<String> guestNames = new Vector<>();
         for (Bookings b : bookings) {
-            if (b.getUsername().equals(username) && b.getStatus().equals("CHECKED_IN")) {
-                b.setStatus("CHECKED_OUT");
-                file.updateBookings(bookings);
-                CLI.randomSpinner("Checking out");
-                System.out.println(CLI.success("Guest '" + username + "' checked out from room " + b.getRoom().getRoomNumber() + "."));
-                Main.pause(scanner);
-                return;
+            if (b.getStatus().equals("CHECKED_IN") && !guestNames.contains(b.getUsername())) {
+                guestNames.add(b.getUsername());
             }
         }
-        System.out.println(CLI.warning("No CHECKED_IN booking found for that guest."));
+        if (guestNames.isEmpty()) {
+            System.out.println(CLI.warning("No guests currently checked in."));
+            Main.pause(scanner);
+            return;
+        }
+
+        // Arrow-key selector for guest
+        int guestIdx = CLI.selectFromList(guestNames.toArray(new String[0]), "Select guest to check out", scanner);
+        if (guestIdx == -1) return;
+        String username = guestNames.get(guestIdx);
+
+        // Collect that guest's CHECKED_IN bookings
+        Vector<Bookings> checkedIn = new Vector<>();
+        for (Bookings b : bookings) {
+            if (b.getUsername().equals(username) && b.getStatus().equals("CHECKED_IN")) {
+                checkedIn.add(b);
+            }
+        }
+
+        // If only one booking, check out directly; otherwise let receptionist pick
+        Bookings toCheckOut;
+        if (checkedIn.size() == 1) {
+            toCheckOut = checkedIn.get(0);
+        } else {
+            String[] bookingLabels = new String[checkedIn.size()];
+            for (int i = 0; i < checkedIn.size(); i++) {
+                Bookings b = checkedIn.get(i);
+                bookingLabels[i] = "Room " + b.getRoom().getRoomNumber() + " | " + b.getCheckIn() + " → " + b.getCheckOut();
+            }
+            int bookingIdx = CLI.selectFromList(bookingLabels, "Select booking", scanner);
+            if (bookingIdx == -1) return;
+            toCheckOut = checkedIn.get(bookingIdx);
+        }
+
+        toCheckOut.setStatus("CHECKED_OUT");
+        file.updateBookings(bookings);
+        CLI.randomSpinner("Checking out");
+        System.out.println(CLI.success("Guest '" + username + "' checked out from room " + toCheckOut.getRoom().getRoomNumber() + "."));
         Main.pause(scanner);
     }
 

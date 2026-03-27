@@ -206,6 +206,100 @@ public class CLI {
         return fallbackScanner.nextLine();
     }
 
+    // ── Interactive list selector ──────────────────────────────────────
+    /**
+     * Display an interactive list the user navigates with arrow keys.
+     * The currently selected item is highlighted in magenta.
+     * Returns the selected index, or -1 if the user presses Escape / 'e'.
+     *
+     * On terminals without stty (Windows / IDEs) falls back to a
+     * numbered-choice prompt using the Scanner.
+     *
+     * @param labels   Display strings for each option
+     * @param title    Heading shown above the list
+     * @param scanner  Fallback scanner for non-stty environments
+     */
+    public static int selectFromList(String[] labels, String title, Scanner scanner) {
+        if (labels.length == 0) return -1;
+
+        // Attempt interactive mode (macOS / Linux terminal)
+        try {
+            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
+            Process save = savePb.start();
+            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
+            save.waitFor();
+
+            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
+            rawPb.start().waitFor();
+
+            int selected = 0;
+            try {
+                renderList(labels, title, selected);
+                while (true) {
+                    int ch = System.in.read();
+                    if (ch == '\r' || ch == '\n') {
+                        // Move below the list before returning
+                        System.out.println();
+                        return selected;
+                    } else if (ch == 27) { // ESC — could be arrow key or standalone Escape
+                        int next = System.in.read();
+                        if (next == '[') {
+                            int arrow = System.in.read();
+                            if (arrow == 'A') { // Up
+                                selected = (selected - 1 + labels.length) % labels.length;
+                            } else if (arrow == 'B') { // Down
+                                selected = (selected + 1) % labels.length;
+                            }
+                        } else {
+                            // Standalone Escape — cancel
+                            System.out.println();
+                            return -1;
+                        }
+                    } else if (ch == 'e' || ch == 'q') {
+                        System.out.println();
+                        return -1;
+                    }
+                    // Re-render: move cursor up to overwrite previous list
+                    int linesToClear = labels.length + 2; // labels + hint + blank line
+                    System.out.print("\033[" + linesToClear + "A"); // move up
+                    renderList(labels, title, selected);
+                }
+            } finally {
+                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
+                restorePb.start().waitFor();
+            }
+        } catch (Exception ignored) {
+            // Fall through to numbered fallback
+        }
+
+        // Fallback: numbered selection (Windows / IDEs)
+        System.out.println("  " + header(title));
+        System.out.println();
+        for (int i = 0; i < labels.length; i++) {
+            System.out.println("  " + cyan((i + 1) + ".") + " " + labels[i]);
+        }
+        System.out.print(prompt("Choice (1-" + labels.length + ", or 'e' to cancel): "));
+        String input = scanner.nextLine().trim();
+        if (input.equalsIgnoreCase("e")) return -1;
+        try {
+            int choice = Integer.parseInt(input);
+            if (choice >= 1 && choice <= labels.length) return choice - 1;
+        } catch (NumberFormatException e) { /* fall through */ }
+        System.out.println(warning("Invalid selection."));
+        return -1;
+    }
+
+    /** Render the selector list with the currently highlighted item in magenta. */
+    private static void renderList(String[] labels, String title, int selected) {
+        System.out.println();
+        for (int i = 0; i < labels.length; i++) {
+            String prefix = (i == selected) ? magenta("  ▸ ") : dim("    ");
+            String label  = (i == selected) ? magenta(labels[i]) : "  " + labels[i];
+            System.out.println(prefix + label + "\033[K"); // \033[K clears rest of line
+        }
+        System.out.println(dim("  ↑↓ Navigate  Enter Select  Esc Cancel") + "\033[K");
+    }
+
     // ── Banner / divider helpers ─────────────────────────────────────────
     public static void printBanner(String title) {
         String line = "═".repeat(38);

@@ -71,11 +71,10 @@ public class UserMenu {
         System.out.println("\n" + CLI.header("  Available Rooms") + "\n");
         for (int i = 0; i < bookable.size(); i++) {
             Room r = bookable.get(i);
-            System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night%n",
+            System.out.printf("  %s  %-6s | %-8s | %s/night%n",
                     CLI.cyan((i + 1) + "."),
                     CLI.bold(r.getRoomNumber()),
                     r.getType(),
-                    r.getCapacity(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
 
