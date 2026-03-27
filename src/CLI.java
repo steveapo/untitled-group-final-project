@@ -145,18 +145,64 @@ public class CLI {
 
     // ── Password input ──────────────────────────────────────────────────
     /**
-     * Read a password with input masking.
-     * Uses System.console().readPassword() which works cross-platform
-     * (macOS, Linux, Windows PowerShell, Windows Terminal).
-     * Falls back to plain Scanner input in IDEs where console is unavailable.
+     * Read a password while masking each keystroke with '*'.
+     *
+     * Strategy (tries in order):
+     *   1. stty — works on macOS and Linux terminals; shows live asterisks.
+     *   2. System.console().readPassword() — works on Windows PowerShell /
+     *      Windows Terminal; input is hidden (no asterisks, but not visible).
+     *   3. Plain Scanner — last resort inside IDEs where neither is available.
      */
     public static String readPassword(Scanner fallbackScanner) {
+        // Attempt 1: stty-based char-by-char masking (macOS / Linux)
+        try {
+            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
+            Process save = savePb.start();
+            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
+            save.waitFor();
+
+            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
+            rawPb.start().waitFor();
+
+            StringBuilder password = new StringBuilder();
+            try {
+                while (true) {
+                    int ch = System.in.read();
+                    if (ch == '\r' || ch == '\n' || ch == -1) {
+                        System.out.println();
+                        break;
+                    } else if (ch == 127 || ch == 8) { // backspace / delete
+                        if (password.length() > 0) {
+                            password.deleteCharAt(password.length() - 1);
+                            System.out.print("\b \b");
+                            System.out.flush();
+                        }
+                    } else if (ch == 3) { // Ctrl+C
+                        System.out.println();
+                        break;
+                    } else {
+                        password.append((char) ch);
+                        System.out.print("*");
+                        System.out.flush();
+                    }
+                }
+            } finally {
+                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
+                restorePb.start().waitFor();
+            }
+            return password.toString();
+        } catch (Exception ignored) {
+            // stty not available (Windows) — fall through
+        }
+
+        // Attempt 2: System.console (Windows PowerShell / Windows Terminal — hidden, no asterisks)
         java.io.Console console = System.console();
         if (console != null) {
-            char[] passwordChars = console.readPassword();
-            return passwordChars != null ? new String(passwordChars) : "";
+            char[] chars = console.readPassword();
+            return chars != null ? new String(chars) : "";
         }
-        // Fallback for IDEs where System.console() is null
+
+        // Attempt 3: plain input (IDEs where console is null)
         return fallbackScanner.nextLine();
     }
 
