@@ -24,10 +24,15 @@ public class GuestMenu {
                     break;
                 case "2":
                     Account logged = new Account().login(users, scanner);
-                    if (logged != null) return logged;
+                    if (logged != null) {
+                        CLI.randomSpinner("Logging in");
+                        return logged;
+                    }
                     break;
                 case "3":
-                    new Account().register(users, scanner);
+                    if (new Account().register(users, scanner)) {
+                        CLI.randomSpinner("Creating account");
+                    }
                     Main.pause(scanner);
                     break;
                 case "4":
@@ -40,6 +45,7 @@ public class GuestMenu {
     }
 
     private static void viewRooms(Vector<Room> rooms) {
+        CLI.randomSpinner("Loading rooms");
         CLI.clearScreen();
         CLI.printBanner("AVAILABLE ROOMS");
         System.out.println();
@@ -48,7 +54,7 @@ public class GuestMenu {
             if (r.getStatus().equals("AVAILABLE")) {
                 System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night%n",
                         CLI.green("●"),
-                        CLI.bold(r.getRoom_no()),
+                        CLI.bold(r.getRoomNumber()),
                         r.getType(),
                         r.getCapacity(),
                         CLI.yellow(String.format("$%.2f", r.getPrice())));

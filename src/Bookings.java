@@ -1,39 +1,56 @@
+/** Represents a hotel room booking, linking a room to a guest and date range. */
 public class Bookings {
-    private Room room;
-    private String check_in, check_out;
-    private String username;  // which user made the booking
-    private String status;    // "CONFIRMED", "CANCELLED", "CHECKED_IN", "CHECKED_OUT"
 
-    public Bookings(Room room, String check_in, String check_out) {
-        this.room = room;
-        this.check_in = check_in;
-        this.check_out = check_out;
-        this.username = "unknown";
-        this.status = "CONFIRMED";
-    }
+    private Room   room;
+    private String checkIn;
+    private String checkOut;
+    private String username; // guest who made the booking
+    private String status;   // "CONFIRMED", "CANCELLED", "CHECKED_IN", "CHECKED_OUT"
 
-    public Bookings(Room room, String check_in, String check_out, String username, String status) {
-        this.room = room;
-        this.check_in = check_in;
-        this.check_out = check_out;
+    /** Construct a booking with all five attributes. */
+    public Bookings(Room room, String checkIn, String checkOut, String username, String status) {
+        this.room     = room;
+        this.checkIn  = checkIn;
+        this.checkOut = checkOut;
         this.username = username;
-        this.status = status;
+        this.status   = status;
     }
 
-    public String getCheck_in()  { return check_in; }
-    public String getCheck_out() { return check_out; }
-    public Room getRoom()        { return room; }
-    public String getUsername()  { return username; }
-    public String getStatus()    { return status; }
+    // ── Getters ──────────────────────────────────────────────────────────
+    /** Return the booked room. */
+    public Room   getRoom()     { return room; }
 
-    public void setCheck_in(String check_in)   { this.check_in = check_in; }
-    public void setCheck_out(String check_out) { this.check_out = check_out; }
-    public void setRoom(Room room)             { this.room = room; }  // fixed: was self-assign
+    /** Return the check-in date string (dd-MM-yyyy). */
+    public String getCheckIn()  { return checkIn; }
+
+    /** Return the check-out date string (dd-MM-yyyy). */
+    public String getCheckOut() { return checkOut; }
+
+    /** Return the username of the guest who made this booking. */
+    public String getUsername() { return username; }
+
+    /** Return the current booking status. */
+    public String getStatus()   { return status; }
+
+    // ── Setters ──────────────────────────────────────────────────────────
+    /** Update the booked room. */
+    public void setRoom(Room room)             { this.room = room; }
+
+    /** Update the check-in date. */
+    public void setCheckIn(String checkIn)     { this.checkIn = checkIn; }
+
+    /** Update the check-out date. */
+    public void setCheckOut(String checkOut)   { this.checkOut = checkOut; }
+
+    /** Update the guest username. */
     public void setUsername(String username)   { this.username = username; }
+
+    /** Update the booking status. */
     public void setStatus(String status)       { this.status = status; }
 
+    /** Serialise to CSV: roomNumber,checkIn,checkOut,username,status */
     @Override
     public String toString() {
-        return room.getRoom_no() + "," + check_in + "," + check_out + "," + username + "," + status;
+        return room.getRoomNumber() + "," + checkIn + "," + checkOut + "," + username + "," + status;
     }
 }

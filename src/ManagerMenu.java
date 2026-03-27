@@ -60,6 +60,7 @@ public class ManagerMenu {
     }
 
     private static void listAllRooms(Vector<Room> rooms) {
+        CLI.randomSpinner("Loading rooms");
         CLI.clearScreen();
         CLI.printBanner("ALL ROOMS");
         System.out.println();
@@ -67,7 +68,7 @@ public class ManagerMenu {
             String dot = r.getStatus().equals("AVAILABLE") ? CLI.green("●") : CLI.red("●");
             System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night | %s%n",
                     dot,
-                    CLI.bold(r.getRoom_no()),
+                    CLI.bold(r.getRoomNumber()),
                     r.getType(),
                     r.getCapacity(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())),
@@ -85,36 +86,42 @@ public class ManagerMenu {
         if (roomNo.equalsIgnoreCase("e")) return;
 
         for (Room r : rooms) {
-            if (r.getRoom_no().equalsIgnoreCase(roomNo)) {
+            if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
                 System.out.println(CLI.warning("Room already exists."));
                 Main.pause(scanner);
                 return;
             }
         }
 
-        System.out.print(CLI.prompt("Capacity: "));
+        System.out.print(CLI.prompt("Capacity (or 'e' to cancel): "));
+        String capInput = scanner.nextLine().trim();
+        if (capInput.equalsIgnoreCase("e")) return;
         int capacity;
-        try { capacity = Integer.parseInt(scanner.nextLine().trim()); }
+        try { capacity = Integer.parseInt(capInput); }
         catch (NumberFormatException e) {
             System.out.println(CLI.warning("Invalid capacity."));
             Main.pause(scanner);
             return;
         }
 
-        System.out.print(CLI.prompt("Price per night: "));
+        System.out.print(CLI.prompt("Price per night (or 'e' to cancel): "));
+        String priceInput = scanner.nextLine().trim();
+        if (priceInput.equalsIgnoreCase("e")) return;
         double price;
-        try { price = Double.parseDouble(scanner.nextLine().trim()); }
+        try { price = Double.parseDouble(priceInput); }
         catch (NumberFormatException e) {
             System.out.println(CLI.warning("Invalid price."));
             Main.pause(scanner);
             return;
         }
 
-        System.out.print(CLI.prompt("Type (Single/Double/Triple/Quad/Suite): "));
+        System.out.print(CLI.prompt("Type (Single/Double/Triple/Quad/Suite, or 'e' to cancel): "));
         String type = scanner.nextLine().trim();
+        if (type.equalsIgnoreCase("e")) return;
 
         rooms.add(new Room(roomNo, capacity, price, type, "AVAILABLE"));
         file.updateRooms(rooms);
+        CLI.randomSpinner("Adding room");
         System.out.println(CLI.success("Room " + roomNo + " added."));
         Main.pause(scanner);
     }
@@ -129,16 +136,19 @@ public class ManagerMenu {
         if (roomNo.equalsIgnoreCase("e")) return;
 
         for (Room r : rooms) {
-            if (r.getRoom_no().equalsIgnoreCase(roomNo)) {
+            if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
                 CLI.printMenuItem("1", "Price");
                 CLI.printMenuItem("2", "Type");
                 CLI.printMenuItem("3", "Status");
-                System.out.print(CLI.prompt("Edit: "));
+                System.out.print(CLI.prompt("Edit (or 'e' to cancel): "));
                 String opt = scanner.nextLine().trim();
+                if (opt.equalsIgnoreCase("e")) return;
                 switch (opt) {
                     case "1":
-                        System.out.print(CLI.prompt("New price: "));
-                        try { r.setPrice(Double.parseDouble(scanner.nextLine().trim())); }
+                        System.out.print(CLI.prompt("New price (or 'e' to cancel): "));
+                        String priceStr = scanner.nextLine().trim();
+                        if (priceStr.equalsIgnoreCase("e")) return;
+                        try { r.setPrice(Double.parseDouble(priceStr)); }
                         catch (NumberFormatException e) {
                             System.out.println(CLI.warning("Invalid price."));
                             Main.pause(scanner);
@@ -146,12 +156,16 @@ public class ManagerMenu {
                         }
                         break;
                     case "2":
-                        System.out.print(CLI.prompt("New type (Single/Double/Triple/Quad/Suite): "));
-                        r.setType(scanner.nextLine().trim());
+                        System.out.print(CLI.prompt("New type (Single/Double/Triple/Quad/Suite, or 'e' to cancel): "));
+                        String newType = scanner.nextLine().trim();
+                        if (newType.equalsIgnoreCase("e")) return;
+                        r.setType(newType);
                         break;
                     case "3":
-                        System.out.print(CLI.prompt("New status (AVAILABLE/MAINTENANCE): "));
-                        r.setStatus(scanner.nextLine().trim().toUpperCase());
+                        System.out.print(CLI.prompt("New status (AVAILABLE/MAINTENANCE, or 'e' to cancel): "));
+                        String newStatus = scanner.nextLine().trim();
+                        if (newStatus.equalsIgnoreCase("e")) return;
+                        r.setStatus(newStatus.toUpperCase());
                         break;
                     default:
                         System.out.println(CLI.warning("Invalid option."));
@@ -159,6 +173,7 @@ public class ManagerMenu {
                         return;
                 }
                 file.updateRooms(rooms);
+                CLI.randomSpinner("Saving changes");
                 System.out.println(CLI.success("Room " + roomNo + " updated."));
                 Main.pause(scanner);
                 return;
@@ -179,17 +194,20 @@ public class ManagerMenu {
 
         Room toRemove = null;
         for (Room r : rooms) {
-            if (r.getRoom_no().equalsIgnoreCase(roomNo)) { toRemove = r; break; }
+            if (r.getRoomNumber().equalsIgnoreCase(roomNo)) { toRemove = r; break; }
         }
         if (toRemove == null) {
             System.out.println(CLI.warning("Room not found."));
             Main.pause(scanner);
             return;
         }
-        System.out.print(CLI.prompt("Confirm delete " + roomNo + "? (yes/no): "));
-        if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
+        System.out.print(CLI.prompt("Confirm delete " + roomNo + "? (yes/no/e): "));
+        String confirm = scanner.nextLine().trim();
+        if (confirm.equalsIgnoreCase("e")) return;
+        if (confirm.equalsIgnoreCase("yes")) {
             rooms.remove(toRemove);
             file.updateRooms(rooms);
+            CLI.randomSpinner("Deleting room");
             System.out.println(CLI.success("Room " + roomNo + " deleted."));
         } else {
             System.out.println(CLI.dim("Delete cancelled."));
@@ -224,6 +242,7 @@ public class ManagerMenu {
     }
 
     private static void listAllStaff(Vector<Account> users) {
+        CLI.randomSpinner("Loading staff");
         CLI.clearScreen();
         CLI.printBanner("STAFF ACCOUNTS");
         System.out.println();
@@ -255,6 +274,7 @@ public class ManagerMenu {
             Account lastAdded = users.get(users.size() - 1);
             lastAdded.setRole("RECEPTION");
             file.updateUsersFileAll(users);
+            CLI.randomSpinner("Creating account");
             System.out.println(CLI.success("Account '" + lastAdded.getUsername() + "' set to RECEPTION."));
             Main.pause(scanner);
         }
@@ -271,10 +291,13 @@ public class ManagerMenu {
         for (Account u : users) {
             if (u.getUsername().equals(username)
                     && (u.getRole().equals("RECEPTION") || u.getRole().equals("MANAGER"))) {
-                System.out.print(CLI.prompt("Deactivate '" + username + "'? (yes/no): "));
-                if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
+                System.out.print(CLI.prompt("Deactivate '" + username + "'? (yes/no/e): "));
+                String deactivateConfirm = scanner.nextLine().trim();
+                if (deactivateConfirm.equalsIgnoreCase("e")) return;
+                if (deactivateConfirm.equalsIgnoreCase("yes")) {
                     u.setRole("USER");
                     file.updateUsersFileAll(users);
+                    CLI.randomSpinner("Deactivating account");
                     System.out.println(CLI.success("Account deactivated (role set to USER)."));
                 } else {
                     System.out.println(CLI.dim("Deactivation cancelled."));
@@ -289,6 +312,7 @@ public class ManagerMenu {
 
     // ─── Bookings & Stats ──────────────────────────────────────────────
     private static void viewAllBookings(Vector<Bookings> bookings) {
+        CLI.randomSpinner("Loading bookings");
         CLI.clearScreen();
         CLI.printBanner("ALL BOOKINGS");
         System.out.println();
@@ -296,9 +320,9 @@ public class ManagerMenu {
         for (Bookings b : bookings) {
             System.out.printf("  %s. Room %s | %-12s | %s → %s | Guest: %s%n",
                     CLI.cyan(String.valueOf(index++)),
-                    CLI.bold(b.getRoom().getRoom_no()),
+                    CLI.bold(b.getRoom().getRoomNumber()),
                     UserMenu.statusColour(b.getStatus()),
-                    b.getCheck_in(), b.getCheck_out(),
+                    b.getCheckIn(), b.getCheckOut(),
                     b.getUsername());
         }
         if (bookings.isEmpty()) System.out.println(CLI.dim("  No bookings found."));
@@ -306,6 +330,7 @@ public class ManagerMenu {
     }
 
     private static void viewStats(Vector<Bookings> bookings) {
+        CLI.randomSpinner("Loading statistics");
         CLI.clearScreen();
         CLI.printBanner("BOOKING STATISTICS");
         System.out.println();
@@ -324,8 +349,8 @@ public class ManagerMenu {
                         java.time.format.DateTimeFormatter fmt =
                             java.time.format.DateTimeFormatter.ofPattern("dd-MM-uuuu")
                                 .withResolverStyle(java.time.format.ResolverStyle.STRICT);
-                        java.time.LocalDate checkIn  = java.time.LocalDate.parse(b.getCheck_in(), fmt);
-                        java.time.LocalDate checkOut = java.time.LocalDate.parse(b.getCheck_out(), fmt);
+                        java.time.LocalDate checkIn  = java.time.LocalDate.parse(b.getCheckIn(), fmt);
+                        java.time.LocalDate checkOut = java.time.LocalDate.parse(b.getCheckOut(), fmt);
                         long nights = java.time.temporal.ChronoUnit.DAYS.between(checkIn, checkOut);
                         totalRevenue += nights * b.getRoom().getPrice();
                     } catch (Exception e) {

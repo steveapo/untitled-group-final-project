@@ -1,5 +1,3 @@
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -7,123 +5,113 @@ import java.time.format.ResolverStyle;
 import java.util.Scanner;
 import java.util.Vector;
 
+/**
+ * Handles date input and room-availability filtering for bookings.
+ * Accepts dates in dd-MM-yyyy format and validates them against current and existing bookings.
+ */
 public class DateInput {
-    private LocalDate userDateFormattedCheckIn;
-    private LocalDate userDateFormattedCheckOut;
-    private final DateTimeFormatter formatter =
+
+    private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("d-M-uuuu").withResolverStyle(ResolverStyle.STRICT);
+    private static final String LINE_SUFFIX = " - Line: ";
 
     private final Scanner scanner;
 
+    /** Construct with the shared input scanner. */
     public DateInput(Scanner scanner) {
         this.scanner = scanner;
     }
 
+    /**
+     * Prompt the user for a check-in date; re-prompts on invalid input or past dates.
+     * Returns null if the user types 'e' to cancel.
+     */
     public LocalDate checkInDate() {
-        int lineNumber;
         Files file = new Files();
         while (true) {
-            System.out.println("Enter the check in date (dd-MM-yyyy): ");
-            String userDate = scanner.nextLine();
+            System.out.print(CLI.prompt("Enter the check in date (dd-MM-yyyy, or 'e' to cancel): "));
+            String userInput = scanner.nextLine().trim();
+            if (userInput.equalsIgnoreCase("e")) return null;
             try {
-                userDateFormattedCheckIn = LocalDate.parse(userDate, formatter);
-                LocalDate currentDate = LocalDate.now();
-                if (userDateFormattedCheckIn.isBefore(currentDate)) {
+                LocalDate parsedCheckIn = LocalDate.parse(userInput, DATE_FORMATTER);
+                if (parsedCheckIn.isBefore(LocalDate.now())) {
                     System.err.println("Check-In Date cannot be prior to current date.");
-                    lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-                    file.writeErrors("Check-In Date cannot be prior to current date. - " + getClass() + " - Line: " + lineNumber);
+                    file.writeErrors("Check-In Date cannot be prior to current date. - " + getClass()
+                            + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
                 } else {
                     System.out.println("Date has been selected");
-                    break;
+                    return parsedCheckIn;
                 }
-            } catch (DateTimeParseException e) {
+            } catch (DateTimeParseException _) {
                 System.err.println("Invalid date or invalid format. Please use dd-MM-yyyy");
-                lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-                file.writeErrors("Invalid date format - " + getClass() + " - Line: " + lineNumber);
+                file.writeErrors("Invalid date format - " + getClass()
+                        + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
             }
         }
-        return userDateFormattedCheckIn;
     }
 
+    /**
+     * Prompt the user for a check-out date; re-prompts on invalid input or past dates.
+     * Returns null if the user types 'e' to cancel.
+     */
     public LocalDate checkOutDate() {
-        int lineNumber;
         Files file = new Files();
         while (true) {
-            System.out.println("Enter the check out date (dd-MM-yyyy): ");
-            String userDate = scanner.nextLine();
+            System.out.print(CLI.prompt("Enter the check out date (dd-MM-yyyy, or 'e' to cancel): "));
+            String userInput = scanner.nextLine().trim();
+            if (userInput.equalsIgnoreCase("e")) return null;
             try {
-                userDateFormattedCheckOut = LocalDate.parse(userDate, formatter);
-                LocalDate currentDate = LocalDate.now();
-                if (userDateFormattedCheckOut.isBefore(currentDate)) {
+                LocalDate parsedCheckOut = LocalDate.parse(userInput, DATE_FORMATTER);
+                if (parsedCheckOut.isBefore(LocalDate.now())) {
                     System.err.println("Check-Out Date cannot be prior to current date.");
-                    lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-                    file.writeErrors("Check-Out Date cannot be prior to current date. - " + getClass() + " - Line: " + lineNumber);
+                    file.writeErrors("Check-Out Date cannot be prior to current date. - " + getClass()
+                            + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
                 } else {
                     System.out.println("Date has been selected");
-                    break;
+                    return parsedCheckOut;
                 }
-            } catch (DateTimeParseException e) {
+            } catch (DateTimeParseException _) {
                 System.err.println("Invalid date or invalid format. Please use dd-MM-yyyy");
-                lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-                file.writeErrors("Invalid date format - " + getClass() + " - Line: " + lineNumber);
+                file.writeErrors("Invalid date format - " + getClass()
+                        + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
             }
         }
-        return userDateFormattedCheckOut;
     }
 
-    public Vector<Room> checkBookingsDate(LocalDate date1, LocalDate date2,
-                                           Vector<Room> available, Vector<Room> rooms) {
-        Vector<String> added = new Vector<>();
-        Vector<String> bookingsRoom = new Vector<>();
-        int lineNumber;
-        Files file = new Files();
+    /**
+     * Filter the rooms list to those with no active booking that overlaps the requested date range.
+     * Uses the in-memory bookings vector rather than re-reading from disk, keeping data access
+     * centralised in the Files class.
+     */
+    public Vector<Room> checkBookingsDate(LocalDate requestedStart, LocalDate requestedEnd,
+                                           Vector<Room> available, Vector<Room> rooms,
+                                           Vector<Bookings> bookings) {
+        Vector<String> processedRoomNumbers = new Vector<>();
 
-        try (Scanner fileScanner = new Scanner(new File("Bookings"))) {
-            Vector<String[]> allBookings = new Vector<>();
-            while (fileScanner.hasNextLine()) {
-                String line = fileScanner.nextLine().trim();
-                if (line.isEmpty()) continue;
-                String[] data = line.split(",");
-                if (data.length < 3) continue;
-                allBookings.add(data);
-                bookingsRoom.add(data[0].trim());
-            }
+        for (Room room : rooms) {
+            if (processedRoomNumbers.contains(room.getRoomNumber())) continue;
 
-            for (Room room1 : rooms) {
-                if (added.contains(room1.getRoom_no())) continue;
-                boolean isAvailable = true;
-                for (String[] bookingData : allBookings) {
-                    String bookedRoom = bookingData[0].trim();
-                    if (!room1.getRoom_no().equals(bookedRoom)) continue;
-                    // Skip cancelled bookings — they don't block availability
-                    if (bookingData.length >= 5 && bookingData[4].trim().equals("CANCELLED")) continue;
+            boolean isAvailable = true;
+            for (Bookings booking : bookings) {
+                if (!room.getRoomNumber().equals(booking.getRoom().getRoomNumber())) continue;
+                if (booking.getStatus().equals("CANCELLED")) continue;
 
-                    LocalDate bookedStart = LocalDate.parse(bookingData[1].trim(), formatter);
-                    LocalDate bookedEnd   = LocalDate.parse(bookingData[2].trim(), formatter);
-                    boolean overlaps = !(date1.isBefore(bookedStart) && date2.isBefore(bookedStart)
-                            || date1.isAfter(bookedEnd));
-                    if (overlaps) {
-                        isAvailable = false;
-                        break;
-                    }
-                }
-                if (isAvailable) {
-                    available.add(room1);
-                    added.add(room1.getRoom_no());
+                LocalDate bookedStart = LocalDate.parse(booking.getCheckIn(),  DATE_FORMATTER);
+                LocalDate bookedEnd   = LocalDate.parse(booking.getCheckOut(), DATE_FORMATTER);
+
+                // Overlap: the requested range is not entirely before or after the booked range.
+                // Check-out day is not an occupied night, so a new check-in on the same day is allowed.
+                boolean overlaps = requestedStart.isBefore(bookedEnd) && requestedEnd.isAfter(bookedStart);
+                if (overlaps) {
+                    isAvailable = false;
+                    break;
                 }
             }
 
-            for (Room v1 : rooms) {
-                if (!bookingsRoom.contains(v1.getRoom_no()) && !added.contains(v1.getRoom_no())) {
-                    available.add(v1);
-                    added.add(v1.getRoom_no());
-                }
+            if (isAvailable) {
+                available.add(room);
+                processedRoomNumbers.add(room.getRoomNumber());
             }
-
-        } catch (FileNotFoundException e) {
-            System.err.println("Could not open Bookings file");
-            lineNumber = Thread.currentThread().getStackTrace()[1].getLineNumber();
-            file.writeErrors("Could not open Bookings file - " + getClass() + " - Line: " + lineNumber);
         }
 
         return available;

@@ -14,8 +14,10 @@ public class SeedManager {
 
     // Hardcoded default credentials — users should change these after first login
     @SuppressWarnings("java:S2068")
+    private static final String DEFAULT_ADMIN_USERNAME = "admin";
+    @SuppressWarnings("java:S2068")
     private static final String DEFAULT_ADMIN_PASSWORD = "admin";
-    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
      * Write the default admin account to the Users file.
@@ -24,49 +26,50 @@ public class SeedManager {
     public static void seedAdmin(Files file) {
         try {
             byte[] saltBytes = new byte[16];
-            RANDOM.nextBytes(saltBytes);
+            SECURE_RANDOM.nextBytes(saltBytes);
 
             MessageDigest md = MessageDigest.getInstance("SHA-512");
             md.update(saltBytes);
-            byte[] hashBytes = md.digest(
-                    DEFAULT_ADMIN_PASSWORD.getBytes(StandardCharsets.UTF_8));
+            byte[] hashBytes = md.digest(DEFAULT_ADMIN_PASSWORD.getBytes(StandardCharsets.UTF_8));
 
-            String b64Hash = Base64.getEncoder().encodeToString(hashBytes);
-            String b64Salt = Base64.getEncoder().encodeToString(saltBytes);
+            // Encode hash and salt as Base64 strings for CSV file storage
+            String encodedHash = Base64.getEncoder().encodeToString(hashBytes);
+            String encodedSalt = Base64.getEncoder().encodeToString(saltBytes);
 
-            file.updateUsersFile("admin", "Admin", "User",
-                    "admin@hotel.com", b64Hash, b64Salt, "MANAGER");
+            file.updateUsersFile(DEFAULT_ADMIN_USERNAME, "Admin", "User",
+                    "admin@hotel.com", encodedHash, encodedSalt, "MANAGER");
         } catch (Exception e) {
             System.err.println("Failed to seed admin account: " + e.getMessage());
         }
     }
 
-    // ── Standalone CLI tool for generating additional staff accounts ─────
+    /** Standalone CLI tool — print hashed user records to stdout for manual seeding. */
     public static void main(String[] args) throws Exception {
-        Scanner sc = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
 
         System.out.print("Choose a manager password: ");
-        String managerPassword = sc.nextLine().trim();
-        printUserLine("admin", "Admin", "User", "admin@hotel.com", managerPassword, "MANAGER");
+        String managerPassword = scanner.nextLine().trim();
+        printUserLine(DEFAULT_ADMIN_USERNAME, "Admin", "User", "admin@hotel.com", managerPassword, "MANAGER");
 
         System.out.print("\nAdd a receptionist account too? (yes/no): ");
-        if (sc.nextLine().trim().equalsIgnoreCase("yes")) {
+        if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
             System.out.print("Receptionist username: ");
-            String receptionUsername = sc.nextLine().trim();
+            String receptionUsername = scanner.nextLine().trim();
             System.out.print("Receptionist password: ");
-            String receptionPassword = sc.nextLine().trim();
+            String receptionPassword = scanner.nextLine().trim();
             printUserLine(receptionUsername, "Front", "Desk",
                     "reception@hotel.com", receptionPassword, "RECEPTION");
         }
 
         System.out.println("\nCopy the line(s) above into your Users file, or re-run with auto-seed.");
-        sc.close();
+        scanner.close();
     }
 
+    /** Hash password with a fresh random salt and print the resulting CSV user record to stdout. */
     private static void printUserLine(String username, String firstName, String lastName,
                                        String email, String password, String role) throws Exception {
         byte[] saltBytes = new byte[16];
-        RANDOM.nextBytes(saltBytes);
+        SECURE_RANDOM.nextBytes(saltBytes);
 
         MessageDigest md = MessageDigest.getInstance("SHA-512");
         md.update(saltBytes);

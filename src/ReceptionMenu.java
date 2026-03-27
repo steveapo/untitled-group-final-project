@@ -29,7 +29,7 @@ public class ReceptionMenu {
 
             switch (choice) {
                 case "1":  viewAllRooms(rooms); Main.pause(scanner);                               break;
-                case "2":  searchAvailableRooms(scanner, rooms); Main.pause(scanner);              break;
+                case "2":  searchAvailableRooms(scanner, rooms, bookings); Main.pause(scanner);              break;
                 case "3":  createBooking(scanner, rooms, bookings, users, file);                   break;
                 case "4":  viewAllBookings(bookings); Main.pause(scanner);                         break;
                 case "5":  cancelBooking(scanner, bookings, file);                                 break;
@@ -46,6 +46,7 @@ public class ReceptionMenu {
     }
 
     private static void viewAllRooms(Vector<Room> rooms) {
+        CLI.randomSpinner("Loading rooms");
         CLI.clearScreen();
         CLI.printBanner("ALL ROOMS");
         System.out.println();
@@ -53,7 +54,7 @@ public class ReceptionMenu {
             String dot = r.getStatus().equals("AVAILABLE") ? CLI.green("●") : CLI.red("●");
             System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night | %s%n",
                     dot,
-                    CLI.bold(r.getRoom_no()),
+                    CLI.bold(r.getRoomNumber()),
                     r.getType(),
                     r.getCapacity(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())),
@@ -62,26 +63,30 @@ public class ReceptionMenu {
         CLI.printDivider();
     }
 
-    private static void searchAvailableRooms(Scanner scanner, Vector<Room> rooms) throws Exception {
+    private static void searchAvailableRooms(Scanner scanner, Vector<Room> rooms, Vector<Bookings> bookings) throws Exception {
         CLI.clearScreen();
         CLI.printBanner("SEARCH ROOMS BY DATE");
         System.out.println();
         DateInput date = new DateInput(scanner);
         LocalDate checkIn  = date.checkInDate();
+        if (checkIn == null) return;
         LocalDate checkOut = date.checkOutDate();
+        if (checkOut == null) return;
         while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
             System.out.println(CLI.warning("Check-out must be after check-in. Re-enter."));
             checkOut = date.checkOutDate();
+            if (checkOut == null) return;
         }
         Vector<Room> available = new Vector<>();
-        date.checkBookingsDate(checkIn, checkOut, available, rooms);
+        date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
+        CLI.randomSpinner("Searching");
         System.out.println("\n" + CLI.header("  Available Rooms") + "\n");
         boolean found = false;
         for (Room r : available) {
             if (r.getStatus().equals("AVAILABLE")) {
                 System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night%n",
                         CLI.green("●"),
-                        CLI.bold(r.getRoom_no()),
+                        CLI.bold(r.getRoomNumber()),
                         r.getType(),
                         r.getCapacity(),
                         CLI.yellow(String.format("$%.2f", r.getPrice())));
@@ -117,14 +122,17 @@ public class ReceptionMenu {
 
         DateInput date = new DateInput(scanner);
         LocalDate checkIn  = date.checkInDate();
+        if (checkIn == null) return;
         LocalDate checkOut = date.checkOutDate();
+        if (checkOut == null) return;
         while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
             System.out.println(CLI.warning("Check-out must be after check-in. Re-enter."));
             checkOut = date.checkOutDate();
+            if (checkOut == null) return;
         }
 
         Vector<Room> available = new Vector<>();
-        date.checkBookingsDate(checkIn, checkOut, available, rooms);
+        date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
         Vector<Room> bookable = new Vector<>();
         for (Room r : available) {
             if (r.getStatus().equals("AVAILABLE")) bookable.add(r);
@@ -139,15 +147,17 @@ public class ReceptionMenu {
             Room r = bookable.get(i);
             System.out.printf("  %s. %-6s | %-8s | Capacity: %d | %s/night%n",
                     CLI.cyan(String.valueOf(i + 1)),
-                    CLI.bold(r.getRoom_no()),
+                    CLI.bold(r.getRoomNumber()),
                     r.getType(),
                     r.getCapacity(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
-        System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", or 0 to cancel): "));
+        System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", or 'e' to cancel): "));
+        String roomInput = scanner.nextLine().trim();
+        if (roomInput.equalsIgnoreCase("e")) return;
         int choice;
         try {
-            choice = Integer.parseInt(scanner.nextLine().trim());
+            choice = Integer.parseInt(roomInput);
         } catch (NumberFormatException e) {
             System.out.println(CLI.warning("Invalid input."));
             Main.pause(scanner);
@@ -167,12 +177,14 @@ public class ReceptionMenu {
         CLI.withSpinner("Saving booking", () -> {
             bookings.add(new Bookings(chosen, checkInStr, checkOutStr, finalGuest, "CONFIRMED"));
             file.updateBookings(bookings);
+            try { Thread.sleep(CLI.randomDelayMs()); } catch (InterruptedException _) { Thread.currentThread().interrupt(); }
         });
         System.out.println(CLI.success("Booking created for guest '" + guestUsername + "'."));
         Main.pause(scanner);
     }
 
     private static void viewAllBookings(Vector<Bookings> bookings) {
+        CLI.randomSpinner("Loading bookings");
         CLI.clearScreen();
         CLI.printBanner("ALL BOOKINGS");
         System.out.println();
@@ -180,9 +192,9 @@ public class ReceptionMenu {
         for (Bookings b : bookings) {
             System.out.printf("  %s. Room %s | %-12s | %s → %s | Guest: %s%n",
                     CLI.cyan(String.valueOf(index++)),
-                    CLI.bold(b.getRoom().getRoom_no()),
+                    CLI.bold(b.getRoom().getRoomNumber()),
                     UserMenu.statusColour(b.getStatus()),
-                    b.getCheck_in(), b.getCheck_out(),
+                    b.getCheckIn(), b.getCheckOut(),
                     b.getUsername());
         }
         if (bookings.isEmpty()) System.out.println(CLI.dim("  No bookings found."));
@@ -212,13 +224,15 @@ public class ReceptionMenu {
             Bookings b = activeBookings.get(i);
             System.out.printf("  %s. Room %s | %s → %s%n",
                     CLI.cyan(String.valueOf(i + 1)),
-                    CLI.bold(b.getRoom().getRoom_no()),
-                    b.getCheck_in(), b.getCheck_out());
+                    CLI.bold(b.getRoom().getRoomNumber()),
+                    b.getCheckIn(), b.getCheckOut());
         }
-        System.out.print(CLI.prompt("Choose (1-" + activeBookings.size() + ", or 0 to cancel): "));
+        System.out.print(CLI.prompt("Choose (1-" + activeBookings.size() + ", or 'e' to cancel): "));
+        String cancelInput = scanner.nextLine().trim();
+        if (cancelInput.equalsIgnoreCase("e")) return;
         int choice;
         try {
-            choice = Integer.parseInt(scanner.nextLine().trim());
+            choice = Integer.parseInt(cancelInput);
         } catch (NumberFormatException e) {
             System.out.println(CLI.warning("Invalid input."));
             Main.pause(scanner);
@@ -232,6 +246,7 @@ public class ReceptionMenu {
         }
         activeBookings.get(choice - 1).setStatus("CANCELLED");
         file.updateBookings(bookings);
+        CLI.randomSpinner("Cancelling booking");
         System.out.println(CLI.success("Booking cancelled."));
         Main.pause(scanner);
     }
@@ -247,7 +262,8 @@ public class ReceptionMenu {
             if (b.getUsername().equals(username) && b.getStatus().equals("CONFIRMED")) {
                 b.setStatus("CHECKED_IN");
                 file.updateBookings(bookings);
-                System.out.println(CLI.success("Guest '" + username + "' checked in to room " + b.getRoom().getRoom_no() + "."));
+                CLI.randomSpinner("Checking in");
+                System.out.println(CLI.success("Guest '" + username + "' checked in to room " + b.getRoom().getRoomNumber() + "."));
                 Main.pause(scanner);
                 return;
             }
@@ -267,7 +283,8 @@ public class ReceptionMenu {
             if (b.getUsername().equals(username) && b.getStatus().equals("CHECKED_IN")) {
                 b.setStatus("CHECKED_OUT");
                 file.updateBookings(bookings);
-                System.out.println(CLI.success("Guest '" + username + "' checked out from room " + b.getRoom().getRoom_no() + "."));
+                CLI.randomSpinner("Checking out");
+                System.out.println(CLI.success("Guest '" + username + "' checked out from room " + b.getRoom().getRoomNumber() + "."));
                 Main.pause(scanner);
                 return;
             }
@@ -277,6 +294,7 @@ public class ReceptionMenu {
     }
 
     private static void viewAllGuests(Vector<Account> users) {
+        CLI.randomSpinner("Loading guests");
         CLI.clearScreen();
         CLI.printBanner("REGISTERED GUESTS");
         System.out.println();
@@ -303,19 +321,22 @@ public class ReceptionMenu {
         String roomNo = scanner.nextLine().trim();
         if (roomNo.equalsIgnoreCase("e")) return;
         for (Room r : rooms) {
-            if (r.getRoom_no().equalsIgnoreCase(roomNo)) {
+            if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
                 System.out.println("Current status: " + UserMenu.statusColour(r.getStatus()));
                 CLI.printMenuItem("1", "AVAILABLE");
                 CLI.printMenuItem("2", "MAINTENANCE");
-                System.out.print(CLI.prompt("Choice: "));
+                System.out.print(CLI.prompt("Choice (or 'e' to cancel): "));
                 String opt = scanner.nextLine().trim();
+                if (opt.equalsIgnoreCase("e")) return;
                 if (opt.equals("1")) {
                     r.setStatus("AVAILABLE");
                     file.updateRooms(rooms);
+                    CLI.randomSpinner("Updating status");
                     System.out.println(CLI.success(roomNo + " set to AVAILABLE."));
                 } else if (opt.equals("2")) {
                     r.setStatus("MAINTENANCE");
                     file.updateRooms(rooms);
+                    CLI.randomSpinner("Updating status");
                     System.out.println(CLI.yellow(roomNo + " set to MAINTENANCE."));
                 } else {
                     System.out.println(CLI.warning("Invalid option."));

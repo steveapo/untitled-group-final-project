@@ -1,6 +1,7 @@
 import java.util.Scanner;
 import java.util.Vector;
 
+/** Application entry point — initialises data, seeds the admin on first run, then drives the top-level menu loop. */
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -12,7 +13,7 @@ public class Main {
         Vector<Bookings> bookings = new Vector<>();
         Vector<Account>  users    = new Vector<>();
 
-        // ── Auto-seed admin account on first run ─────────────────────────
+        // Auto-seed admin account on first run
         CLI.withSpinner("Initialising system", () -> {
             if (!file.adminExists()) {
                 file.createUsersFile();
@@ -29,10 +30,10 @@ public class Main {
 
         CLI.withSpinner("Loading rooms and bookings", () -> {
             file.populateRooms(rooms);
-            file.populatebookings(rooms, bookings);
+            file.populateBookings(rooms, bookings);
         });
 
-        // ── Main loop ────────────────────────────────────────────────────
+        // Main menu loop
         while (true) {
             CLI.clearScreen();
             CLI.printBanner("HOTEL ROOM BOOKING SYSTEM");
@@ -47,19 +48,22 @@ public class Main {
 
             switch (choice) {
                 case "1":
-                    Account fromGuest = GuestMenu.show(scanner, rooms, users);
-                    if (fromGuest != null) {
-                        dispatch(scanner, fromGuest, rooms, bookings, users, file);
+                    Account guestAccount = GuestMenu.show(scanner, rooms, users);
+                    if (guestAccount != null) {
+                        dispatch(scanner, guestAccount, rooms, bookings, users, file);
                     }
                     break;
                 case "2":
-                    Account logged = new Account().login(users, scanner);
-                    if (logged != null) {
-                        dispatch(scanner, logged, rooms, bookings, users, file);
+                    Account loggedAccount = new Account().login(users, scanner);
+                    if (loggedAccount != null) {
+                        CLI.randomSpinner("Logging in");
+                        dispatch(scanner, loggedAccount, rooms, bookings, users, file);
                     }
                     break;
                 case "3":
-                    new Account().register(users, scanner);
+                    if (new Account().register(users, scanner)) {
+                        CLI.randomSpinner("Creating account");
+                    }
                     break;
                 case "4":
                     CLI.clearScreen();
@@ -72,6 +76,7 @@ public class Main {
         }
     }
 
+    /** Route the authenticated account to its role-specific menu. */
     private static void dispatch(Scanner scanner, Account account,
                                   Vector<Room> rooms, Vector<Bookings> bookings,
                                   Vector<Account> users, Files file) throws Exception {
@@ -91,7 +96,7 @@ public class Main {
         }
     }
 
-    // Press Enter to continue (used after error messages before clearing screen)
+    /** Press Enter to continue — used after error messages before clearing the screen. */
     static void pause(Scanner scanner) {
         System.out.print(CLI.dim("Press Enter to continue..."));
         scanner.nextLine();

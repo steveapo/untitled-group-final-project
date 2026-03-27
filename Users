@@ -1,4 +1,4 @@
-admin,Admin,User,admin@hotel.com,kVNpxvU9A/1/luFciUE5XROYQ4z3CJwq7Daez/PrkUfTKyUY82Hs2LgIu0/Uolq/goFyKTX0niQpGs8f9PtzMg==,VLjZfX4kH4NHBKhHfZFK/g==,RECEPTION
-test,Stavros,Apostolou,test@gmail.com,Pd46aLK2blwzuVNgqtlMtjx9PF1/wByeu+2ovp9VEsC/7Tzu5SErXgAncb3TyWG3ATZSoRfIodItkvcr6ipaLg==,I6EJ5fFkL1/coW3IzdfyQw==,USER
-violeta,violeta,koroneou,vkor@gmail.com,8sy3fIIzV1vfn6MPpANmguMFlQXo9o+cByz1L4lP6+lMlw0yixM4xRHC4yGzdRbdOsmkr8wsVLDGHJM2XzCIPQ==,ZuN200fiQieiTrC+Nn4bJA==,USER
-mylto,mylto,mylto,mylto@gmail.com,/nwgSJl3NkBYeAzB6n+4Q7DbmUgzfscQ/mDYP/PP/IwMYTDFlPcv/S0Es29tJDRnbtJH/MRVa+4aK0n6e6Tfgg==,nPmQdkA/C5A8fMjeMkioRA==,USER
+user1,Alice,Smith,alice@hotel.com,f0567b63ChnPzY2NkJHinZZVcheUrUKh//JpG9vpH81mty+5u2ndktXYG0CChmE2InXnz6c/GjBBsD42+SHWiQ==,fIABFcMdCnSxrFliGehZ2A==,USER
+user2,Bob,Jones,bob@hotel.com,mlgGG71gg9ErkJSMTtkrGP/Vtro2G8/pu767216DlNj+TBmfOhCs6FyZ6cL71IyG0lmVWIUHSBLWmB/r6CjRBg==,E8ps9xXKyqxDISbn+iL52A==,USER
+reception,Claire,Dupont,reception@hotel.com,bBBdhaWhyrSiytzeW3SBFEd791N87kK1rBoUfbNdC5KckjZpd20U25z6IVnp4n/kxh8cB3LQt0P1rI3bDZVKhQ==,rOgD2fsBOFfEkr3gvpo+kQ==,RECEPTION
+admin,Admin,Owner,admin@hotel.com,cxnatM6dZ1yulcX9NeIP0VgO92ADsZv+kBeDgk/BRYtqSwJecDNFoMR6lt+LjJjDaRm+30Ne7DLshsebcbAqqg==,Jmwz8kBGgW9CWnHGxL1M+A==,MANAGER

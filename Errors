@@ -1,20 +1,2 @@
-Wrong password - class Main
-Wrong password - class Main
-Wrong password - class Main - 75
-Wrong password - class Main - Line:75
-Check-In Date cannot be prior to current date. - class DateInput - Line30
-Wrong password - class Account - Line: 191
-Username already taken - class Account Line: 146
-Wrong password - class Account - Line: 191
-Wrong password - class Account - Line: 191
-Wrong password - class Account - Line: 191
-Names cannot have numbers - class Account - Line: 72
-Names cannot have numbers - class Account - Line: 72
-Names cannot have numbers - class Account - Line: 72
-Names cannot have numbers - class Account - Line: 72
-Invalid email - class Account - Line: 104
-Check-Out Date cannot be prior to current date. - class DateInput - Line: 59
-Invalid date format - class DateInput - Line: 41
-Check-In Date cannot be prior to current date. - class DateInput - Line: 33
-Check-In Date cannot be prior to current date. - class DateInput - Line: 33
-Invalid email - class Account - Line: 104
+Invalid date format - class DateInput - Line: 76
+Invalid date format - class DateInput - Line: 76

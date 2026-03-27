@@ -55,7 +55,7 @@ public class UserMenu {
         }
 
         Vector<Room> available = new Vector<>();
-        date.checkBookingsDate(checkIn, checkOut, available, rooms);
+        date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
 
         Vector<Room> bookable = new Vector<>();
         for (Room r : available) {
@@ -73,16 +73,18 @@ public class UserMenu {
             Room r = bookable.get(i);
             System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night%n",
                     CLI.cyan((i + 1) + "."),
-                    CLI.bold(r.getRoom_no()),
+                    CLI.bold(r.getRoomNumber()),
                     r.getType(),
                     r.getCapacity(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
 
-        System.out.print(CLI.prompt("\nChoose room (1-" + bookable.size() + ", or 0 to cancel): "));
+        System.out.print(CLI.prompt("\nChoose room (1-" + bookable.size() + ", or 'e' to cancel): "));
+        String roomInput = scanner.nextLine().trim();
+        if (roomInput.equalsIgnoreCase("e")) return;
         int choice;
         try {
-            choice = Integer.parseInt(scanner.nextLine().trim());
+            choice = Integer.parseInt(roomInput);
         } catch (NumberFormatException e) {
             System.out.println(CLI.warning("Invalid input."));
             Main.pause(scanner);
@@ -100,15 +102,18 @@ public class UserMenu {
         // Capture as effectively-final strings for use inside the lambda
         final String checkInStr  = checkIn.format(fmt);
         final String checkOutStr = checkOut.format(fmt);
-        System.out.println("\nConfirm booking " + CLI.bold(chosen.getRoom_no())
+        System.out.println("\nConfirm booking " + CLI.bold(chosen.getRoomNumber())
                 + " from " + CLI.cyan(checkInStr) + " to " + CLI.cyan(checkOutStr) + "?");
-        System.out.print(CLI.prompt("(yes/no): "));
-        if (scanner.nextLine().trim().equalsIgnoreCase("yes")) {
+        System.out.print(CLI.prompt("(yes/no/e): "));
+        String confirm = scanner.nextLine().trim();
+        if (confirm.equalsIgnoreCase("e")) { System.out.println(CLI.dim("Booking cancelled.")); Main.pause(scanner); return; }
+        if (confirm.equalsIgnoreCase("yes")) {
             CLI.withSpinner("Saving booking", () -> {
                 Bookings newBooking = new Bookings(chosen, checkInStr,
                         checkOutStr, account.getUsername(), "CONFIRMED");
                 bookings.add(newBooking);
                 file.updateBookings(bookings);
+                try { Thread.sleep(CLI.randomDelayMs()); } catch (InterruptedException _) { Thread.currentThread().interrupt(); }
             });
             System.out.println(CLI.success("Booking confirmed!"));
         } else {
@@ -118,6 +123,7 @@ public class UserMenu {
     }
 
     private static void viewMyBookings(Account account, Vector<Bookings> bookings) {
+        CLI.randomSpinner("Loading bookings");
         CLI.clearScreen();
         CLI.printBanner("MY BOOKINGS");
         System.out.println();
@@ -128,8 +134,8 @@ public class UserMenu {
                 String statusColour = statusColour(b.getStatus());
                 System.out.printf("  %s. Room %s | %s → %s | %s%n",
                         CLI.cyan(String.valueOf(index++)),
-                        CLI.bold(b.getRoom().getRoom_no()),
-                        b.getCheck_in(), b.getCheck_out(),
+                        CLI.bold(b.getRoom().getRoomNumber()),
+                        b.getCheckIn(), b.getCheckOut(),
                         statusColour);
                 found = true;
             }
@@ -160,13 +166,15 @@ public class UserMenu {
             Bookings b = activeBookings.get(i);
             System.out.printf("  %s. Room %s | %s → %s%n",
                     CLI.cyan(String.valueOf(i + 1)),
-                    CLI.bold(b.getRoom().getRoom_no()),
-                    b.getCheck_in(), b.getCheck_out());
+                    CLI.bold(b.getRoom().getRoomNumber()),
+                    b.getCheckIn(), b.getCheckOut());
         }
-        System.out.print(CLI.prompt("\nChoose booking to cancel (1-" + activeBookings.size() + ", or 0 to go back): "));
+        System.out.print(CLI.prompt("\nChoose booking to cancel (1-" + activeBookings.size() + ", or 'e' to go back): "));
+        String cancelInput = scanner.nextLine().trim();
+        if (cancelInput.equalsIgnoreCase("e")) return;
         int choice;
         try {
-            choice = Integer.parseInt(scanner.nextLine().trim());
+            choice = Integer.parseInt(cancelInput);
         } catch (NumberFormatException e) {
             System.out.println(CLI.warning("Invalid input."));
             Main.pause(scanner);
@@ -180,11 +188,13 @@ public class UserMenu {
         }
         activeBookings.get(choice - 1).setStatus("CANCELLED");
         file.updateBookings(bookings);
+        CLI.randomSpinner("Cancelling booking");
         System.out.println(CLI.success("Booking cancelled."));
         Main.pause(scanner);
     }
 
     private static void viewProfile(Account account) {
+        CLI.randomSpinner("Loading profile");
         CLI.clearScreen();
         CLI.printBanner("MY PROFILE");
         System.out.println();

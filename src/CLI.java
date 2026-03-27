@@ -9,6 +9,8 @@
  * On Windows, ANSI codes work natively in Windows Terminal and PowerShell 7+.
  * Legacy cmd.exe will see plain text (colours suppressed automatically).
  */
+import java.util.Scanner;
+
 public class CLI {
 
     // ── ANSI escape codes ────────────────────────────────────────────────
@@ -123,6 +125,39 @@ public class CLI {
         withSpinner(label, () -> {
             try { Thread.sleep(durationMs); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         });
+    }
+
+    /**
+     * Show a spinner for a random duration between 500 ms and 2000 ms.
+     *
+     * @param label Text shown next to the spinner
+     */
+    private static final java.util.Random RANDOM = new java.util.Random();
+
+    /** Returns a random delay between 500 ms and 2000 ms. */
+    public static int randomDelayMs() {
+        return 500 + RANDOM.nextInt(1501);
+    }
+
+    public static void randomSpinner(String label) {
+        spinner(label, randomDelayMs());
+    }
+
+    // ── Password input ──────────────────────────────────────────────────
+    /**
+     * Read a password with input masking.
+     * Uses System.console().readPassword() which works cross-platform
+     * (macOS, Linux, Windows PowerShell, Windows Terminal).
+     * Falls back to plain Scanner input in IDEs where console is unavailable.
+     */
+    public static String readPassword(Scanner fallbackScanner) {
+        java.io.Console console = System.console();
+        if (console != null) {
+            char[] passwordChars = console.readPassword();
+            return passwordChars != null ? new String(passwordChars) : "";
+        }
+        // Fallback for IDEs where System.console() is null
+        return fallbackScanner.nextLine();
     }
 
     // ── Banner / divider helpers ─────────────────────────────────────────
