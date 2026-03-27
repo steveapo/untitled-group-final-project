@@ -84,11 +84,10 @@ public class ReceptionMenu {
         boolean found = false;
         for (Room r : available) {
             if (r.getStatus().equals("AVAILABLE")) {
-                System.out.printf("  %s  %-6s | %-8s | Capacity: %d | %s/night%n",
+                System.out.printf("  %s  %-6s | %-8s | %s/night%n",
                         CLI.green("●"),
                         CLI.bold(r.getRoomNumber()),
                         r.getType(),
-    
                         CLI.yellow(String.format("$%.2f", r.getPrice())));
                 found = true;
             }
@@ -145,11 +144,10 @@ public class ReceptionMenu {
         }
         for (int i = 0; i < bookable.size(); i++) {
             Room r = bookable.get(i);
-            System.out.printf("  %s. %-6s | %-8s | Capacity: %d | %s/night%n",
+            System.out.printf("  %s. %-6s | %-8s | %s/night%n",
                     CLI.cyan(String.valueOf(i + 1)),
                     CLI.bold(r.getRoomNumber()),
                     r.getType(),
-
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
         System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", or 'e' to cancel): "));
