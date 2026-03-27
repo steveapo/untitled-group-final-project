@@ -1,9 +1,27 @@
 import { defineConfig } from 'vitepress'
+import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Local HTTPS certs (dev only) — skipped on Vercel where .certs/ doesn't exist
+const keyPath = resolve(__dirname, '../.certs/key.pem')
+const certPath = resolve(__dirname, '../.certs/cert.pem')
+const hasLocalCerts = fs.existsSync(keyPath) && fs.existsSync(certPath)
 
 export default defineConfig({
   title: 'Hotel Booking System',
   description: 'Documentation for the Hotel Room Booking System — ITC2205 Final Project',
   srcDir: 'docs',
+  vite: {
+    server: hasLocalCerts ? {
+      https: {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+      }
+    } : {}
+  },
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
