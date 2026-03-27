@@ -220,6 +220,11 @@ public class CLI {
      * @param scanner  Fallback scanner for non-stty environments
      */
     public static int selectFromList(String[] labels, String title, Scanner scanner) {
+        return selectFromList(labels, title, scanner, 0);
+    }
+
+    /** Overload that pre-selects a specific index (e.g. the current value in a toggle). */
+    public static int selectFromList(String[] labels, String title, Scanner scanner, int initialSelection) {
         if (labels.length == 0) return -1;
 
         // Attempt interactive mode (macOS / Linux terminal)
@@ -232,7 +237,7 @@ public class CLI {
             ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
             rawPb.start().waitFor();
 
-            int selected = 0;
+            int selected = Math.max(0, Math.min(initialSelection, labels.length - 1));
             try {
                 renderList(labels, title, selected);
                 while (true) {

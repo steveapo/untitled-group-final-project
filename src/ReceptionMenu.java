@@ -384,24 +384,20 @@ public class ReceptionMenu {
         if (roomNo.equalsIgnoreCase("e")) return;
         for (Room r : rooms) {
             if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
-                System.out.println("Current status: " + UserMenu.statusColour(r.getStatus()));
-                CLI.printMenuItem("1", "AVAILABLE");
-                CLI.printMenuItem("2", "MAINTENANCE");
-                System.out.print(CLI.prompt("Choice (or 'e' to cancel): "));
-                String opt = scanner.nextLine().trim();
-                if (opt.equalsIgnoreCase("e")) return;
-                if (opt.equals("1")) {
-                    r.setStatus("AVAILABLE");
-                    file.updateRooms(rooms);
-                    CLI.randomSpinner("Updating status");
+                System.out.println("  Current: " + UserMenu.statusColour(r.getStatus()));
+                System.out.println();
+                String[] statuses = {"AVAILABLE", "MAINTENANCE"};
+                int preselect = r.getStatus().equals("MAINTENANCE") ? 1 : 0;
+                int choice = CLI.selectFromList(statuses, "New status", scanner, preselect);
+                if (choice == -1) return;
+                String newStatus = statuses[choice];
+                r.setStatus(newStatus);
+                file.updateRooms(rooms);
+                CLI.randomSpinner("Updating status");
+                if (newStatus.equals("AVAILABLE")) {
                     System.out.println(CLI.success(roomNo + " set to AVAILABLE."));
-                } else if (opt.equals("2")) {
-                    r.setStatus("MAINTENANCE");
-                    file.updateRooms(rooms);
-                    CLI.randomSpinner("Updating status");
-                    System.out.println(CLI.yellow(roomNo + " set to MAINTENANCE."));
                 } else {
-                    System.out.println(CLI.warning("Invalid option."));
+                    System.out.println(CLI.yellow(roomNo + " set to MAINTENANCE."));
                 }
                 Main.pause(scanner);
                 return;

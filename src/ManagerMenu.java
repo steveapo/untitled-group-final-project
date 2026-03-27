@@ -161,10 +161,11 @@ public class ManagerMenu {
                         r.setType(newType);
                         break;
                     case "3":
-                        System.out.print(CLI.prompt("New status (AVAILABLE/MAINTENANCE, or 'e' to cancel): "));
-                        String newStatus = scanner.nextLine().trim();
-                        if (newStatus.equalsIgnoreCase("e")) return;
-                        r.setStatus(newStatus.toUpperCase());
+                        String[] statuses = {"AVAILABLE", "MAINTENANCE"};
+                        int preselect = r.getStatus().equals("MAINTENANCE") ? 1 : 0;
+                        int statusChoice = CLI.selectFromList(statuses, "New status", scanner, preselect);
+                        if (statusChoice == -1) return;
+                        r.setStatus(statuses[statusChoice]);
                         break;
                     default:
                         System.out.println(CLI.warning("Invalid option."));
