@@ -13,7 +13,7 @@ java -version
 ## Option 1: Download the Release (Recommended)
 
 1. Go to the [GitHub Releases page](https://github.com/steveapo/untitled-group-final-project/releases)
-2. Download `HotelBooking-v1.0.zip`
+2. Download `HotelBooking-v1.1.zip`
 3. Extract the zip file
 4. Run the application:
 
