@@ -29,21 +29,21 @@ public class DateInput {
     public LocalDate checkInDate() {
         Files file = new Files();
         while (true) {
-            System.out.print(CLI.prompt("Enter the check in date (dd-MM-yyyy, or 'e' to cancel): "));
-            String userInput = scanner.nextLine().trim();
-            if (userInput.equalsIgnoreCase("e")) return null;
+            System.out.print(CLI.prompt("Enter the check in date (dd-MM-yyyy, Esc to go back): "));
+            String userInput = CLI.readLine(scanner);
+            if (userInput == null) return null;
             try {
                 LocalDate parsedCheckIn = LocalDate.parse(userInput, DATE_FORMATTER);
                 if (parsedCheckIn.isBefore(LocalDate.now())) {
-                    System.err.println("Check-In Date cannot be prior to current date.");
+                    System.out.println(CLI.warning("Check-in date cannot be prior to current date."));
                     file.writeErrors("Check-In Date cannot be prior to current date. - " + getClass()
                             + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
                 } else {
-                    System.out.println("Date has been selected");
+                    System.out.println(CLI.success("Date selected."));
                     return parsedCheckIn;
                 }
             } catch (DateTimeParseException _) {
-                System.err.println("Invalid date or invalid format. Please use dd-MM-yyyy");
+                System.out.println(CLI.warning("Invalid date or format. Please use dd-MM-yyyy."));
                 file.writeErrors("Invalid date format - " + getClass()
                         + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
             }
@@ -57,21 +57,21 @@ public class DateInput {
     public LocalDate checkOutDate() {
         Files file = new Files();
         while (true) {
-            System.out.print(CLI.prompt("Enter the check out date (dd-MM-yyyy, or 'e' to cancel): "));
-            String userInput = scanner.nextLine().trim();
-            if (userInput.equalsIgnoreCase("e")) return null;
+            System.out.print(CLI.prompt("Enter the check out date (dd-MM-yyyy, Esc to go back): "));
+            String userInput = CLI.readLine(scanner);
+            if (userInput == null) return null;
             try {
                 LocalDate parsedCheckOut = LocalDate.parse(userInput, DATE_FORMATTER);
                 if (parsedCheckOut.isBefore(LocalDate.now())) {
-                    System.err.println("Check-Out Date cannot be prior to current date.");
+                    System.out.println(CLI.warning("Check-out date cannot be prior to current date."));
                     file.writeErrors("Check-Out Date cannot be prior to current date. - " + getClass()
                             + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
                 } else {
-                    System.out.println("Date has been selected");
+                    System.out.println(CLI.success("Date selected."));
                     return parsedCheckOut;
                 }
             } catch (DateTimeParseException _) {
-                System.err.println("Invalid date or invalid format. Please use dd-MM-yyyy");
+                System.out.println(CLI.warning("Invalid date or format. Please use dd-MM-yyyy."));
                 file.writeErrors("Invalid date format - " + getClass()
                         + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
             }

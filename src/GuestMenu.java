@@ -12,10 +12,8 @@ public class GuestMenu {
             CLI.printMenuItem("1", "View available rooms");
             CLI.printMenuItem("2", "Login");
             CLI.printMenuItem("3", "Register");
-            CLI.printMenuItem("4", "Back to main menu");
-            CLI.printDivider();
-            System.out.print(CLI.prompt("Choice: "));
-            String choice = scanner.nextLine().trim();
+            CLI.printFooter("Back");
+            String choice = CLI.readChoice(scanner);
 
             switch (choice) {
                 case "1":
@@ -35,10 +33,10 @@ public class GuestMenu {
                     }
                     Main.pause(scanner);
                     break;
-                case "4":
+                case "ESC":
                     return null;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–4."));
+                    System.out.println(CLI.warning("Invalid option. Enter 1–3."));
                     Main.pause(scanner);
             }
         }

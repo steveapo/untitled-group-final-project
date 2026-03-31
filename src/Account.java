@@ -85,22 +85,22 @@ public class Account {
 
         String newFirstName;
         while (true) {
-            System.out.print(CLI.prompt("Enter your first name (or 'e' to cancel): "));
-            newFirstName = scanner.nextLine().trim();
-            if (newFirstName.equalsIgnoreCase("e")) return false;
+            System.out.print(CLI.prompt("Enter your first name (Esc to go back): "));
+            newFirstName = CLI.readLine(scanner);
+            if (newFirstName == null) return false;
             if (newFirstName.matches("[A-Za-z]+")) break;
-            System.err.println("Names cannot have numbers.");
+            System.out.println(CLI.warning("Names cannot have numbers."));
             file.writeErrors("Names cannot have numbers - " + getClass() + LINE_SUFFIX
                     + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
 
         String newLastName;
         while (true) {
-            System.out.print(CLI.prompt("Enter your last name (or 'e' to cancel): "));
-            newLastName = scanner.nextLine().trim();
-            if (newLastName.equalsIgnoreCase("e")) return false;
+            System.out.print(CLI.prompt("Enter your last name (Esc to go back): "));
+            newLastName = CLI.readLine(scanner);
+            if (newLastName == null) return false;
             if (newLastName.matches("[A-Za-z]+")) break;
-            System.err.println("Surnames cannot have numbers.");
+            System.out.println(CLI.warning("Surnames cannot have numbers."));
             file.writeErrors("Surnames cannot have numbers - " + getClass() + LINE_SUFFIX
                     + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
@@ -109,11 +109,11 @@ public class Account {
                 + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$";
         String newEmail;
         while (true) {
-            System.out.print(CLI.prompt("Enter your email (or 'e' to cancel): "));
-            newEmail = scanner.nextLine().trim();
-            if (newEmail.equalsIgnoreCase("e")) return false;
+            System.out.print(CLI.prompt("Enter your email (Esc to go back): "));
+            newEmail = CLI.readLine(scanner);
+            if (newEmail == null) return false;
             if (Pattern.matches(emailRegex, newEmail)) break;
-            System.err.println("Invalid email. Please try again.");
+            System.out.println(CLI.warning("Invalid email. Please try again."));
             file.writeErrors("Invalid email - " + getClass() + LINE_SUFFIX
                     + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
@@ -121,8 +121,8 @@ public class Account {
         String[] credentials = hashPassword(scanner);
         if (credentials.length == 0) return false;
 
-        System.out.println("Registration complete.");
-        System.out.println("Name: " + newFirstName + " " + newLastName + "  |  Email: " + newEmail);
+        System.out.println(CLI.success("Registration complete."));
+        System.out.println("  Name: " + newFirstName + " " + newLastName + "  |  Email: " + newEmail);
         file.createUsersFile();
         file.updateUsersFile(newUsername, newFirstName, newLastName, newEmail,
                 credentials[0], credentials[1], "USER");
@@ -135,9 +135,9 @@ public class Account {
      * Returns {base64Hash, base64Salt}, or an empty array if the user types 'e' to cancel.
      */
     public String[] hashPassword(Scanner scanner) throws Exception {
-        System.out.print(CLI.prompt("Enter your password (or 'e' to cancel): "));
+        System.out.print(CLI.prompt("Enter your password (Esc to go back): "));
         String inputPassword = CLI.readPassword(scanner);
-        if (inputPassword.equalsIgnoreCase("e")) return new String[0];
+        if (inputPassword == null) return new String[0];
 
         SecureRandom random = new SecureRandom();
         byte[] saltBytes = new byte[16];
@@ -159,9 +159,9 @@ public class Account {
      */
     public String checkUsername(Vector<Account> users, Scanner scanner) {
         while (true) {
-            System.out.print(CLI.prompt("Enter your username (or 'e' to cancel): "));
-            String candidateUsername = scanner.nextLine().trim();
-            if (candidateUsername.equalsIgnoreCase("e")) return null;
+            System.out.print(CLI.prompt("Enter your username (Esc to go back): "));
+            String candidateUsername = CLI.readLine(scanner);
+            if (candidateUsername == null) return null;
 
             boolean isAlreadyTaken = false;
             for (Account user : users) {
@@ -171,7 +171,7 @@ public class Account {
                 }
             }
             if (isAlreadyTaken) {
-                System.err.println("Username already taken.");
+                System.out.println(CLI.warning("Username already taken."));
                 Files file = new Files();
                 file.writeErrors("Username already taken - " + getClass() + LINE_SUFFIX
                         + Thread.currentThread().getStackTrace()[1].getLineNumber());
@@ -189,9 +189,9 @@ public class Account {
     public Account login(Vector<Account> users, Scanner scanner) throws Exception {
         Files file = new Files();
 
-        System.out.print(CLI.prompt("Enter your username (or 'e' to go back): "));
-        String inputUsername = scanner.nextLine().trim();
-        if (inputUsername.equalsIgnoreCase("e")) return null;
+        System.out.print(CLI.prompt("Enter your username (Esc to go back): "));
+        String inputUsername = CLI.readLine(scanner);
+        if (inputUsername == null) return null;
 
         // File-based account lookup
         Account matchedAccount = null;
@@ -203,7 +203,8 @@ public class Account {
         }
 
         if (matchedAccount == null) {
-            System.out.println("Username not found.");
+            System.out.println(CLI.warning("Username not found."));
+            Main.pause(scanner);
             return null;
         }
 
@@ -214,9 +215,9 @@ public class Account {
     private Account loginWithPassword(Account matchedAccount, Scanner scanner, Files file)
             throws Exception {
         while (true) {
-            System.out.print(CLI.prompt("Enter your password (or 'e' to go back): "));
+            System.out.print(CLI.prompt("Enter your password (Esc to go back): "));
             String inputPassword = CLI.readPassword(scanner);
-            if (inputPassword.equalsIgnoreCase("e")) return null;
+            if (inputPassword == null) return null;
 
             MessageDigest md = MessageDigest.getInstance("SHA-512");
             md.update(matchedAccount.getSalt());
@@ -225,7 +226,7 @@ public class Account {
             if (MessageDigest.isEqual(attemptHash, matchedAccount.getHashedPassword())) {
                 return matchedAccount;
             }
-            System.err.println("Wrong password. Try again.");
+            System.out.println(CLI.warning("Wrong password. Try again."));
             file.writeErrors("Wrong password - " + getClass() + " - user: " + matchedAccount.getUsername());
         }
     }

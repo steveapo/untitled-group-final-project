@@ -55,9 +55,9 @@ public class CLI {
     public static String white(String text)   { return ansi(WHITE,          text); }
     public static String bold(String text)    { return ansi(BOLD,           text); }
     public static String dim(String text)     { return ansi(DIM,            text); }
-    public static String success(String text) { return ansi(GREEN  + BOLD,  text); }
-    public static String error(String text)   { return ansi(RED    + BOLD,  text); }
-    public static String warning(String text) { return ansi(YELLOW + BOLD,  text); }
+    public static String success(String text) { return ansi(GREEN  + BOLD,  "\u2714  " + text); }
+    public static String error(String text)   { return ansi(RED    + BOLD,  "\u2718  " + text); }
+    public static String warning(String text) { return ansi(RED    + BOLD,  "\u2718  " + text); }
     public static String header(String text)  { return ansi(CYAN   + BOLD,  text); }
     public static String prompt(String text)  { return ansi(MAGENTA,        text); }
 
@@ -111,7 +111,7 @@ public class CLI {
             try { Thread.sleep(80); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
         // Clear the spinner line, print completion tick
-        System.out.print("\r" + success("✔") + "  " + label + "   \n");
+        System.out.print("\r" + ansi(GREEN + BOLD, "\u2714") + "  " + label + "   \n");
         System.out.flush();
     }
 
@@ -171,6 +171,14 @@ public class CLI {
                     if (ch == '\r' || ch == '\n' || ch == -1) {
                         System.out.println();
                         break;
+                    } else if (ch == 27) { // ESC
+                        try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                        if (System.in.available() > 0) {
+                            while (System.in.available() > 0) System.in.read();
+                            continue; // arrow key sequence — ignore
+                        }
+                        System.out.println();
+                        return null; // standalone ESC — cancel
                     } else if (ch == 127 || ch == 8) { // backspace / delete
                         if (password.length() > 0) {
                             password.deleteCharAt(password.length() - 1);
@@ -179,7 +187,7 @@ public class CLI {
                         }
                     } else if (ch == 3) { // Ctrl+C
                         System.out.println();
-                        break;
+                        return null;
                     } else {
                         password.append((char) ch);
                         System.out.print("*");
@@ -199,11 +207,16 @@ public class CLI {
         java.io.Console console = System.console();
         if (console != null) {
             char[] chars = console.readPassword();
-            return chars != null ? new String(chars) : "";
+            if (chars == null) return null;
+            String pwd = new String(chars);
+            if (pwd.equalsIgnoreCase("e")) return null;
+            return pwd;
         }
 
         // Attempt 3: plain input (IDEs where console is null)
-        return fallbackScanner.nextLine();
+        String line = fallbackScanner.nextLine();
+        if (line.equalsIgnoreCase("e")) return null;
+        return line;
     }
 
     // ── Interactive list selector ──────────────────────────────────────
@@ -322,5 +335,147 @@ public class CLI {
 
     public static void printMenuItem(String number, String label) {
         System.out.println("  " + cyan(number + ".") + " " + label);
+    }
+
+    // ── Hotkey footer ───────────────────────────────────────────────────
+    /** Print a footer bar showing the ESC hotkey and its action. */
+    public static void printFooter(String backLabel) {
+        printDivider();
+        System.out.println(dim("  [Esc] " + backLabel));
+    }
+
+    // ── Wait for any keypress ───────────────────────────────────────────
+    /** Wait for any keypress (raw mode) or Enter (fallback). */
+    public static void waitForKey(Scanner fallbackScanner) {
+        System.out.print(dim("  Press any key to continue..."));
+        try {
+            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
+            Process save = savePb.start();
+            String orig = new String(save.getInputStream().readAllBytes()).trim();
+            save.waitFor();
+
+            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
+            rawPb.start().waitFor();
+
+            try {
+                System.in.read();
+                try { Thread.sleep(30); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                while (System.in.available() > 0) System.in.read();
+            } finally {
+                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + orig + " < /dev/tty");
+                restorePb.start().waitFor();
+            }
+            System.out.println();
+            return;
+        } catch (Exception ignored) {
+            // stty not available — fall through to Scanner
+        }
+        fallbackScanner.nextLine();
+    }
+
+    // ── Raw-mode menu choice reader ─────────────────────────────────────
+    /**
+     * Read a menu choice as a single keypress (no Enter needed).
+     * Returns "1"–"9" for digit keys, or "ESC" when Escape is pressed.
+     * Falls back to Scanner.nextLine() on Windows/IDEs where 'e' also maps to "ESC".
+     */
+    public static String readChoice(Scanner fallbackScanner) {
+        try {
+            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
+            Process save = savePb.start();
+            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
+            save.waitFor();
+
+            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
+            rawPb.start().waitFor();
+
+            try {
+                while (true) {
+                    int ch = System.in.read();
+                    if (ch == 27) { // ESC
+                        try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                        if (System.in.available() > 0) {
+                            while (System.in.available() > 0) System.in.read();
+                            continue; // arrow key sequence — ignore
+                        }
+                        return "ESC";
+                    } else if (ch >= '1' && ch <= '9') {
+                        return String.valueOf((char) ch);
+                    } else if (ch == 'e' || ch == 'q') {
+                        return "ESC";
+                    }
+                    // Ignore other keys
+                }
+            } finally {
+                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
+                restorePb.start().waitFor();
+            }
+        } catch (Exception ignored) {
+            // stty not available — fall through to Scanner
+        }
+
+        System.out.print(prompt("Choice: "));
+        String input = fallbackScanner.nextLine().trim();
+        if (input.equalsIgnoreCase("e")) return "ESC";
+        return input;
+    }
+
+    // ── Raw-mode line reader with ESC support ───────────────────────────
+    /**
+     * Read a line of text with live ESC support.
+     * Characters are echoed, Backspace works, ESC cancels immediately (returns null).
+     * Falls back to Scanner.nextLine() in non-raw environments where 'e' also cancels.
+     */
+    public static String readLine(Scanner fallbackScanner) {
+        try {
+            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
+            Process save = savePb.start();
+            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
+            save.waitFor();
+
+            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
+            rawPb.start().waitFor();
+
+            StringBuilder sb = new StringBuilder();
+            try {
+                while (true) {
+                    int ch = System.in.read();
+                    if (ch == '\r' || ch == '\n' || ch == -1) {
+                        System.out.println();
+                        return sb.toString().trim();
+                    } else if (ch == 27) { // ESC
+                        try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                        if (System.in.available() > 0) {
+                            while (System.in.available() > 0) System.in.read();
+                            continue; // arrow key sequence — ignore
+                        }
+                        System.out.println();
+                        return null; // standalone ESC — cancel
+                    } else if (ch == 127 || ch == 8) { // Backspace
+                        if (sb.length() > 0) {
+                            sb.deleteCharAt(sb.length() - 1);
+                            System.out.print("\b \b");
+                            System.out.flush();
+                        }
+                    } else if (ch == 3) { // Ctrl+C
+                        System.out.println();
+                        return null;
+                    } else if (ch >= 32) { // printable characters
+                        sb.append((char) ch);
+                        System.out.print((char) ch);
+                        System.out.flush();
+                    }
+                }
+            } finally {
+                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
+                restorePb.start().waitFor();
+            }
+        } catch (Exception ignored) {
+            // stty not available — fall through to Scanner
+        }
+
+        String line = fallbackScanner.nextLine().trim();
+        if (line.equalsIgnoreCase("e")) return null;
+        return line;
     }
 }

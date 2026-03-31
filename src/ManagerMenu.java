@@ -14,19 +14,17 @@ public class ManagerMenu {
             CLI.printMenuItem("2", "Staff Management");
             CLI.printMenuItem("3", "View all bookings");
             CLI.printMenuItem("4", "View statistics");
-            CLI.printMenuItem("5", "Logout");
-            CLI.printDivider();
-            System.out.print(CLI.prompt("Choice: "));
-            String choice = scanner.nextLine().trim();
+            CLI.printFooter("Logout");
+            String choice = CLI.readChoice(scanner);
 
             switch (choice) {
                 case "1": roomManagement(scanner, rooms, file);            break;
                 case "2": staffManagement(scanner, users, file);           break;
                 case "3": viewAllBookings(bookings); Main.pause(scanner);  break;
                 case "4": viewStats(bookings);       Main.pause(scanner);  break;
-                case "5": return;
+                case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–5."));
+                    System.out.println(CLI.warning("Invalid option. Enter 1–4."));
                     Main.pause(scanner);
             }
         }
@@ -42,16 +40,14 @@ public class ManagerMenu {
             CLI.printMenuItem("2", "Add a room");
             CLI.printMenuItem("3", "Edit a room");
             CLI.printMenuItem("4", "Delete a room");
-            CLI.printMenuItem("5", "Back");
-            CLI.printDivider();
-            System.out.print(CLI.prompt("Choice: "));
-            String choice = scanner.nextLine().trim();
+            CLI.printFooter("Back");
+            String choice = CLI.readChoice(scanner);
             switch (choice) {
                 case "1": listAllRooms(rooms); Main.pause(scanner);  break;
                 case "2": addRoom(scanner, rooms, file);              break;
                 case "3": editRoom(scanner, rooms, file);             break;
                 case "4": deleteRoom(scanner, rooms, file);           break;
-                case "5": return;
+                case "ESC": return;
                 default:
                     System.out.println(CLI.warning("Invalid option."));
                     Main.pause(scanner);
@@ -80,9 +76,9 @@ public class ManagerMenu {
         CLI.clearScreen();
         CLI.printBanner("ADD ROOM");
         System.out.println();
-        System.out.print(CLI.prompt("Room number (e.g. R401, or 'e' to cancel): "));
-        String roomNo = scanner.nextLine().trim();
-        if (roomNo.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Room number (e.g. R401, Esc to go back): "));
+        String roomNo = CLI.readLine(scanner);
+        if (roomNo == null) return;
 
         for (Room r : rooms) {
             if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
@@ -92,9 +88,9 @@ public class ManagerMenu {
             }
         }
 
-        System.out.print(CLI.prompt("Capacity (or 'e' to cancel): "));
-        String capInput = scanner.nextLine().trim();
-        if (capInput.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Capacity (Esc to go back): "));
+        String capInput = CLI.readLine(scanner);
+        if (capInput == null) return;
         int capacity;
         try { capacity = Integer.parseInt(capInput); }
         catch (NumberFormatException e) {
@@ -103,9 +99,9 @@ public class ManagerMenu {
             return;
         }
 
-        System.out.print(CLI.prompt("Price per night (or 'e' to cancel): "));
-        String priceInput = scanner.nextLine().trim();
-        if (priceInput.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Price per night (Esc to go back): "));
+        String priceInput = CLI.readLine(scanner);
+        if (priceInput == null) return;
         double price;
         try { price = Double.parseDouble(priceInput); }
         catch (NumberFormatException e) {
@@ -114,9 +110,9 @@ public class ManagerMenu {
             return;
         }
 
-        System.out.print(CLI.prompt("Type (Single/Double/Triple/Quad/Suite, or 'e' to cancel): "));
-        String type = scanner.nextLine().trim();
-        if (type.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Type (Single/Double/Triple/Quad/Suite, Esc to go back): "));
+        String type = CLI.readLine(scanner);
+        if (type == null) return;
 
         rooms.add(new Room(roomNo, capacity, price, type, "AVAILABLE"));
         file.updateRooms(rooms);
@@ -130,23 +126,23 @@ public class ManagerMenu {
         CLI.printBanner("EDIT ROOM");
         System.out.println();
         listAllRooms(rooms);
-        System.out.print(CLI.prompt("Room number to edit (or 'e' to cancel): "));
-        String roomNo = scanner.nextLine().trim();
-        if (roomNo.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Room number to edit (Esc to go back): "));
+        String roomNo = CLI.readLine(scanner);
+        if (roomNo == null) return;
 
         for (Room r : rooms) {
             if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
                 CLI.printMenuItem("1", "Price");
                 CLI.printMenuItem("2", "Type");
                 CLI.printMenuItem("3", "Status");
-                System.out.print(CLI.prompt("Edit (or 'e' to cancel): "));
-                String opt = scanner.nextLine().trim();
-                if (opt.equalsIgnoreCase("e")) return;
+                System.out.print(CLI.prompt("Edit (Esc to go back): "));
+                String opt = CLI.readLine(scanner);
+                if (opt == null) return;
                 switch (opt) {
                     case "1":
-                        System.out.print(CLI.prompt("New price (or 'e' to cancel): "));
-                        String priceStr = scanner.nextLine().trim();
-                        if (priceStr.equalsIgnoreCase("e")) return;
+                        System.out.print(CLI.prompt("New price (Esc to go back): "));
+                        String priceStr = CLI.readLine(scanner);
+                        if (priceStr == null) return;
                         try { r.setPrice(Double.parseDouble(priceStr)); }
                         catch (NumberFormatException e) {
                             System.out.println(CLI.warning("Invalid price."));
@@ -155,9 +151,9 @@ public class ManagerMenu {
                         }
                         break;
                     case "2":
-                        System.out.print(CLI.prompt("New type (Single/Double/Triple/Quad/Suite, or 'e' to cancel): "));
-                        String newType = scanner.nextLine().trim();
-                        if (newType.equalsIgnoreCase("e")) return;
+                        System.out.print(CLI.prompt("New type (Single/Double/Triple/Quad/Suite, Esc to go back): "));
+                        String newType = CLI.readLine(scanner);
+                        if (newType == null) return;
                         r.setType(newType);
                         break;
                     case "3":
@@ -188,9 +184,9 @@ public class ManagerMenu {
         CLI.printBanner("DELETE ROOM");
         System.out.println();
         listAllRooms(rooms);
-        System.out.print(CLI.prompt("Room number to delete (or 'e' to cancel): "));
-        String roomNo = scanner.nextLine().trim();
-        if (roomNo.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Room number to delete (Esc to go back): "));
+        String roomNo = CLI.readLine(scanner);
+        if (roomNo == null) return;
 
         Room toRemove = null;
         for (Room r : rooms) {
@@ -201,9 +197,9 @@ public class ManagerMenu {
             Main.pause(scanner);
             return;
         }
-        System.out.print(CLI.prompt("Confirm delete " + roomNo + "? (yes/no/e): "));
-        String confirm = scanner.nextLine().trim();
-        if (confirm.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Confirm delete " + roomNo + "? (yes/no, Esc to go back): "));
+        String confirm = CLI.readLine(scanner);
+        if (confirm == null) return;
         if (confirm.equalsIgnoreCase("yes")) {
             rooms.remove(toRemove);
             file.updateRooms(rooms);
@@ -225,15 +221,13 @@ public class ManagerMenu {
             CLI.printMenuItem("1", "List all staff");
             CLI.printMenuItem("2", "Add receptionist");
             CLI.printMenuItem("3", "Deactivate staff account");
-            CLI.printMenuItem("4", "Back");
-            CLI.printDivider();
-            System.out.print(CLI.prompt("Choice: "));
-            String choice = scanner.nextLine().trim();
+            CLI.printFooter("Back");
+            String choice = CLI.readChoice(scanner);
             switch (choice) {
                 case "1": listAllStaff(users); Main.pause(scanner);         break;
                 case "2": addReceptionist(scanner, users, file);            break;
                 case "3": deactivateStaff(scanner, users, file);            break;
-                case "4": return;
+                case "ESC": return;
                 default:
                     System.out.println(CLI.warning("Invalid option."));
                     Main.pause(scanner);
@@ -285,15 +279,15 @@ public class ManagerMenu {
         CLI.printBanner("DEACTIVATE STAFF");
         System.out.println();
         listAllStaff(users);
-        System.out.print(CLI.prompt("Staff username to deactivate (or 'e' to cancel): "));
-        String username = scanner.nextLine().trim();
-        if (username.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Staff username to deactivate (Esc to go back): "));
+        String username = CLI.readLine(scanner);
+        if (username == null) return;
         for (Account u : users) {
             if (u.getUsername().equals(username)
                     && (u.getRole().equals("RECEPTION") || u.getRole().equals("MANAGER"))) {
-                System.out.print(CLI.prompt("Deactivate '" + username + "'? (yes/no/e): "));
-                String deactivateConfirm = scanner.nextLine().trim();
-                if (deactivateConfirm.equalsIgnoreCase("e")) return;
+                System.out.print(CLI.prompt("Deactivate '" + username + "'? (yes/no, Esc to go back): "));
+                String deactivateConfirm = CLI.readLine(scanner);
+                if (deactivateConfirm == null) return;
                 if (deactivateConfirm.equalsIgnoreCase("yes")) {
                     u.setRole("USER");
                     file.updateUsersFileAll(users);

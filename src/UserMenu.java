@@ -17,19 +17,17 @@ public class UserMenu {
             CLI.printMenuItem("2", "View my bookings");
             CLI.printMenuItem("3", "Cancel a booking");
             CLI.printMenuItem("4", "View my profile");
-            CLI.printMenuItem("5", "Logout");
-            CLI.printDivider();
-            System.out.print(CLI.prompt("Choice: "));
-            String choice = scanner.nextLine().trim();
+            CLI.printFooter("Logout");
+            String choice = CLI.readChoice(scanner);
 
             switch (choice) {
                 case "1": bookRoom(scanner, account, rooms, bookings, file);  break;
                 case "2": viewMyBookings(account, bookings); Main.pause(scanner); break;
                 case "3": cancelBooking(scanner, account, bookings, file);    break;
                 case "4": viewProfile(account); Main.pause(scanner);          break;
-                case "5": return;
+                case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–5."));
+                    System.out.println(CLI.warning("Invalid option. Enter 1–4."));
                     Main.pause(scanner);
             }
         }
@@ -78,9 +76,9 @@ public class UserMenu {
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
 
-        System.out.print(CLI.prompt("\nChoose room (1-" + bookable.size() + ", or 'e' to cancel): "));
-        String roomInput = scanner.nextLine().trim();
-        if (roomInput.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("\nChoose room (1-" + bookable.size() + ", Esc to go back): "));
+        String roomInput = CLI.readLine(scanner);
+        if (roomInput == null) return;
         int choice;
         try {
             choice = Integer.parseInt(roomInput);
@@ -103,9 +101,9 @@ public class UserMenu {
         final String checkOutStr = checkOut.format(fmt);
         System.out.println("\nConfirm booking " + CLI.bold(chosen.getRoomNumber())
                 + " from " + CLI.cyan(checkInStr) + " to " + CLI.cyan(checkOutStr) + "?");
-        System.out.print(CLI.prompt("(yes/no/e): "));
-        String confirm = scanner.nextLine().trim();
-        if (confirm.equalsIgnoreCase("e")) { System.out.println(CLI.dim("Booking cancelled.")); Main.pause(scanner); return; }
+        System.out.print(CLI.prompt("(yes/no, Esc to go back): "));
+        String confirm = CLI.readLine(scanner);
+        if (confirm == null) { System.out.println(CLI.dim("Booking cancelled.")); Main.pause(scanner); return; }
         if (confirm.equalsIgnoreCase("yes")) {
             CLI.withSpinner("Saving booking", () -> {
                 Bookings newBooking = new Bookings(chosen, checkInStr,
@@ -168,9 +166,9 @@ public class UserMenu {
                     CLI.bold(b.getRoom().getRoomNumber()),
                     b.getCheckIn(), b.getCheckOut());
         }
-        System.out.print(CLI.prompt("\nChoose booking to cancel (1-" + activeBookings.size() + ", or 'e' to go back): "));
-        String cancelInput = scanner.nextLine().trim();
-        if (cancelInput.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("\nChoose booking to cancel (1-" + activeBookings.size() + ", Esc to go back): "));
+        String cancelInput = CLI.readLine(scanner);
+        if (cancelInput == null) return;
         int choice;
         try {
             choice = Integer.parseInt(cancelInput);

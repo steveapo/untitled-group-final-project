@@ -13,23 +13,21 @@ public class ReceptionMenu {
             CLI.clearScreen();
             CLI.printBanner("RECEPTION MENU");
             System.out.println(CLI.dim("  Logged in as: ") + CLI.bold(account.getUsername()) + "\n");
-            CLI.printMenuItem(" 1", "View all rooms");
-            CLI.printMenuItem(" 2", "Search available rooms by dates");
-            CLI.printMenuItem(" 3", "Create booking for a guest");
-            CLI.printMenuItem(" 4", "View all bookings");
-            CLI.printMenuItem(" 5", "Cancel a booking");
-            CLI.printMenuItem(" 6", "Check in guest");
-            CLI.printMenuItem(" 7", "Check out guest");
-            CLI.printMenuItem(" 8", "View all guests");
-            CLI.printMenuItem(" 9", "Mark room maintenance / available");
-            CLI.printMenuItem("10", "Logout");
-            CLI.printDivider();
-            System.out.print(CLI.prompt("Choice: "));
-            String choice = scanner.nextLine().trim();
+            CLI.printMenuItem("1", "View all rooms");
+            CLI.printMenuItem("2", "Search available rooms by dates");
+            CLI.printMenuItem("3", "Create booking for a guest");
+            CLI.printMenuItem("4", "View all bookings");
+            CLI.printMenuItem("5", "Cancel a booking");
+            CLI.printMenuItem("6", "Check in guest");
+            CLI.printMenuItem("7", "Check out guest");
+            CLI.printMenuItem("8", "View all guests");
+            CLI.printMenuItem("9", "Mark room maintenance / available");
+            CLI.printFooter("Logout");
+            String choice = CLI.readChoice(scanner);
 
             switch (choice) {
-                case "1":  viewAllRooms(rooms); Main.pause(scanner);                               break;
-                case "2":  searchAvailableRooms(scanner, rooms, bookings); Main.pause(scanner);              break;
+                case "1":  viewAllRooms(rooms); Main.pause(scanner);                              break;
+                case "2":  searchAvailableRooms(scanner, rooms, bookings); Main.pause(scanner);    break;
                 case "3":  createBooking(scanner, rooms, bookings, users, file);                   break;
                 case "4":  viewAllBookings(bookings); Main.pause(scanner);                         break;
                 case "5":  cancelBooking(scanner, bookings, file);                                 break;
@@ -37,9 +35,9 @@ public class ReceptionMenu {
                 case "7":  checkOut(scanner, bookings, file);                                      break;
                 case "8":  viewAllGuests(users); Main.pause(scanner);                              break;
                 case "9":  setRoomStatus(scanner, rooms, file);                                    break;
-                case "10": return;
+                case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–10."));
+                    System.out.println(CLI.warning("Invalid option. Enter 1–9."));
                     Main.pause(scanner);
             }
         }
@@ -102,9 +100,9 @@ public class ReceptionMenu {
         CLI.clearScreen();
         CLI.printBanner("CREATE BOOKING");
         System.out.println();
-        System.out.print(CLI.prompt("Guest username (or 'e' to cancel): "));
-        String guestUsername = scanner.nextLine().trim();
-        if (guestUsername.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Guest username (Esc to go back): "));
+        String guestUsername = CLI.readLine(scanner);
+        if (guestUsername == null) return;
 
         boolean guestExists = false;
         for (Account u : users) {
@@ -150,9 +148,9 @@ public class ReceptionMenu {
                     r.getType(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
-        System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", or 'e' to cancel): "));
-        String roomInput = scanner.nextLine().trim();
-        if (roomInput.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", Esc to go back): "));
+        String roomInput = CLI.readLine(scanner);
+        if (roomInput == null) return;
         int choice;
         try {
             choice = Integer.parseInt(roomInput);
@@ -203,9 +201,9 @@ public class ReceptionMenu {
         CLI.clearScreen();
         CLI.printBanner("CANCEL BOOKING");
         System.out.println();
-        System.out.print(CLI.prompt("Guest username (or 'e' to cancel): "));
-        String username = scanner.nextLine().trim();
-        if (username.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Guest username (Esc to go back): "));
+        String username = CLI.readLine(scanner);
+        if (username == null) return;
 
         Vector<Bookings> activeBookings = new Vector<>();
         for (Bookings b : bookings) {
@@ -225,9 +223,9 @@ public class ReceptionMenu {
                     CLI.bold(b.getRoom().getRoomNumber()),
                     b.getCheckIn(), b.getCheckOut());
         }
-        System.out.print(CLI.prompt("Choose (1-" + activeBookings.size() + ", or 'e' to cancel): "));
-        String cancelInput = scanner.nextLine().trim();
-        if (cancelInput.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Choose (1-" + activeBookings.size() + ", Esc to go back): "));
+        String cancelInput = CLI.readLine(scanner);
+        if (cancelInput == null) return;
         int choice;
         try {
             choice = Integer.parseInt(cancelInput);
@@ -379,9 +377,9 @@ public class ReceptionMenu {
         CLI.printBanner("SET ROOM STATUS");
         System.out.println();
         viewAllRooms(rooms);
-        System.out.print(CLI.prompt("Room number to update (or 'e' to cancel): "));
-        String roomNo = scanner.nextLine().trim();
-        if (roomNo.equalsIgnoreCase("e")) return;
+        System.out.print(CLI.prompt("Room number to update (Esc to go back): "));
+        String roomNo = CLI.readLine(scanner);
+        if (roomNo == null) return;
         for (Room r : rooms) {
             if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
                 System.out.println("  Current: " + UserMenu.statusColour(r.getStatus()));
@@ -397,7 +395,7 @@ public class ReceptionMenu {
                 if (newStatus.equals("AVAILABLE")) {
                     System.out.println(CLI.success(roomNo + " set to AVAILABLE."));
                 } else {
-                    System.out.println(CLI.yellow(roomNo + " set to MAINTENANCE."));
+                    System.out.println(CLI.success(roomNo + " set to MAINTENANCE."));
                 }
                 Main.pause(scanner);
                 return;

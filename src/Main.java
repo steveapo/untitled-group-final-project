@@ -24,7 +24,7 @@ public class Main {
         file.getUsers(users);
 
         if (!file.checkFile()) {
-            System.err.println(CLI.error("Critical data files (Rooms or Bookings) are missing. Exiting."));
+            System.out.println(CLI.error("Critical data files (Rooms or Bookings) are missing. Exiting."));
             return;
         }
 
@@ -41,10 +41,8 @@ public class Main {
             CLI.printMenuItem("1", "Continue as Guest");
             CLI.printMenuItem("2", "Login");
             CLI.printMenuItem("3", "Register");
-            CLI.printMenuItem("4", "Exit");
-            CLI.printDivider();
-            System.out.print(CLI.prompt("Choice: "));
-            String choice = scanner.nextLine().trim();
+            CLI.printFooter("Exit");
+            String choice = CLI.readChoice(scanner);
 
             switch (choice) {
                 case "1":
@@ -65,12 +63,12 @@ public class Main {
                         CLI.randomSpinner("Creating account");
                     }
                     break;
-                case "4":
+                case "ESC":
                     CLI.clearScreen();
                     System.out.println(CLI.success("Goodbye! See you next time."));
                     return;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–4."));
+                    System.out.println(CLI.warning("Invalid option. Enter 1–3."));
                     pause(scanner);
             }
         }
@@ -91,14 +89,13 @@ public class Main {
                 ManagerMenu.show(scanner, account, rooms, bookings, users, file);
                 break;
             default:
-                System.err.println(CLI.error("Unknown role '" + account.getRole() + "'. Contact admin."));
+                System.out.println(CLI.error("Unknown role '" + account.getRole() + "'. Contact admin."));
                 file.writeErrors("Unknown role: " + account.getRole() + " - user: " + account.getUsername());
         }
     }
 
     /** Press Enter to continue — used after error messages before clearing the screen. */
     static void pause(Scanner scanner) {
-        System.out.print(CLI.dim("Press Enter to continue..."));
-        scanner.nextLine();
+        CLI.waitForKey(scanner);
     }
 }
