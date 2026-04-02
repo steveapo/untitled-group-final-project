@@ -36,7 +36,7 @@ public class GuestMenu {
                 case "ESC":
                     return null;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–3."));
+                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–3."));
                     Main.pause(scanner);
             }
         }

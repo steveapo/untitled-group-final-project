@@ -37,7 +37,7 @@ public class ReceptionMenu {
                 case "9":  setRoomStatus(scanner, rooms, file);                                    break;
                 case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–9."));
+                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–9."));
                     Main.pause(scanner);
             }
         }
@@ -71,7 +71,7 @@ public class ReceptionMenu {
         LocalDate checkOut = date.checkOutDate();
         if (checkOut == null) return;
         while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
-            System.out.println(CLI.warning("Check-out must be after check-in. Re-enter."));
+            System.out.println(CLI.warning("[ERR_DATE_ORDER] Check-out must be after check-in."));
             checkOut = date.checkOutDate();
             if (checkOut == null) return;
         }
@@ -112,7 +112,7 @@ public class ReceptionMenu {
             }
         }
         if (!guestExists) {
-            System.out.println(CLI.warning("Guest not found. Register the guest first."));
+            System.out.println(CLI.warning("[ERR_NOT_FOUND] Guest not found. Register the guest first."));
             Main.pause(scanner);
             return;
         }
@@ -123,7 +123,7 @@ public class ReceptionMenu {
         LocalDate checkOut = date.checkOutDate();
         if (checkOut == null) return;
         while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
-            System.out.println(CLI.warning("Check-out must be after check-in. Re-enter."));
+            System.out.println(CLI.warning("[ERR_DATE_ORDER] Check-out must be after check-in."));
             checkOut = date.checkOutDate();
             if (checkOut == null) return;
         }
@@ -136,7 +136,7 @@ public class ReceptionMenu {
         }
 
         if (bookable.isEmpty()) {
-            System.out.println(CLI.warning("No rooms available for those dates."));
+            System.out.println(CLI.warning("[ERR_NO_ROOMS] No rooms available for those dates."));
             Main.pause(scanner);
             return;
         }
@@ -148,22 +148,18 @@ public class ReceptionMenu {
                     r.getType(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
-        System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", Esc to go back): "));
-        String roomInput = CLI.readLine(scanner);
-        if (roomInput == null) return;
         int choice;
-        try {
-            choice = Integer.parseInt(roomInput);
-        } catch (NumberFormatException e) {
-            System.out.println(CLI.warning("Invalid input."));
-            Main.pause(scanner);
-            return;
-        }
-        if (choice == 0) return;
-        if (choice < 1 || choice > bookable.size()) {
-            System.out.println(CLI.warning("Invalid room number."));
-            Main.pause(scanner);
-            return;
+        while (true) {
+            System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", Esc to go back): "));
+            String roomInput = CLI.readLine(scanner);
+            if (roomInput == null) return;
+            try {
+                choice = Integer.parseInt(roomInput);
+                if (choice >= 1 && choice <= bookable.size()) break;
+                System.out.println(CLI.warning("[ERR_RANGE] Enter a number between 1 and " + bookable.size() + "."));
+            } catch (NumberFormatException e) {
+                System.out.println(CLI.warning("[ERR_NUM] Please enter a valid number."));
+            }
         }
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
         Room chosen = bookable.get(choice - 1);
@@ -212,7 +208,7 @@ public class ReceptionMenu {
             }
         }
         if (activeBookings.isEmpty()) {
-            System.out.println(CLI.warning("No active bookings for that guest."));
+            System.out.println(CLI.warning("[ERR_NO_BOOKINGS] No active bookings for that guest."));
             Main.pause(scanner);
             return;
         }
@@ -223,22 +219,18 @@ public class ReceptionMenu {
                     CLI.bold(b.getRoom().getRoomNumber()),
                     b.getCheckIn(), b.getCheckOut());
         }
-        System.out.print(CLI.prompt("Choose (1-" + activeBookings.size() + ", Esc to go back): "));
-        String cancelInput = CLI.readLine(scanner);
-        if (cancelInput == null) return;
         int choice;
-        try {
-            choice = Integer.parseInt(cancelInput);
-        } catch (NumberFormatException e) {
-            System.out.println(CLI.warning("Invalid input."));
-            Main.pause(scanner);
-            return;
-        }
-        if (choice == 0) return;
-        if (choice < 1 || choice > activeBookings.size()) {
-            System.out.println(CLI.warning("Invalid selection."));
-            Main.pause(scanner);
-            return;
+        while (true) {
+            System.out.print(CLI.prompt("Choose (1-" + activeBookings.size() + ", Esc to go back): "));
+            String cancelInput = CLI.readLine(scanner);
+            if (cancelInput == null) return;
+            try {
+                choice = Integer.parseInt(cancelInput);
+                if (choice >= 1 && choice <= activeBookings.size()) break;
+                System.out.println(CLI.warning("[ERR_RANGE] Enter a number between 1 and " + activeBookings.size() + "."));
+            } catch (NumberFormatException e) {
+                System.out.println(CLI.warning("[ERR_NUM] Please enter a valid number."));
+            }
         }
         activeBookings.get(choice - 1).setStatus("CANCELLED");
         file.updateBookings(bookings);
@@ -260,7 +252,7 @@ public class ReceptionMenu {
             }
         }
         if (guestNames.isEmpty()) {
-            System.out.println(CLI.warning("No guests with CONFIRMED bookings."));
+            System.out.println(CLI.warning("[ERR_NO_BOOKINGS] No guests with confirmed bookings."));
             Main.pause(scanner);
             return;
         }
@@ -313,7 +305,7 @@ public class ReceptionMenu {
             }
         }
         if (guestNames.isEmpty()) {
-            System.out.println(CLI.warning("No guests currently checked in."));
+            System.out.println(CLI.warning("[ERR_NO_BOOKINGS] No guests currently checked in."));
             Main.pause(scanner);
             return;
         }
@@ -377,31 +369,39 @@ public class ReceptionMenu {
         CLI.printBanner("SET ROOM STATUS");
         System.out.println();
         viewAllRooms(rooms);
-        System.out.print(CLI.prompt("Room number to update (Esc to go back): "));
-        String roomNo = CLI.readLine(scanner);
-        if (roomNo == null) return;
-        for (Room r : rooms) {
-            if (r.getRoomNumber().equalsIgnoreCase(roomNo)) {
-                System.out.println("  Current: " + UserMenu.statusColour(r.getStatus()));
-                System.out.println();
-                String[] statuses = {"AVAILABLE", "MAINTENANCE"};
-                int preselect = r.getStatus().equals("MAINTENANCE") ? 1 : 0;
-                int choice = CLI.selectFromList(statuses, "New status", scanner, preselect);
-                if (choice == -1) return;
-                String newStatus = statuses[choice];
-                r.setStatus(newStatus);
-                file.updateRooms(rooms);
-                CLI.randomSpinner("Updating status");
-                if (newStatus.equals("AVAILABLE")) {
-                    System.out.println(CLI.success(roomNo + " set to AVAILABLE."));
-                } else {
-                    System.out.println(CLI.success(roomNo + " set to MAINTENANCE."));
-                }
-                Main.pause(scanner);
-                return;
+
+        // Validate room number format and lookup
+        Room target = null;
+        while (true) {
+            System.out.print(CLI.prompt("Room number to update (Esc to go back): "));
+            String roomNo = CLI.readLine(scanner);
+            if (roomNo == null) return;
+            roomNo = roomNo.toUpperCase();
+            if (!roomNo.matches("R\\d{3}")) {
+                System.out.println(CLI.warning("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401)."));
+                continue;
             }
+            for (Room r : rooms) {
+                if (r.getRoomNumber().equalsIgnoreCase(roomNo)) { target = r; break; }
+            }
+            if (target == null) {
+                System.out.println(CLI.warning("[ERR_NOT_FOUND] Room " + roomNo + " not found."));
+                continue;
+            }
+            break;
         }
-        System.out.println(CLI.warning("Room not found."));
+
+        System.out.println("  Current: " + UserMenu.statusColour(target.getStatus()));
+        System.out.println();
+        String[] statuses = {"AVAILABLE", "MAINTENANCE"};
+        int preselect = target.getStatus().equals("MAINTENANCE") ? 1 : 0;
+        int choice = CLI.selectFromList(statuses, "New status", scanner, preselect);
+        if (choice == -1) return;
+        String newStatus = statuses[choice];
+        target.setStatus(newStatus);
+        file.updateRooms(rooms);
+        CLI.randomSpinner("Updating status");
+        System.out.println(CLI.success(target.getRoomNumber() + " set to " + newStatus + "."));
         Main.pause(scanner);
     }
 }

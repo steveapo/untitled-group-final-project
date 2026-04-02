@@ -4,6 +4,8 @@ import java.util.Vector;
 /** Application entry point — initialises data, seeds the admin on first run, then drives the top-level menu loop. */
 public class Main {
 
+    private static final String DOCS_URL = "https://untitled-group-self.vercel.app";
+
     public static void main(String[] args) throws Exception {
         Scanner scanner = new Scanner(System.in);
         Files file = new Files();
@@ -41,6 +43,7 @@ public class Main {
             CLI.printMenuItem("1", "Continue as Guest");
             CLI.printMenuItem("2", "Login");
             CLI.printMenuItem("3", "Register");
+            CLI.printMenuItem("4", "User Guide \u2197");
             CLI.printFooter("Exit");
             String choice = CLI.readChoice(scanner);
 
@@ -63,12 +66,17 @@ public class Main {
                         CLI.randomSpinner("Creating account");
                     }
                     break;
+                case "4":
+                    CLI.openUrl(DOCS_URL);
+                    System.out.println(CLI.success("Opening User Guide in browser..."));
+                    pause(scanner);
+                    break;
                 case "ESC":
                     CLI.clearScreen();
                     System.out.println(CLI.success("Goodbye! See you next time."));
                     return;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–3."));
+                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–4."));
                     pause(scanner);
             }
         }

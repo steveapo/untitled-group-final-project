@@ -61,6 +61,28 @@ public class CLI {
     public static String header(String text)  { return ansi(CYAN   + BOLD,  text); }
     public static String prompt(String text)  { return ansi(MAGENTA,        text); }
 
+    /** Wrap text as a clickable terminal hyperlink (OSC 8 with BEL terminator). */
+    public static String link(String text, String url) {
+        if (!ANSI_SUPPORTED) return text;
+        return "\033]8;;" + url + "\007" + ansi(CYAN + "\033[4m", text) + "\033]8;;\007";
+    }
+
+    /** Open a URL in the default browser. Works on macOS, Linux, and Windows. */
+    public static void openUrl(String url) {
+        try {
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("mac")) {
+                new ProcessBuilder("open", url).start();
+            } else if (os.contains("win")) {
+                new ProcessBuilder("cmd", "/c", "start", url).start();
+            } else {
+                new ProcessBuilder("xdg-open", url).start();
+            }
+        } catch (Exception ignored) {
+            System.out.println(dim("  Could not open browser. Visit: " + url));
+        }
+    }
+
     // ── Screen clearing ──────────────────────────────────────────────────
     /**
      * Clear the terminal screen.

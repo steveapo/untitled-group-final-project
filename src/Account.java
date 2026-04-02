@@ -89,7 +89,7 @@ public class Account {
             newFirstName = CLI.readLine(scanner);
             if (newFirstName == null) return false;
             if (newFirstName.matches("[A-Za-z]+")) break;
-            System.out.println(CLI.warning("Names cannot have numbers."));
+            System.out.println(CLI.warning("[ERR_NAME] First name must contain only letters."));
             file.writeErrors("Names cannot have numbers - " + getClass() + LINE_SUFFIX
                     + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
@@ -100,7 +100,7 @@ public class Account {
             newLastName = CLI.readLine(scanner);
             if (newLastName == null) return false;
             if (newLastName.matches("[A-Za-z]+")) break;
-            System.out.println(CLI.warning("Surnames cannot have numbers."));
+            System.out.println(CLI.warning("[ERR_NAME] Last name must contain only letters."));
             file.writeErrors("Surnames cannot have numbers - " + getClass() + LINE_SUFFIX
                     + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
@@ -113,7 +113,7 @@ public class Account {
             newEmail = CLI.readLine(scanner);
             if (newEmail == null) return false;
             if (Pattern.matches(emailRegex, newEmail)) break;
-            System.out.println(CLI.warning("Invalid email. Please try again."));
+            System.out.println(CLI.warning("[ERR_EMAIL] Invalid email format. Please try again."));
             file.writeErrors("Invalid email - " + getClass() + LINE_SUFFIX
                     + Thread.currentThread().getStackTrace()[1].getLineNumber());
         }
@@ -171,7 +171,7 @@ public class Account {
                 }
             }
             if (isAlreadyTaken) {
-                System.out.println(CLI.warning("Username already taken."));
+                System.out.println(CLI.warning("[ERR_USER_DUP] Username already taken."));
                 Files file = new Files();
                 file.writeErrors("Username already taken - " + getClass() + LINE_SUFFIX
                         + Thread.currentThread().getStackTrace()[1].getLineNumber());
@@ -203,7 +203,7 @@ public class Account {
         }
 
         if (matchedAccount == null) {
-            System.out.println(CLI.warning("Username not found."));
+            System.out.println(CLI.warning("[ERR_AUTH] Username not found."));
             Main.pause(scanner);
             return null;
         }
@@ -226,7 +226,7 @@ public class Account {
             if (MessageDigest.isEqual(attemptHash, matchedAccount.getHashedPassword())) {
                 return matchedAccount;
             }
-            System.out.println(CLI.warning("Wrong password. Try again."));
+            System.out.println(CLI.warning("[ERR_AUTH] Wrong password. Try again."));
             file.writeErrors("Wrong password - " + getClass() + " - user: " + matchedAccount.getUsername());
         }
     }

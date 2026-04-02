@@ -27,7 +27,7 @@ public class UserMenu {
                 case "4": viewProfile(account); Main.pause(scanner);          break;
                 case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("Invalid option. Enter 1–4."));
+                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–4."));
                     Main.pause(scanner);
             }
         }
@@ -47,7 +47,7 @@ public class UserMenu {
         if (checkOut == null) return;
 
         while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
-            System.out.println(CLI.warning("Check-out must be after check-in. Re-enter check-out date."));
+            System.out.println(CLI.warning("[ERR_DATE_ORDER] Check-out must be after check-in."));
             checkOut = date.checkOutDate();
             if (checkOut == null) return;
         }
@@ -61,7 +61,7 @@ public class UserMenu {
         }
 
         if (bookable.isEmpty()) {
-            System.out.println(CLI.warning("No rooms available for those dates."));
+            System.out.println(CLI.warning("[ERR_NO_ROOMS] No rooms available for those dates."));
             Main.pause(scanner);
             return;
         }
@@ -76,22 +76,18 @@ public class UserMenu {
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
 
-        System.out.print(CLI.prompt("\nChoose room (1-" + bookable.size() + ", Esc to go back): "));
-        String roomInput = CLI.readLine(scanner);
-        if (roomInput == null) return;
         int choice;
-        try {
-            choice = Integer.parseInt(roomInput);
-        } catch (NumberFormatException e) {
-            System.out.println(CLI.warning("Invalid input."));
-            Main.pause(scanner);
-            return;
-        }
-        if (choice == 0) return;
-        if (choice < 1 || choice > bookable.size()) {
-            System.out.println(CLI.warning("Invalid room number."));
-            Main.pause(scanner);
-            return;
+        while (true) {
+            System.out.print(CLI.prompt("\nChoose room (1-" + bookable.size() + ", Esc to go back): "));
+            String roomInput = CLI.readLine(scanner);
+            if (roomInput == null) return;
+            try {
+                choice = Integer.parseInt(roomInput);
+                if (choice >= 1 && choice <= bookable.size()) break;
+                System.out.println(CLI.warning("[ERR_RANGE] Enter a number between 1 and " + bookable.size() + "."));
+            } catch (NumberFormatException e) {
+                System.out.println(CLI.warning("[ERR_NUM] Please enter a valid number."));
+            }
         }
 
         Room chosen = bookable.get(choice - 1);
@@ -166,22 +162,18 @@ public class UserMenu {
                     CLI.bold(b.getRoom().getRoomNumber()),
                     b.getCheckIn(), b.getCheckOut());
         }
-        System.out.print(CLI.prompt("\nChoose booking to cancel (1-" + activeBookings.size() + ", Esc to go back): "));
-        String cancelInput = CLI.readLine(scanner);
-        if (cancelInput == null) return;
         int choice;
-        try {
-            choice = Integer.parseInt(cancelInput);
-        } catch (NumberFormatException e) {
-            System.out.println(CLI.warning("Invalid input."));
-            Main.pause(scanner);
-            return;
-        }
-        if (choice == 0) return;
-        if (choice < 1 || choice > activeBookings.size()) {
-            System.out.println(CLI.warning("Invalid selection."));
-            Main.pause(scanner);
-            return;
+        while (true) {
+            System.out.print(CLI.prompt("\nChoose booking to cancel (1-" + activeBookings.size() + ", Esc to go back): "));
+            String cancelInput = CLI.readLine(scanner);
+            if (cancelInput == null) return;
+            try {
+                choice = Integer.parseInt(cancelInput);
+                if (choice >= 1 && choice <= activeBookings.size()) break;
+                System.out.println(CLI.warning("[ERR_RANGE] Enter a number between 1 and " + activeBookings.size() + "."));
+            } catch (NumberFormatException e) {
+                System.out.println(CLI.warning("[ERR_NUM] Please enter a valid number."));
+            }
         }
         activeBookings.get(choice - 1).setStatus("CANCELLED");
         file.updateBookings(bookings);

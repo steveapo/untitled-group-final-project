@@ -35,7 +35,7 @@ public class DateInput {
             try {
                 LocalDate parsedCheckIn = LocalDate.parse(userInput, DATE_FORMATTER);
                 if (parsedCheckIn.isBefore(LocalDate.now())) {
-                    System.out.println(CLI.warning("Check-in date cannot be prior to current date."));
+                    System.out.println(CLI.warning("[ERR_DATE_PAST] Check-in date cannot be prior to current date."));
                     file.writeErrors("Check-In Date cannot be prior to current date. - " + getClass()
                             + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
                 } else {
@@ -43,7 +43,7 @@ public class DateInput {
                     return parsedCheckIn;
                 }
             } catch (DateTimeParseException _) {
-                System.out.println(CLI.warning("Invalid date or format. Please use dd-MM-yyyy."));
+                System.out.println(CLI.warning("[ERR_DATE_FMT] Invalid date or format. Please use dd-MM-yyyy."));
                 file.writeErrors("Invalid date format - " + getClass()
                         + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
             }
@@ -63,7 +63,7 @@ public class DateInput {
             try {
                 LocalDate parsedCheckOut = LocalDate.parse(userInput, DATE_FORMATTER);
                 if (parsedCheckOut.isBefore(LocalDate.now())) {
-                    System.out.println(CLI.warning("Check-out date cannot be prior to current date."));
+                    System.out.println(CLI.warning("[ERR_DATE_PAST] Check-out date cannot be prior to current date."));
                     file.writeErrors("Check-Out Date cannot be prior to current date. - " + getClass()
                             + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
                 } else {
@@ -71,7 +71,7 @@ public class DateInput {
                     return parsedCheckOut;
                 }
             } catch (DateTimeParseException _) {
-                System.out.println(CLI.warning("Invalid date or format. Please use dd-MM-yyyy."));
+                System.out.println(CLI.warning("[ERR_DATE_FMT] Invalid date or format. Please use dd-MM-yyyy."));
                 file.writeErrors("Invalid date format - " + getClass()
                         + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
             }
