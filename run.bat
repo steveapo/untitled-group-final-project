@@ -1,7 +1,7 @@
 @echo off
 REM Hotel Room Booking System Launcher (Windows)
-REM Ensures the JAR runs from the correct directory so data files are found.
-
+REM Forces UTF-8 output so Unicode glyphs (Braille spinner, box-drawing) render correctly.
+chcp 65001 >nul
 cd /d "%~dp0dist"
-java -jar HotelBooking.jar
+java --enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -jar HotelBooking.jar
 pause
