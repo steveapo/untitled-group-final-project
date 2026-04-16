@@ -38,72 +38,54 @@ public class UserMenu {
     private static void bookRoom(Scanner scanner, Account account,
                                   Vector<Room> rooms, Vector<Bookings> bookings,
                                   Files file) throws Exception {
+        // ── Step 1: number of guests ──────────────────────────────────────
         CLI.clearScreen();
         CLI.printBanner("BOOK A ROOM");
         System.out.println();
+        Integer guests = CLI.promptChoiceInRange(
+            "Number of guests (1-9, Esc to go back): ", scanner, 9);
+        if (guests == null) return;
 
-        DateInput date = new DateInput(scanner);
-        LocalDate checkIn  = date.checkInDate();
-        if (checkIn == null) return;
-        LocalDate checkOut;
-        while (true) {
-            checkOut = date.checkOutDate();
-            if (checkOut == null) return;
-            if (checkOut.isAfter(checkIn)) break;
-            System.out.println(CLI.warning("[ERR_DATE_ORDER] Check-out must be after check-in."));
-            CLI.waitForKey(scanner);
-        }
+        // ── Step 2: visual date + room picker ─────────────────────────────
+        OccupancyCalendar.BookingSelection sel =
+            OccupancyCalendar.pickDates(scanner, rooms, bookings, guests);
+        if (sel == null) return;   // user cancelled
 
-        Vector<Room> available = new Vector<>();
-        date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
+        // ── Step 3: confirmation screen ───────────────────────────────────
+        CLI.clearScreen();
+        CLI.printBanner("CONFIRM BOOKING");
+        System.out.println();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-uuuu")
+                .withResolverStyle(ResolverStyle.STRICT);
+        final String checkInStr  = sel.checkIn.format(fmt);
+        final String checkOutStr = sel.checkOut.format(fmt);
+        long nights = sel.checkIn.until(sel.checkOut).getDays();
+        double total = nights * sel.room.getPrice();
 
-        Vector<Room> bookable = new Vector<>();
-        for (Room r : available) {
-            if (r.getStatus().equals("AVAILABLE")) bookable.add(r);
-        }
-
-        if (bookable.isEmpty()) {
-            System.out.println(CLI.warning("[ERR_NO_ROOMS] No rooms available for those dates."));
+        System.out.println("  " + CLI.dim("Room    : ") + CLI.bold(sel.room.getRoomNumber())
+                + "  " + sel.room.getType() + "  (capacity " + sel.room.getCapacity() + ")");
+        System.out.println("  " + CLI.dim("Check-in: ") + CLI.cyan(checkInStr));
+        System.out.println("  " + CLI.dim("Check-out: ") + CLI.cyan(checkOutStr));
+        System.out.println("  " + CLI.dim("Nights  : ") + nights);
+        System.out.println("  " + CLI.dim("Total   : ") + CLI.yellow(String.format("$%.2f", total)));
+        System.out.println();
+        System.out.print(CLI.prompt("Confirm? (yes/no, Esc to cancel): "));
+        String confirm = CLI.readLine(scanner);
+        if (confirm == null || !confirm.equalsIgnoreCase("yes")) {
+            System.out.println(CLI.dim("Booking cancelled."));
             Main.pause(scanner);
             return;
         }
 
-        System.out.println("\n" + CLI.header("  Available Rooms") + "\n");
-        for (int i = 0; i < bookable.size(); i++) {
-            Room r = bookable.get(i);
-            System.out.printf("  %s  %-6s | %-8s | %s/night%n",
-                    CLI.cyan((i + 1) + "."),
-                    CLI.bold(r.getRoomNumber()),
-                    r.getType(),
-                    CLI.yellow(String.format("$%.2f", r.getPrice())));
-        }
-
-        Integer choice = CLI.promptChoiceInRange(
-            "\nChoose room (1-" + bookable.size() + ", Esc to go back): ", scanner, bookable.size());
-        if (choice == null) return;
-
-        Room chosen = bookable.get(choice - 1);
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
-        // Capture as effectively-final strings for use inside the lambda
-        final String checkInStr  = checkIn.format(fmt);
-        final String checkOutStr = checkOut.format(fmt);
-        System.out.println("\nConfirm booking " + CLI.bold(chosen.getRoomNumber())
-                + " from " + CLI.cyan(checkInStr) + " to " + CLI.cyan(checkOutStr) + "?");
-        System.out.print(CLI.prompt("(yes/no, Esc to go back): "));
-        String confirm = CLI.readLine(scanner);
-        if (confirm == null) { System.out.println(CLI.dim("Booking cancelled.")); Main.pause(scanner); return; }
-        if (confirm.equalsIgnoreCase("yes")) {
-            CLI.withSpinner("Saving booking", () -> {
-                Bookings newBooking = new Bookings(chosen, checkInStr,
-                        checkOutStr, account.getUsername(), "CONFIRMED");
-                bookings.add(newBooking);
-                file.updateBookings(bookings);
-                try { Thread.sleep(CLI.randomDelayMs()); } catch (InterruptedException _) { Thread.currentThread().interrupt(); }
-            });
-            System.out.println(CLI.success("Booking confirmed!"));
-        } else {
-            System.out.println(CLI.dim("Booking cancelled."));
-        }
+        final Room chosen = sel.room;
+        CLI.withSpinner("Saving booking", () -> {
+            bookings.add(new Bookings(chosen, checkInStr, checkOutStr,
+                    account.getUsername(), "CONFIRMED"));
+            file.updateBookings(bookings);
+            try { Thread.sleep(CLI.randomDelayMs()); }
+            catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+        });
+        System.out.println(CLI.success("Booking confirmed!"));
         Main.pause(scanner);
     }
 

@@ -567,6 +567,8 @@ public class CLI {
                     if (next == -2) return "ESC"; // standalone ESC (timeout)
                     if (next == '[') {
                         int third = reader.read(50L);
+                        if (third == 'A') return "UP";
+                        if (third == 'B') return "DOWN";
                         if (third == 'D') return "LEFT";
                         if (third == 'C') return "RIGHT";
                         if (third == '1') { // potential modifier sequence
@@ -586,6 +588,7 @@ public class CLI {
                     continue; // unrecognised — keep waiting
                 }
                 if (ch == 'T' || ch == 't') return "T";
+                if (ch == '\r' || ch == '\n') return "ENTER";
                 // all other keys ignored
             }
         }, null);
@@ -593,12 +596,15 @@ public class CLI {
 
         // Dumb terminal / piped stdin fallback
         String line = fallbackScanner.nextLine().trim();
-        if (line.isEmpty() || line.equalsIgnoreCase("e")) return "ESC";
+        if (line.equalsIgnoreCase("e")) return "ESC";
+        if (line.isEmpty() || line.equalsIgnoreCase("enter")) return "ENTER";
         switch (line) {
             case "h": return "LEFT";
             case "l": return "RIGHT";
             case "H": return "SHIFT_LEFT";
             case "L": return "SHIFT_RIGHT";
+            case "k": return "UP";
+            case "j": return "DOWN";
             case "t": case "T": return "T";
             default:  return "ESC";
         }
