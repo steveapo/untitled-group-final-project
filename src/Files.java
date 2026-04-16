@@ -9,14 +9,50 @@ import java.util.Vector;
 /** Handles all file I/O for rooms, bookings, users, and error logs. */
 public class Files {
 
-    private static final String USERS_FILE    = "Users";
-    private static final String BOOKINGS_FILE = "Bookings";
-    private static final String ROOMS_FILE    = "Rooms";
-    private static final String ERRORS_FILE   = "Errors";
+    private final File USERS_FILE;
+    private final File BOOKINGS_FILE;
+    private final File ROOMS_FILE;
+    private final File ERRORS_FILE;
+
+    /** Default constructor — resolves files next to the JAR (or CWD when not packaged). */
+    public Files() {
+        this(defaultBaseDir());
+    }
+
+    /**
+     * Test- and embedding-friendly constructor — every data file is resolved
+     * inside the supplied {@code baseDir}. This avoids the static-state and
+     * {@code user.dir} pitfalls that make {@link Files} hard to test.
+     */
+    public Files(File baseDir) {
+        this.USERS_FILE    = new File(baseDir, "Users");
+        this.BOOKINGS_FILE = new File(baseDir, "Bookings");
+        this.ROOMS_FILE    = new File(baseDir, "Rooms");
+        this.ERRORS_FILE   = new File(baseDir, "Errors");
+    }
+
+    /**
+     * Default base directory for data files.
+     * Prefers the directory containing the running JAR (so double-clicking
+     * works on Windows). Falls back to the current working directory
+     * when running from class files (IDE, {@code mvn test}, etc.).
+     */
+    private static File defaultBaseDir() {
+        try {
+            File codeSource = new File(
+                Files.class.getProtectionDomain().getCodeSource().getLocation().toURI()
+            );
+            if (codeSource.isFile() && codeSource.getName().endsWith(".jar")) {
+                File jarDir = codeSource.getParentFile();
+                if (jarDir != null) return jarDir;
+            }
+        } catch (Exception ignored) { /* fall through */ }
+        return new File(".");
+    }
 
     /** Load bookings from file — expects 5 CSV fields: roomNumber,checkIn,checkOut,username,status */
     public Vector<Bookings> populateBookings(Vector<Room> rooms, Vector<Bookings> bookings) {
-        try (Scanner scanner = new Scanner(new File(BOOKINGS_FILE))) {
+        try (Scanner scanner = new Scanner(BOOKINGS_FILE)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
                 if (line.isEmpty()) continue;
@@ -41,7 +77,7 @@ public class Files {
 
     /** Load rooms from file — expects 5 CSV fields: roomNumber,capacity,price,type,status */
     public Vector<Room> populateRooms(Vector<Room> rooms) {
-        try (Scanner scanner = new Scanner(new File(ROOMS_FILE))) {
+        try (Scanner scanner = new Scanner(ROOMS_FILE)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
                 if (line.isEmpty()) continue;
@@ -62,9 +98,7 @@ public class Files {
     /** Check that the required data files (Rooms and Bookings) exist. */
     public boolean checkFile() {
         try {
-            File bookingsFile = new File(BOOKINGS_FILE);
-            File roomsFile    = new File(ROOMS_FILE);
-            if (!bookingsFile.exists() || !roomsFile.exists()) {
+            if (!BOOKINGS_FILE.exists() || !ROOMS_FILE.exists()) {
                 System.out.println("Either both or one of the files was not found");
                 return false;
             } else {
@@ -79,8 +113,8 @@ public class Files {
 
     /** Overwrite the Bookings file with all current in-memory bookings (5 fields per line). */
     public void updateBookings(Vector<Bookings> bookings) {
-        File original = new File(BOOKINGS_FILE);
-        File tempFile = new File(BOOKINGS_FILE + ".tmp");
+        File original = BOOKINGS_FILE;
+        File tempFile = new File(original.getParentFile(), original.getName() + ".tmp");
         try (FileWriter writer = new FileWriter(tempFile, false)) {
             for (int i = 0; i < bookings.size(); i++) {
                 String line = bookings.get(i).toString().trim();
@@ -112,8 +146,7 @@ public class Files {
     /** Create the Users file if it does not already exist. */
     public void createUsersFile() {
         try {
-            File usersFile = new File(USERS_FILE);
-            if (usersFile.createNewFile()) {
+            if (USERS_FILE.createNewFile()) {
                 System.out.println("Users file created");
             }
         } catch (IOException e) {
@@ -145,9 +178,8 @@ public class Files {
 
     /** Return true if an admin account already exists in the Users file. */
     public boolean adminExists() {
-        File usersFile = new File(USERS_FILE);
-        if (!usersFile.exists() || usersFile.length() == 0) return false;
-        try (Scanner scanner = new Scanner(usersFile)) {
+        if (!USERS_FILE.exists() || USERS_FILE.length() == 0) return false;
+        try (Scanner scanner = new Scanner(USERS_FILE)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
                 if (line.startsWith("admin,")) return true;
@@ -161,12 +193,11 @@ public class Files {
     /** Load all user accounts from the Users file into the provided vector — expects 7 CSV fields per line. */
     public void getUsers(Vector<Account> users) {
         users.clear();
-        File usersFile = new File(USERS_FILE);
-        if (!usersFile.exists() || usersFile.length() == 0) {
+        if (!USERS_FILE.exists() || USERS_FILE.length() == 0) {
             System.out.println("No users found.");
             return;
         }
-        try (Scanner scanner = new Scanner(usersFile)) {
+        try (Scanner scanner = new Scanner(USERS_FILE)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
                 if (line.isEmpty()) continue;
@@ -188,8 +219,7 @@ public class Files {
     /** Create the Errors log file if it does not already exist. */
     public void errorLogging() {
         try {
-            File errorsFile = new File(ERRORS_FILE);
-            if (!errorsFile.exists() && !errorsFile.createNewFile()) {
+            if (!ERRORS_FILE.exists() && !ERRORS_FILE.createNewFile()) {
                 System.err.println("Could not create Errors file");
             }
         } catch (IOException e) {
@@ -199,7 +229,7 @@ public class Files {
 
     /** Append an error message to the Errors log. */
     public void writeErrors(String errorMessage) {
-        try (FileWriter writer = new FileWriter(new File(ERRORS_FILE), true)) {
+        try (FileWriter writer = new FileWriter(ERRORS_FILE, true)) {
             writer.write(errorMessage + "\n");
         } catch (IOException e) {
             System.err.println("Error writing to Errors file");
