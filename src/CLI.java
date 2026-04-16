@@ -545,4 +545,61 @@ public class CLI {
         System.out.print("\033[" + linesUp + "A\r\033[J");
         System.out.flush();
     }
+
+    // ── Arrow-key / hotkey reader ───────────────────────────────────────
+    /**
+     * Read a single navigation key for interactive views.
+     * Returns one of: "LEFT", "RIGHT", "SHIFT_LEFT", "SHIFT_RIGHT", "T", "ESC".
+     * Other keys are silently ignored (keeps waiting).
+     *
+     * Raw-mode path: parses xterm/VT100 CSI escape sequences.
+     * Fallback path (dumb terminal / piped stdin): h=LEFT, l=RIGHT,
+     *   H=SHIFT_LEFT, L=SHIFT_RIGHT, t/T=T, e/empty=ESC.
+     */
+    public static String readArrowOrKey(Scanner fallbackScanner) {
+        String result = withRawMode(() -> {
+            NonBlockingReader reader = TERMINAL.reader();
+            while (true) {
+                int ch = reader.read();
+                if (ch == 27) { // ESC byte
+                    int next = reader.read(50L);
+                    if (next == -2) return "ESC"; // standalone ESC (timeout)
+                    if (next == '[') {
+                        int third = reader.read(50L);
+                        if (third == 'D') return "LEFT";
+                        if (third == 'C') return "RIGHT";
+                        if (third == '1') { // potential modifier sequence
+                            int semi = reader.read(50L);
+                            int mod  = reader.read(50L);
+                            int dir  = reader.read(50L);
+                            if (semi == ';' && mod == '2') {
+                                if (dir == 'D') return "SHIFT_LEFT";
+                                if (dir == 'C') return "SHIFT_RIGHT";
+                            }
+                        }
+                        // drain remaining bytes of unrecognised sequence
+                        while (reader.read(10L) >= 0) { }
+                    } else {
+                        while (reader.read(10L) >= 0) { }
+                    }
+                    continue; // unrecognised — keep waiting
+                }
+                if (ch == 'T' || ch == 't') return "T";
+                // all other keys ignored
+            }
+        }, null);
+        if (result != null) return result;
+
+        // Dumb terminal / piped stdin fallback
+        String line = fallbackScanner.nextLine().trim();
+        if (line.isEmpty() || line.equalsIgnoreCase("e")) return "ESC";
+        switch (line) {
+            case "h": return "LEFT";
+            case "l": return "RIGHT";
+            case "H": return "SHIFT_LEFT";
+            case "L": return "SHIFT_RIGHT";
+            case "t": case "T": return "T";
+            default:  return "ESC";
+        }
+    }
 }
