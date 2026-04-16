@@ -10,194 +10,191 @@ import java.util.Vector;
  *
  * <p>Two modes:
  * <ul>
- *   <li><b>VIEW mode</b> ({@link #show}): read-only, all rooms, ESC exits.
- *   <li><b>PICK mode</b> ({@link #pickDates}): booking flow for a user.
- *       Shows only rooms that fit the requested capacity, lets the user
- *       navigate with ←/→/↑/↓, press ENTER to set check-in then check-out,
- *       and returns a {@link BookingSelection} (or {@code null} on cancel).
+ *   <li><b>VIEW mode</b> ({@link #show}): read-only, navigation only, ESC exits.
+ *   <li><b>PICK mode</b> ({@link #pickDates}): booking date+room selector for users.
  * </ul>
+ *
+ * <p>Alignment contract: every day column is exactly {@value #COL_W} visible chars.
+ * All ANSI escape codes are applied AFTER padding so they contribute zero visible width.
  */
 public class OccupancyCalendar {
 
     private static final DateTimeFormatter FMT     = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    private static final DateTimeFormatter FMT_OUT = DateTimeFormatter.ofPattern("dd-MM-uuuu")
-                                                         .withResolverStyle(ResolverStyle.STRICT);
+    private static final DateTimeFormatter FMT_OUT =
+            DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
 
     // ── Cell status ──────────────────────────────────────────────────────
 
-    /** Visibility: package-private so OccupancyCalendarTest can reference it. */
     enum CellStatus { AVAILABLE, CONFIRMED, CHECKED_IN, CHECKED_OUT, MAINTENANCE }
 
     // ── Result type for PICK mode ────────────────────────────────────────
 
-    /** Returned by {@link #pickDates} when the user confirms a selection. */
     static final class BookingSelection {
         final Room      room;
         final LocalDate checkIn;
         final LocalDate checkOut;
         BookingSelection(Room room, LocalDate checkIn, LocalDate checkOut) {
-            this.room     = room;
-            this.checkIn  = checkIn;
-            this.checkOut = checkOut;
+            this.room = room; this.checkIn = checkIn; this.checkOut = checkOut;
         }
     }
 
-    // ── ANSI helpers ─────────────────────────────────────────────────────
+    // ── ANSI codes ───────────────────────────────────────────────────────
 
     private static final String RESET     = "\033[0m";
     private static final String BOLD      = "\033[1m";
     private static final String UNDERLINE = "\033[4m";
-    private static final String GREEN     = "\033[32m";
-    private static final String CYAN      = "\033[36m";
-    private static final String MAGENTA   = "\033[35m";
-    private static final String DIM       = "\033[2m";
-    private static final String RED       = "\033[31m";
-    private static final String YELLOW    = "\033[33m";
     private static final String INVERT    = "\033[7m";
-    private static final String BG_GREEN  = "\033[42m";
 
-    private static boolean isAnsiSupported() {
+    // Foreground
+    private static final String FG_GREEN  = "\033[32m";
+    private static final String FG_RED    = "\033[31m";
+    private static final String FG_YELLOW = "\033[33m";
+    private static final String FG_GRAY   = "\033[90m";   // bright black = dark gray
+    private static final String FG_PINK   = "\033[95m";   // bright magenta ≈ pink
+
+    private static boolean isAnsi() {
         if (System.getenv("NO_COLOR") != null) return false;
         if ("dumb".equals(System.getenv("TERM"))) return false;
         return !CLI.bold("X").equals("X");
     }
 
-    private static String ansi(String code, String text) {
-        return isAnsiSupported() ? code + text + RESET : text;
+    // Wrap text in an ANSI code only if ANSI is supported.
+    // IMPORTANT: `text` must already be padded to its final visible width before calling this.
+    private static String a(String code, String text) {
+        return isAnsi() ? code + text + RESET : text;
     }
 
-    // ── Glyphs ───────────────────────────────────────────────────────────
+    // ── Glyphs (each exactly 2 visible chars) ────────────────────────────
 
     private static final String GLYPH_AVAILABLE   = "░░";
-    private static final String GLYPH_CONFIRMED   = "██";
-    private static final String GLYPH_CHECKED_IN  = "██";
-    private static final String GLYPH_CHECKED_OUT = "▒▒";
+    private static final String GLYPH_OCCUPIED    = "██";  // confirmed / checked-in / checked-out
     private static final String GLYPH_MAINTENANCE = "▒▒";
 
     private static final String FB_AVAILABLE   = "..";
-    private static final String FB_CONFIRMED   = "##";
-    private static final String FB_CHECKED_IN  = "##";
-    private static final String FB_CHECKED_OUT = "xx";
+    private static final String FB_OCCUPIED    = "##";
     private static final String FB_MAINTENANCE = "MM";
+    private static final String FB_RANGE       = "~~";
 
-    // ── Layout ───────────────────────────────────────────────────────────
+    // ── Layout constants ─────────────────────────────────────────────────
 
-    // Each day column: │ + COL_W visible chars + next │
-    private static final int    COL_W      = 4;
-    private static final String SEP_LINE   = "────";   // COL_W '─'
-    private static final String VERT       = "│";
-    private static final String CORNER_TL  = "┌";
-    private static final String CORNER_TR  = "┐";
-    private static final String CORNER_BL  = "└";
-    private static final String CORNER_BR  = "┘";
-    private static final String T_DOWN     = "┬";
-    private static final String T_UP       = "┴";
-    private static final String CROSS      = "┼";
-    private static final String HORIZ_L    = "├";
-    private static final String HORIZ_R    = "┤";
+    // Each day column: COL_W visible chars between │ separators.
+    // Cell content:  " " + glyph(2) + " " = 4 visible chars  → COL_W = 4
+    private static final int    COL_W     = 4;
+    private static final String DASH4     = "────";   // exactly COL_W '─'
 
-    // Row label area visible width.
-    // Format: "  R101  Dbl  $120/n  " — 2 + 4 + 2 + 3 + 2 + 7 + 2 = uses LABEL_W
-    // We keep it at 22 so it fits common room data without wrapping.
-    private static final int    LABEL_W    = 22;
-    // Header indentation must equal LABEL_W to align with grid columns.
-    private static final String HDR_INDENT = " ".repeat(LABEL_W);
+    // Row-label visible width.  Format (see buildLabel):
+    //   2(margin) + 4(room#) + 2(gap) + 3(type) + 2(gap) + 7(price) + 2(gap) + 3(cap) = 25
+    private static final int    LABEL_W   = 25;
+
+    // Box-drawing characters
+    private static final String V   = "│";
+    private static final String TL  = "┌"; private static final String TR  = "┐";
+    private static final String BL  = "└"; private static final String BR  = "┘";
+    private static final String TD  = "┬"; private static final String TU  = "┴";
+    private static final String CR  = "┼";
+    private static final String HL  = "├"; private static final String HR  = "┤";
 
     // ── Public entry points ───────────────────────────────────────────────
 
-    /**
-     * VIEW mode: read-only calendar, all rooms, ESC exits.
-     */
+    /** VIEW mode — read-only, all rooms passed in, ESC exits. */
     public static void show(Scanner scanner,
                             Vector<Room> rooms,
                             Vector<Bookings> bookings,
-                            boolean showGuestNames) {
-        LocalDate selectedDay = LocalDate.now();
-        int selectedRow = 0;
+                            boolean isStaff) {
+        LocalDate weekStart  = mondayOf(LocalDate.now());
+        int       colCursor  = LocalDate.now().getDayOfWeek().getValue() - 1; // 0=Mon…6=Sun
+        int       rowCursor  = 0;
         while (true) {
-            LocalDate windowStart = selectedDay.minusDays(3);
             CLI.clearScreen();
-            renderView(rooms, bookings, windowStart, selectedDay, selectedRow, null, null);
+            CLI.printBanner("OCCUPANCY CALENDAR");
+            renderGrid(rooms, bookings, weekStart, colCursor, rowCursor,
+                       null, isStaff, false);
             String key = CLI.readArrowOrKey(scanner);
             switch (key) {
-                case "LEFT":        selectedDay = selectedDay.minusDays(1);              break;
-                case "RIGHT":       selectedDay = selectedDay.plusDays(1);               break;
-                case "SHIFT_LEFT":  selectedDay = selectedDay.minusWeeks(1);             break;
-                case "SHIFT_RIGHT": selectedDay = selectedDay.plusWeeks(1);              break;
-                case "UP":          if (selectedRow > 0) selectedRow--;                  break;
-                case "DOWN":        if (selectedRow < rooms.size() - 1) selectedRow++;   break;
-                case "T":           selectedDay = LocalDate.now();                        break;
-                case "ESC":         return;
-                default:            break;
+                case "LEFT":
+                    if (colCursor > 0) colCursor--;
+                    else { weekStart = weekStart.minusWeeks(1); colCursor = 6; }
+                    break;
+                case "RIGHT":
+                    if (colCursor < 6) colCursor++;
+                    else { weekStart = weekStart.plusWeeks(1); colCursor = 0; }
+                    break;
+                case "SHIFT_LEFT":  weekStart = weekStart.minusWeeks(1); break;
+                case "SHIFT_RIGHT": weekStart = weekStart.plusWeeks(1);  break;
+                case "UP":    if (rowCursor > 0) rowCursor--;                  break;
+                case "DOWN":  if (rowCursor < rooms.size() - 1) rowCursor++;   break;
+                case "T":
+                    weekStart = mondayOf(LocalDate.now());
+                    colCursor = LocalDate.now().getDayOfWeek().getValue() - 1;
+                    break;
+                case "ESC": return;
+                default: break;
             }
         }
     }
 
     /**
-     * PICK mode: interactive date picker for booking.
-     *
-     * <p>Shows only rooms whose capacity &ge; {@code minCapacity} and whose
-     * status is not MAINTENANCE.  The user navigates left/right to choose
-     * check-in (ENTER), then moves right to choose check-out (ENTER again).
-     * A room row must be selected (UP/DOWN) — the check-in and check-out
-     * must both fall on the same room row.
-     *
-     * @return a {@link BookingSelection}, or {@code null} if the user cancelled.
+     * PICK mode — date+room picker for the booking flow.
+     * Shows only rooms with capacity &ge; minCapacity that are not in maintenance.
+     * Returns a {@link BookingSelection} or {@code null} on cancel.
      */
     public static BookingSelection pickDates(Scanner scanner,
                                              Vector<Room> allRooms,
                                              Vector<Bookings> bookings,
                                              int minCapacity) {
-        // Filter to rooms that can accommodate the party and aren't in maintenance
         Vector<Room> rooms = new Vector<>();
         for (Room r : allRooms) {
-            if (r.getCapacity() >= minCapacity && !"MAINTENANCE".equalsIgnoreCase(r.getStatus())) {
-                rooms.add(r);
-            }
+            if (r.getCapacity() >= minCapacity) rooms.add(r);
         }
         if (rooms.isEmpty()) return null;
 
-        LocalDate selectedDay = LocalDate.now();
-        int selectedRow = 0;
-        LocalDate checkIn = null;   // null until first ENTER
+        LocalDate weekStart = mondayOf(LocalDate.now());
+        int colCursor = LocalDate.now().getDayOfWeek().getValue() - 1;
+        int rowCursor = 0;
+        LocalDate checkIn = null;
 
         while (true) {
-            LocalDate windowStart = selectedDay.minusDays(3);
             CLI.clearScreen();
-            renderView(rooms, bookings, windowStart, selectedDay, selectedRow, checkIn, null);
+            CLI.printBanner("BOOK A ROOM");
+            renderGrid(rooms, bookings, weekStart, colCursor, rowCursor,
+                       checkIn, false, true);
             String key = CLI.readArrowOrKey(scanner);
             switch (key) {
-                case "LEFT":        selectedDay = selectedDay.minusDays(1);                          break;
-                case "RIGHT":       selectedDay = selectedDay.plusDays(1);                           break;
-                case "SHIFT_LEFT":  selectedDay = selectedDay.minusWeeks(1);                         break;
-                case "SHIFT_RIGHT": selectedDay = selectedDay.plusWeeks(1);                          break;
-                case "UP":          if (selectedRow > 0) selectedRow--;                              break;
-                case "DOWN":        if (selectedRow < rooms.size() - 1) selectedRow++;               break;
-                case "T":           selectedDay = LocalDate.now();                                    break;
-                case "ESC":
-                    if (checkIn != null) {
-                        checkIn = null;      // cancel check-in, back to step 1
+                case "LEFT":
+                    if (colCursor > 0) colCursor--;
+                    else { weekStart = weekStart.minusWeeks(1); colCursor = 6; }
+                    break;
+                case "RIGHT":
+                    if (colCursor < 6) colCursor++;
+                    else { weekStart = weekStart.plusWeeks(1); colCursor = 0; }
+                    break;
+                case "SHIFT_LEFT":  weekStart = weekStart.minusWeeks(1); break;
+                case "SHIFT_RIGHT": weekStart = weekStart.plusWeeks(1);  break;
+                case "UP":   if (rowCursor > 0) rowCursor--;                  break;
+                case "DOWN": if (rowCursor < rooms.size() - 1) rowCursor++;   break;
+                case "T":
+                    weekStart = mondayOf(LocalDate.now());
+                    colCursor = LocalDate.now().getDayOfWeek().getValue() - 1;
+                    break;
+                case "ENTER": {
+                    Room cur = rooms.get(rowCursor);
+                    LocalDate curDay = weekStart.plusDays(colCursor);
+                    if (checkIn == null) {
+                        if (cellFor(cur, curDay, bookings) == CellStatus.AVAILABLE
+                                && !curDay.isBefore(LocalDate.now())) {
+                            checkIn = curDay;
+                        }
                     } else {
-                        return null;         // full cancel
+                        if (curDay.isAfter(checkIn)
+                                && allAvailable(cur, checkIn, curDay, bookings)) {
+                            return new BookingSelection(cur, checkIn, curDay);
+                        }
                     }
                     break;
-                case "ENTER":
-                    Room curRoom = rooms.get(selectedRow);
-                    if (checkIn == null) {
-                        // Step 1: set check-in — must be available on that day
-                        if (cellFor(curRoom, selectedDay, bookings) == CellStatus.AVAILABLE) {
-                            checkIn = selectedDay;
-                        }
-                        // else ignore — cell isn't available
-                    } else {
-                        // Step 2: set check-out — must be after check-in, on same room,
-                        // and all days in [checkIn, selectedDay) must be available
-                        if (selectedDay.isAfter(checkIn)
-                                && allAvailable(curRoom, checkIn, selectedDay, bookings)) {
-                            return new BookingSelection(curRoom, checkIn, selectedDay);
-                        }
-                        // else ignore invalid range
-                    }
+                }
+                case "ESC":
+                    if (checkIn != null) { checkIn = null; }
+                    else return null;
                     break;
                 default: break;
             }
@@ -207,208 +204,206 @@ public class OccupancyCalendar {
     // ── Renderer ─────────────────────────────────────────────────────────
 
     /**
-     * Render the grid.
+     * Render the 7-day grid.  All alignment is computed on plain strings first;
+     * ANSI codes are applied only after the string reaches its final visible width.
      *
-     * @param rooms        rooms to display (already filtered if in pick mode)
-     * @param windowStart  first visible day
-     * @param selectedDay  the column cursor
-     * @param selectedRow  the row cursor (highlighted room row)
-     * @param checkIn      if non-null, the locked check-in date (pick mode step 2)
-     * @param checkOut     unused (reserved for future preview highlight)
+     * @param weekStart  Monday of the displayed week
+     * @param colCursor  0-based column index within the week (0=Mon…6=Sun)
+     * @param rowCursor  0-based room row index
+     * @param checkIn    locked check-in date in pick mode (null otherwise)
+     * @param isStaff    true for reception/manager colour scheme
+     * @param pickMode   true when used for booking selection
      */
-    private static void renderView(Vector<Room> rooms,
+    private static void renderGrid(Vector<Room> rooms,
                                    Vector<Bookings> bookings,
-                                   LocalDate windowStart,
-                                   LocalDate selectedDay,
-                                   int selectedRow,
+                                   LocalDate weekStart,
+                                   int colCursor,
+                                   int rowCursor,
                                    LocalDate checkIn,
-                                   LocalDate checkOut) {
-        LocalDate today = LocalDate.now();
-        boolean ansi = isAnsiSupported();
-        boolean pickMode = (checkIn != null || checkOut != null);
+                                   boolean isStaff,
+                                   boolean pickMode) {
+        boolean ansi      = isAnsi();
+        LocalDate today   = LocalDate.now();
+        LocalDate selDay  = weekStart.plusDays(colCursor);
 
-        // ── Banner ────────────────────────────────────────────────────────
-        String selLabel = selectedDay.format(DateTimeFormatter.ofPattern("EEE MMM d"));
-        String modeTag  = checkIn == null ? "Select check-in" : "Select check-out";
-        String bannerMid = pickMode
-                ? "BOOK A ROOM  ▸ " + padRight(selLabel, 12) + "  [" + modeTag + "]"
-                : "OCCUPANCY CALENDAR  ▸ " + padRight(selLabel, 14);
-        String banner =
-                "╔══════════════════════════════════════════════════════════╗\n" +
-                "║  " + padRight(bannerMid, 56) + "║\n" +
-                "╚══════════════════════════════════════════════════════════╝";
-        System.out.println(ansi(BOLD, banner));
+        // ── Status line ───────────────────────────────────────────────────
+        String weekLabel = weekStart.format(DateTimeFormatter.ofPattern("MMM d"))
+                + " – " + weekStart.plusDays(6).format(DateTimeFormatter.ofPattern("MMM d, yyyy"));
+        System.out.println();
+        if (pickMode) {
+            String step = checkIn == null
+                    ? "Step 1: select check-in date  (Enter to confirm)"
+                    : "Step 2: select check-out date (Enter to confirm)  "
+                      + "Check-in: " + checkIn.format(DateTimeFormatter.ofPattern("EEE MMM d"));
+            System.out.println("  " + CLI.dim(weekLabel) + "   " + CLI.cyan(step));
+        } else {
+            System.out.println("  " + CLI.dim("Week: ") + CLI.bold(weekLabel)
+                    + "   " + CLI.dim("Selected: ")
+                    + CLI.cyan(selDay.format(DateTimeFormatter.ofPattern("EEE MMM d"))));
+        }
+        System.out.println();
 
         if (rooms.isEmpty()) {
-            System.out.println("\n  No rooms available.\n\n  Press Esc to go back.");
+            System.out.println("  No rooms available.  Press Esc to go back.");
             return;
         }
 
-        // ── Grid separator lines ──────────────────────────────────────────
-        StringBuilder topLine = new StringBuilder(HDR_INDENT).append(CORNER_TL);
-        StringBuilder midLine = new StringBuilder(HDR_INDENT).append(HORIZ_L);
-        StringBuilder botLine = new StringBuilder(HDR_INDENT).append(CORNER_BL);
-        for (int i = 0; i < 7; i++) {
-            topLine.append(SEP_LINE).append(i < 6 ? T_DOWN : CORNER_TR);
-            midLine.append(SEP_LINE).append(i < 6 ? CROSS  : HORIZ_R);
-            botLine.append(SEP_LINE).append(i < 6 ? T_UP   : CORNER_BR);
-        }
+        // ── Separator lines ──────────────────────────────────────────────
+        // Each is: LABEL_W spaces + corner + (DASH4 + separator) × 7
+        // Total grid width = LABEL_W + 1(V) + (COL_W + 1(V)) × 7 = LABEL_W + 1 + 35 = LABEL_W+36
+        String topLine = spaces(LABEL_W) + TL + repeat(DASH4 + TD, 6) + DASH4 + TR;
+        String midLine = spaces(LABEL_W) + HL + repeat(DASH4 + CR, 6) + DASH4 + HR;
+        String botLine = spaces(LABEL_W) + BL + repeat(DASH4 + TU, 6) + DASH4 + BR;
 
-        // ── Day header rows ───────────────────────────────────────────────
-        StringBuilder nameRow = new StringBuilder(HDR_INDENT);
-        StringBuilder numRow  = new StringBuilder(HDR_INDENT);
+        // ── Header row ────────────────────────────────────────────────────
+        // Two rows: day-of-week names, then day numbers.
+        // Each column is exactly COL_W visible chars: " DOW" or " DD " (leading space, 3 chars).
+        StringBuilder nameRow = new StringBuilder(spaces(LABEL_W)).append(V);
+        StringBuilder numRow  = new StringBuilder(spaces(LABEL_W)).append(V);
+
         for (int i = 0; i < 7; i++) {
-            LocalDate d = windowStart.plusDays(i);
-            boolean isColSel = d.equals(selectedDay);
-            boolean isToday  = d.equals(today);
-            String nameVis = " " + padRight(d.getDayOfWeek().toString().substring(0, 3), COL_W - 1);
-            String numVis  = " " + padRight(String.valueOf(d.getDayOfMonth()), COL_W - 1);
+            LocalDate d       = weekStart.plusDays(i);
+            boolean isSel     = (i == colCursor);
+            boolean isToday   = d.equals(today);
+            boolean isCheckIn = checkIn != null && d.equals(checkIn);
+
+            // Build plain visible strings of exactly COL_W chars each
+            String namePlain = " " + padRight(d.getDayOfWeek().toString().substring(0, 3), COL_W - 1);
+            String numPlain  = " " + padLeft(String.valueOf(d.getDayOfMonth()), COL_W - 1);
+
             if (ansi) {
-                if (isColSel) {
-                    nameRow.append(INVERT).append(BOLD).append(nameVis).append(RESET);
-                    numRow .append(INVERT).append(BOLD).append(numVis) .append(RESET);
+                if (isCheckIn) {
+                    // locked check-in: green background
+                    nameRow.append(a(FG_GREEN + BOLD, namePlain));
+                    numRow .append(a(FG_GREEN + BOLD, numPlain));
+                } else if (isSel) {
+                    nameRow.append(a(INVERT + BOLD, namePlain));
+                    numRow .append(a(INVERT + BOLD, numPlain));
                 } else if (isToday) {
-                    nameRow.append(BOLD).append(UNDERLINE).append(nameVis).append(RESET);
-                    numRow .append(BOLD).append(UNDERLINE).append(numVis) .append(RESET);
+                    nameRow.append(a(BOLD + UNDERLINE, namePlain));
+                    numRow .append(a(BOLD + UNDERLINE, numPlain));
                 } else {
-                    nameRow.append(nameVis);
-                    numRow .append(numVis);
+                    nameRow.append(namePlain);
+                    numRow .append(numPlain);
                 }
             } else {
-                if (isColSel) {
+                // Dumb terminal: surround selected with []
+                if (isSel || isCheckIn) {
                     nameRow.append("[").append(d.getDayOfWeek().toString().substring(0, 2)).append("]");
-                    numRow .append("[").append(padRight(String.valueOf(d.getDayOfMonth()), 2)).append("]");
+                    numRow .append("[").append(padLeft(String.valueOf(d.getDayOfMonth()), 2)).append("]");
                 } else {
-                    nameRow.append(nameVis);
-                    numRow .append(numVis);
+                    nameRow.append(namePlain);
+                    numRow .append(numPlain);
                 }
             }
+            nameRow.append(V);
+            numRow.append(V);
         }
 
-        System.out.println();
         System.out.println(nameRow);
         System.out.println(numRow);
         System.out.println(topLine);
 
-        // ── Grid rows ─────────────────────────────────────────────────────
+        // ── Room rows ─────────────────────────────────────────────────────
         for (int r = 0; r < rooms.size(); r++) {
-            Room room = rooms.get(r);
-            boolean isRowSel = (r == selectedRow);
+            Room room     = rooms.get(r);
+            boolean isRow = (r == rowCursor);
 
-            // Row label: room number + type + price, padded to LABEL_W
-            String label = buildLabel(room, isRowSel, ansi);
+            // Label: plain string of exactly LABEL_W visible chars, then styled
+            String labelPlain = buildLabel(room);
+            String label;
+            if (ansi && isRow) {
+                label = a(BOLD + INVERT, labelPlain);
+            } else {
+                label = labelPlain;
+            }
 
-            StringBuilder row = new StringBuilder();
-            row.append(label).append(VERT);
+            StringBuilder row = new StringBuilder(label).append(V);
 
             for (int i = 0; i < 7; i++) {
-                LocalDate d = windowStart.plusDays(i);
-                CellStatus cs = cellFor(room, d, bookings);
-                boolean isColSel = d.equals(selectedDay);
-                boolean inRange  = checkIn != null && !d.isBefore(checkIn) && d.isBefore(selectedDay);
-                row.append(styledCell(cs, ansi, isColSel && isRowSel, inRange && isRowSel)).append(VERT);
+                LocalDate d       = weekStart.plusDays(i);
+                boolean isCol     = (i == colCursor);
+                boolean isCursor  = isRow && isCol;
+                boolean inRange   = isRow && checkIn != null
+                                    && !d.isBefore(checkIn) && d.isBefore(selDay);
+                CellStatus cs     = cellFor(room, d, bookings);
+                row.append(styledCell(cs, ansi, isCursor, inRange, isStaff, pickMode)).append(V);
             }
+
             System.out.println(row);
             if (r < rooms.size() - 1) {
-                // For the selected row's separator, highlight the separator line too
-                if (isRowSel && ansi) {
-                    System.out.println(ansi(BOLD, midLine.toString()));
-                } else {
-                    System.out.println(midLine);
-                }
+                System.out.println(isRow && ansi ? a(BOLD, midLine) : midLine);
             }
         }
-        System.out.println(botLine);
 
-        // ── Check-in indicator ────────────────────────────────────────────
-        if (checkIn != null) {
-            String ciStr = checkIn.format(DateTimeFormatter.ofPattern("EEE MMM d"));
-            System.out.println("\n  " + ansi(BG_GREEN + BOLD, " Check-in: " + ciStr + " ")
-                    + "  → now select check-out date and press Enter");
-        }
+        System.out.println(botLine);
 
         // ── Legend ────────────────────────────────────────────────────────
         System.out.println();
         if (ansi) {
-            System.out.println("  Legend:  "
-                    + GREEN   + GLYPH_AVAILABLE   + RESET + " Available   "
-                    + CYAN    + GLYPH_CONFIRMED   + RESET + " Confirmed   "
-                    + MAGENTA + GLYPH_CHECKED_IN  + RESET + " Checked-in");
-            System.out.println("           "
-                    + DIM     + GLYPH_CHECKED_OUT + RESET + " Checked-out "
-                    + RED     + GLYPH_MAINTENANCE + RESET + " Maintenance");
+            if (isStaff) {
+                // Staff: gray=available, green=booked, pink=maintenance
+                System.out.println("  Legend:  "
+                        + a(FG_GRAY,  GLYPH_AVAILABLE)   + " Available   "
+                        + a(FG_GREEN, GLYPH_OCCUPIED)     + " Booked      "
+                        + a(FG_PINK,  GLYPH_MAINTENANCE)  + " Maintenance");
+            } else if (pickMode) {
+                // Pick mode (user booking): green=available, red=unavailable
+                System.out.println("  Legend:  "
+                        + a(FG_GREEN,  GLYPH_AVAILABLE)  + " Available   "
+                        + a(FG_RED,    GLYPH_OCCUPIED)   + " Unavailable   "
+                        + a(FG_YELLOW + UNDERLINE, GLYPH_AVAILABLE) + " Selected range");
+            } else {
+                // User view mode: green=available, red=unavailable
+                System.out.println("  Legend:  "
+                        + a(FG_GREEN, GLYPH_AVAILABLE)  + " Available   "
+                        + a(FG_RED,   GLYPH_OCCUPIED)   + " Unavailable");
+            }
         } else {
-            System.out.println("  Legend:  .. Available  ## Confirmed  ## Checked-in");
-            System.out.println("           xx Checked-out  MM Maintenance");
+            System.out.println("  Legend:  .. Available  ## Booked/Unavailable  MM Maintenance");
         }
 
         // ── Footer ────────────────────────────────────────────────────────
         System.out.println();
         if (pickMode) {
-            System.out.println("  \u2190 \u2192 Day   Shift+\u2190\u2192 Week   \u2191 \u2193 Room   Enter Select   Esc " + (checkIn != null ? "Clear check-in" : "Cancel"));
+            String escLabel = checkIn != null ? "Clear check-in" : "Cancel";
+            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  \u2191\u2193 Room  Enter Select  Esc " + escLabel);
         } else {
-            System.out.println("  \u2190 \u2192 Day   Shift+\u2190\u2192 Week   \u2191 \u2193 Room   T Today   Esc Back");
+            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  \u2191\u2193 Room  T Today  Esc Back");
         }
-        System.out.println("  (or: h l day, H L week, k j room, t today, e back)");
+        System.out.println("  " + CLI.dim("(vim: h l day  H L week  k j room  enter  t today  e back)"));
     }
 
-    // ── Label builder ─────────────────────────────────────────────────────
-
-    private static String buildLabel(Room room, boolean selected, boolean ansi) {
-        // Format: "  R101  Dbl  $120/n  " (LABEL_W total visible chars)
-        String typeShort = room.getType().length() >= 3 ? room.getType().substring(0, 3) : room.getType();
-        String price     = String.format("$%d/n", (int) room.getPrice());
-        String cap       = room.getCapacity() + "p";
-        // visible content: roomNum(4) + "  " + type(3) + "  " + price(up to 7) + "  " + cap(2-3)
-        String content   = padRight(room.getRoomNumber(), 4)
-                         + "  " + padRight(typeShort, 3)
-                         + "  " + padRight(price, 7)
-                         + "  " + cap;
-        // wrap in 2-space left margin, pad to LABEL_W
-        String vis = "  " + padRight(content, LABEL_W - 2);
-
-        if (!ansi) return vis;
-        if (selected) return BOLD + INVERT + vis + RESET;
-        return vis;
-    }
-
-    // ── Cell helpers ──────────────────────────────────────────────────────
+    // ── Row label ─────────────────────────────────────────────────────────
 
     /**
-     * Returns true if every day in [checkIn, checkOut) is AVAILABLE for the room.
-     * checkOut is exclusive.
+     * Build a plain (no ANSI) label of exactly {@link #LABEL_W} visible chars.
+     * Format: 2-space margin + room# + 2-gap + type(3) + 2-gap + price + 2-gap + cap
      */
-    private static boolean allAvailable(Room room, LocalDate checkIn,
-                                         LocalDate checkOut, Vector<Bookings> bookings) {
-        LocalDate d = checkIn;
-        while (d.isBefore(checkOut)) {
-            if (cellFor(room, d, bookings) != CellStatus.AVAILABLE) return false;
-            d = d.plusDays(1);
-        }
-        return true;
+    private static String buildLabel(Room room) {
+        String rn    = padRight(room.getRoomNumber(), 4);
+        String type  = padRight(room.getType().length() > 3
+                            ? room.getType().substring(0, 3) : room.getType(), 3);
+        String price = padRight("$" + (int) room.getPrice() + "/n", 7);
+        String cap   = room.getCapacity() + "p";
+        // visible: 2 + 4 + 2 + 3 + 2 + 7 + 2 + len(cap) → pad to LABEL_W
+        String inner = "  " + rn + "  " + type + "  " + price + "  " + cap;
+        return padRight(inner, LABEL_W);
     }
 
     // ── Cell computation ─────────────────────────────────────────────────
 
-    /**
-     * Determine the display status for a given room on a given date.
-     * Package-private so unit tests can call it directly.
-     */
     static CellStatus cellFor(Room room, LocalDate date, Vector<Bookings> bookings) {
-        if ("MAINTENANCE".equalsIgnoreCase(room.getStatus())) {
-            return CellStatus.MAINTENANCE;
-        }
+        if ("MAINTENANCE".equalsIgnoreCase(room.getStatus())) return CellStatus.MAINTENANCE;
         for (Bookings b : bookings) {
             if (!b.getRoom().getRoomNumber().equals(room.getRoomNumber())) continue;
             if ("CANCELLED".equalsIgnoreCase(b.getStatus())) continue;
-            LocalDate checkIn, checkOut;
+            LocalDate ci, co;
             try {
-                checkIn  = LocalDate.parse(b.getCheckIn(),  FMT);
-                checkOut = LocalDate.parse(b.getCheckOut(), FMT);
-            } catch (DateTimeParseException e) {
-                continue;
-            }
-            if (!date.isBefore(checkIn) && date.isBefore(checkOut)) {
+                ci = LocalDate.parse(b.getCheckIn(),  FMT);
+                co = LocalDate.parse(b.getCheckOut(), FMT);
+            } catch (DateTimeParseException e) { continue; }
+            if (!date.isBefore(ci) && date.isBefore(co)) {
                 switch (b.getStatus().toUpperCase()) {
                     case "CONFIRMED":   return CellStatus.CONFIRMED;
                     case "CHECKED_IN":  return CellStatus.CHECKED_IN;
@@ -420,51 +415,118 @@ public class OccupancyCalendar {
         return CellStatus.AVAILABLE;
     }
 
+    private static boolean allAvailable(Room room, LocalDate from, LocalDate to,
+                                         Vector<Bookings> bookings) {
+        for (LocalDate d = from; d.isBefore(to); d = d.plusDays(1)) {
+            if (cellFor(room, d, bookings) != CellStatus.AVAILABLE) return false;
+        }
+        return true;
+    }
+
     // ── Cell styling ─────────────────────────────────────────────────────
 
     /**
-     * @param selected  true if this is the cursor cell (col × row intersection)
-     * @param inRange   true if this cell is in the [checkIn, cursor) preview range
+     * Returns a string of exactly COL_W visible chars: " glyph ".
+     * ANSI codes wrap the whole unit after padding.
      */
     private static String styledCell(CellStatus cs, boolean ansi,
-                                      boolean selected, boolean inRange) {
+                                      boolean cursor, boolean inRange,
+                                      boolean isStaff, boolean pickMode) {
         if (!ansi) {
-            String g;
-            switch (cs) {
-                case AVAILABLE:   g = FB_AVAILABLE;   break;
-                case CONFIRMED:   g = FB_CONFIRMED;   break;
-                case CHECKED_IN:  g = FB_CHECKED_IN;  break;
-                case CHECKED_OUT: g = FB_CHECKED_OUT; break;
-                case MAINTENANCE: g = FB_MAINTENANCE; break;
-                default:          g = "??";
+            // dumb terminal
+            String fb;
+            if (cursor)  { fb = pickMode ? FB_RANGE : FB_AVAILABLE; }
+            else if (inRange) { fb = FB_RANGE; }
+            else switch (cs) {
+                case AVAILABLE:   fb = FB_AVAILABLE;   break;
+                case MAINTENANCE: fb = FB_MAINTENANCE; break;
+                default:          fb = FB_OCCUPIED;
             }
-            if (selected)  return "[" + g.charAt(0) + "]";
-            if (inRange)   return "<" + g + ">";
-            return " " + g + " ";
+            // plain cell: space + 2 chars + space = 4
+            String cell = " " + fb + " ";
+            if (cursor) return "[" + fb + "]";  // still COL_W = 4
+            return cell;
         }
 
-        String colour;
-        String glyph;
-        switch (cs) {
-            case AVAILABLE:   colour = GREEN;   glyph = GLYPH_AVAILABLE;   break;
-            case CONFIRMED:   colour = CYAN;    glyph = GLYPH_CONFIRMED;   break;
-            case CHECKED_IN:  colour = MAGENTA; glyph = GLYPH_CHECKED_IN;  break;
-            case CHECKED_OUT: colour = DIM;     glyph = GLYPH_CHECKED_OUT; break;
-            case MAINTENANCE: colour = RED;     glyph = GLYPH_MAINTENANCE; break;
-            default:          colour = "";      glyph = "??";
+        // ANSI: pick colour and glyph based on scheme
+        if (cursor) {
+            // cursor cell: solid glyph with colour (no invert, just bold colour)
+            String solidGlyph = statusSolidGlyph(cs, isStaff, pickMode);
+            // Return the colored solid glyph with spaces (no INVERT needed)
+            return " " + solidGlyph + " ";
         }
-        // cursor cell: invert + colour
-        if (selected) return INVERT + colour + " " + glyph + " " + RESET;
-        // range preview (between check-in and cursor on selected row): yellow tint + underline
-        if (inRange)  return YELLOW + UNDERLINE + " " + glyph + " " + RESET;
-        return colour + " " + glyph + " " + RESET;
+        if (inRange) {
+            // range preview: yellow underline on available glyph
+            return a(FG_YELLOW + UNDERLINE, " " + GLYPH_AVAILABLE + " ");
+        }
+        return " " + statusGlyph(cs, isStaff, pickMode) + " ";
+    }
+
+    /**
+     * Returns a 2-char ANSI-coloured glyph string for the given status and colour scheme.
+     * The 2 glyph chars are the visible content; colour codes wrap only those chars.
+     * Uses dotted for available, solid for unavailable.
+     */
+    private static String statusGlyph(CellStatus cs, boolean isStaff, boolean pickMode) {
+        if (isStaff) {
+            // Staff scheme: green=available (dotted), green=any booking (solid), pink=maintenance (solid)
+            switch (cs) {
+                case AVAILABLE:   return a(FG_GREEN, GLYPH_AVAILABLE);  // dotted available
+                case MAINTENANCE: return a(FG_PINK,  GLYPH_MAINTENANCE);  // solid maintenance
+                default:          return a(FG_GREEN, GLYPH_OCCUPIED);  // solid booking
+            }
+        } else {
+            // User scheme: green=available (dotted), red=unavailable (dotted in normal view)
+            if (cs == CellStatus.AVAILABLE) return a(FG_GREEN, GLYPH_AVAILABLE);  // dotted available
+            return a(FG_RED, GLYPH_AVAILABLE);  // dotted unavailable in normal view
+        }
+    }
+
+    /**
+     * Returns a 2-char solid ANSI-coloured glyph for cursor mode.
+     * When selected, unavailable cells show as solid red, available as solid green.
+     */
+    private static String statusSolidGlyph(CellStatus cs, boolean isStaff, boolean pickMode) {
+        if (isStaff) {
+            // Staff scheme: all solid in cursor mode
+            switch (cs) {
+                case AVAILABLE:   return a(FG_GREEN, GLYPH_OCCUPIED);  // solid available
+                case MAINTENANCE: return a(FG_PINK,  GLYPH_MAINTENANCE);  // solid maintenance
+                default:          return a(FG_GREEN, GLYPH_OCCUPIED);  // solid booking
+            }
+        } else {
+            // User scheme: green=available (solid), red=unavailable (solid)
+            if (cs == CellStatus.AVAILABLE) return a(FG_GREEN, GLYPH_OCCUPIED);  // solid available
+            return a(FG_RED, GLYPH_OCCUPIED);  // solid unavailable
+        }
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────
 
-    private static String padRight(String s, int width) {
+    /** Returns the Monday of the week containing {@code date}. */
+    private static LocalDate mondayOf(LocalDate date) {
+        return date.minusDays(date.getDayOfWeek().getValue() - 1);
+    }
+
+    private static String padRight(String s, int w) {
         if (s == null) s = "";
-        if (s.length() >= width) return s.substring(0, width);
-        return s + " ".repeat(width - s.length());
+        if (s.length() >= w) return s.substring(0, w);
+        return s + spaces(w - s.length());
+    }
+
+    private static String padLeft(String s, int w) {
+        if (s == null) s = "";
+        if (s.length() >= w) return s.substring(0, w);
+        return spaces(w - s.length()) + s;
+    }
+
+    private static String spaces(int n) {
+        return n <= 0 ? "" : " ".repeat(n);
+    }
+
+    private static String repeat(String s, int n) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n; i++) sb.append(s);
+        return sb.toString();
     }
 }

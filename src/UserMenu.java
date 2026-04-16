@@ -69,12 +69,34 @@ public class UserMenu {
         System.out.println("  " + CLI.dim("Nights  : ") + nights);
         System.out.println("  " + CLI.dim("Total   : ") + CLI.yellow(String.format("$%.2f", total)));
         System.out.println();
-        System.out.print(CLI.prompt("Confirm? (yes/no, Esc to cancel): "));
-        String confirm = CLI.readLine(scanner);
-        if (confirm == null || !confirm.equalsIgnoreCase("yes")) {
-            System.out.println(CLI.dim("Booking cancelled."));
-            Main.pause(scanner);
-            return;
+
+        boolean confirmed = false;
+        while (!confirmed) {
+            System.out.print(CLI.prompt("Confirm? (yes/no, Esc to cancel): "));
+            String confirm = CLI.readLine(scanner);
+            if (confirm == null) {
+                System.out.println(CLI.dim("Booking cancelled."));
+                Main.pause(scanner);
+                return;
+            }
+            if (confirm.equalsIgnoreCase("yes") || confirm.equalsIgnoreCase("y")) {
+                confirmed = true;
+            } else if (confirm.equalsIgnoreCase("no") || confirm.equalsIgnoreCase("n")) {
+                System.out.println(CLI.dim("Booking cancelled."));
+                Main.pause(scanner);
+                return;
+            } else {
+                // Invalid input - erase and re-prompt cleanly
+                System.out.println(CLI.warning("Please enter 'yes' or 'no'."));
+                CLI.waitForKey(scanner);
+                // Clear the prompt cycle: 1 (prompt+input) + 1 (error) + 1 (press-key + newline) = 3 lines up
+                if (CLI.bold("X").equals("X")) {
+                    // ANSI not supported, fall through
+                } else {
+                    System.out.print("\033[3A\r\033[J");
+                    System.out.flush();
+                }
+            }
         }
 
         final Room chosen = sel.room;
