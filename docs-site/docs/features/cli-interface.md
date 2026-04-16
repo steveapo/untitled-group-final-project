@@ -32,6 +32,18 @@ Colors adapt automatically to terminal capabilities:
 - Set `NO_COLOR=1` to disable all colors
 - Set `TERM=dumb` to disable colors and interactive features
 
+## Universal ESC Behavior
+
+**⚠️ Critical:** The **ESC key always takes you back** to the previous state, no matter where you are:
+
+- **In a menu?** Press ESC → Go back to parent menu
+- **Entering text?** Press ESC → Cancel input and return to previous screen
+- **Navigating calendar?** Press ESC → Cancel selection and return
+- **At a confirmation?** Press ESC → Cancel action (nothing happens)
+- **Anywhere?** Press ESC → Always takes you back (universal undo)
+
+This is the primary navigation shortcut across the entire application. See [Keyboard Shortcuts](/features/keyboard-shortcuts) for complete reference.
+
 ## Interactive Elements
 
 ### Arrow-Key Navigation

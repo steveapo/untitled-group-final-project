@@ -1,0 +1,256 @@
+# Keyboard Shortcuts & Navigation
+
+## Universal ESC Behavior
+
+**ESC (Escape key) always cancels and returns to the previous state**, no matter what you're doing:
+
+| Context | Action |
+|---------|--------|
+| **Input field** | Cancel input and return to previous menu |
+| **Menu screen** | Return to parent menu or logout |
+| **Calendar navigation** | Cancel selection and return to previous menu |
+| **Password entry** | Cancel password input and return to previous menu |
+| **Confirmation dialog** | Cancel action and return to previous menu |
+| **List selection** | Cancel selection and return to previous menu |
+
+### Examples
+
+**Booking a room:**
+- If you press ESC while entering guest count → Return to User menu
+- If you press ESC while navigating calendar → Return to User menu
+- If you press ESC at confirmation → Return to User menu (booking NOT created)
+
+**Logging in:**
+- If you press ESC at username prompt → Return to main menu
+- If you press ESC at password prompt → Return to main menu
+
+**Checking in a guest:**
+- If you press ESC at username prompt → Return to Reception menu
+- If you press ESC while selecting booking → Return to Reception menu
+
+---
+
+## Menu Navigation
+
+### Single Keypress (No Enter Required)
+
+At main menus, press a number to select:
+
+```
+  1. Continue as Guest
+  2. Login
+  3. Register
+
+Choice: █
+```
+
+- Press `1`, `2`, or `3` (no Enter needed)
+- Press `Esc` to go back or logout
+- Invalid keys are ignored
+
+### Arrow Key Navigation
+
+When navigating lists or selecting from options:
+
+| Key | Action |
+|-----|--------|
+| **↑** | Move up |
+| **↓** | Move down |
+| **←** | Move left (calendars) |
+| **→** | Move right (calendars) |
+| **Enter** | Select highlighted option |
+| **Esc** | Cancel and go back |
+
+### Vim Keybindings
+
+Power users can use Vim keys in addition to arrows:
+
+| Key | Action |
+|-----|--------|
+| **h** | Left (←) |
+| **j** | Down (↓) |
+| **k** | Up (↑) |
+| **l** | Right (→) |
+| **H** | Shift+Left (week back) |
+| **L** | Shift+Right (week forward) |
+
+Works in menus and calendar navigation.
+
+### Week Navigation
+
+In occupancy calendar:
+
+| Key | Action |
+|-----|--------|
+| **Shift+←** | Jump back one week |
+| **Shift+→** | Jump forward one week |
+
+Useful for quickly scanning availability across longer date ranges.
+
+---
+
+## Text Input Fields
+
+### Basic Editing
+
+When typing in a text field (username, email, password, etc.):
+
+| Key | Action |
+|-------|--------|
+| **Backspace** | Delete last character |
+| **Enter / Return** | Submit input |
+| **Esc** | Cancel and go back |
+
+### Password Input
+
+Passwords are masked as you type:
+
+```
+Enter your password (Esc to go back): ****
+```
+
+- Each keystroke displays as `*`
+- Backspace deletes one character
+- ESC cancels password entry
+
+### Text Validation
+
+Some fields validate your input:
+
+```
+Enter your first name (Esc to go back): John123
+✘ First name must contain only letters.
+
+Press any key to continue...
+```
+
+Invalid input shows error and **re-prompts the same field** (doesn't cancel):
+- Press any key after error
+- Same field re-appears
+- Press ESC to cancel and go back to menu
+
+---
+
+## Calendar Navigation
+
+### Selecting Dates
+
+```
+╔══════════════════════════════════════╗
+║  MARCH 2026 - OCCUPANCY CALENDAR     ║
+╚══════════════════════════════════════╝
+
+       Mon Tue Wed Thu Fri Sat Sun
+  1   │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │
+  2   │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │
+
+  ↑↓ Navigate  Enter Select  Shift+→ Week  Esc Cancel
+```
+
+| Key | Action |
+|-----|--------|
+| **↑ ↓ ← →** | Move one day at a time |
+| **Shift+→** | Jump forward one week |
+| **Shift+←** | Jump backward one week |
+| **Enter** | Select the current date |
+| **Esc** | Cancel date selection and return |
+
+### Color Meanings
+
+- **Green (██)** = Available (can be selected)
+- **Red (██)** = Booked/occupied (cannot be selected)
+- **Pink (██)** = Maintenance (cannot be selected)
+- **Dotted (░░)** = Normal appearance (not selected)
+- **Solid (██)** = Currently selected cell (your cursor)
+
+---
+
+## Confirmation Dialogs
+
+When asked to confirm an action:
+
+```
+Confirm? (yes/no, Esc to cancel): █
+```
+
+| Input | Action |
+|-------|--------|
+| **yes** or **y** | Confirm and proceed |
+| **no** or **n** | Cancel (same as ESC) |
+| **Esc** | Cancel |
+| **Any other key** | Re-prompt (doesn't cancel) |
+
+### Invalid Input Behavior
+
+Invalid input doesn't cancel the operation:
+
+```
+Confirm? (yes/no, Esc to cancel): maybe
+✘ Please enter 'yes' or 'no'.
+
+Press any key to continue...
+[field re-appears]
+Confirm? (yes/no, Esc to cancel): █
+```
+
+This is intentional — you must explicitly press ESC to cancel, not just type a wrong key.
+
+---
+
+## Quick Reference Card
+
+### Always Available
+- **Esc** — Go back / Cancel / Logout
+- **Shift+?** — Help (not implemented, but ESC shows menu)
+
+### Menu Screens
+- **1-9** — Select menu option (single keypress, no Enter)
+- **Esc** — Go back to parent menu or logout
+
+### List Selection
+- **↑ ↓** — Navigate
+- **Enter** — Select
+- **Esc** — Cancel
+
+### Calendar Navigation
+- **↑ ↓ ← →** — Move day-by-day
+- **Shift+← →** — Jump by week
+- **h/j/k/l** — Vim keybindings
+- **Enter** — Select date
+- **Esc** — Cancel
+
+### Text Input
+- **Backspace** — Delete character
+- **Enter** — Submit
+- **Esc** — Cancel and go back
+
+### Confirmation
+- **y / yes** — Confirm
+- **n / no** — Decline
+- **Esc** — Cancel
+- **Other** — Re-prompt
+
+---
+
+## Platform Differences
+
+### macOS / Linux / Windows Terminal
+- All keyboard shortcuts work as documented
+- Real-time feedback (no Enter needed for menu selection)
+- Full ANSI color support
+
+### Windows Legacy (cmd.exe)
+- Keyboard shortcuts still work
+- May need to press Enter after some inputs
+- No color support (text-only output)
+- Numbered menus instead of arrow keys
+
+### IDE Consoles
+- Basic keyboard support
+- May require Enter after inputs
+- Fallback to numbered menus
+- Limited formatting
+
+---
+
+**Note:** ESC is your universal "undo" button. If you make a mistake at any screen or input, just press ESC to go back!

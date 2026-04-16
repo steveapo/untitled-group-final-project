@@ -2,6 +2,17 @@
 
 **Manager role** is for hotel owners and administrators. You have full system control including room inventory, staff management, booking oversight, and analytics.
 
+## Quick Navigation Tip
+
+**Press ESC at any time to:**
+- Return to Manager menu from any submenu
+- Exit input fields (room numbers, names, prices, etc.)
+- Cancel room/staff selection
+- Go back and discard unsaved changes
+- Logout from the system
+
+ESC is your safety net — it always takes you back to where you were without making unwanted changes.
+
 ## Logging In
 
 From the main menu:

@@ -2,6 +2,16 @@
 
 **User role** is for registered guests. You can search for available rooms, make bookings, manage reservations, and view your profile.
 
+## Quick Navigation Tip
+
+**Press ESC at any time to:**
+- Cancel text input and return to previous menu
+- Cancel booking/selection and return
+- Exit any confirmation dialog
+- Logout from User menu
+
+ESC is your universal "undo" button — use it whenever you want to go back.
+
 ## Logging In
 
 From the main menu:

@@ -50,7 +50,8 @@ export default defineConfig({
         items: [
           { text: 'Authentication & Security', link: '/features/authentication' },
           { text: 'Booking System', link: '/features/booking-system' },
-          { text: 'CLI Interface', link: '/features/cli-interface' }
+          { text: 'CLI Interface', link: '/features/cli-interface' },
+          { text: 'Keyboard Shortcuts', link: '/features/keyboard-shortcuts' }
         ]
       },
       {

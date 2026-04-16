@@ -2,6 +2,16 @@
 
 **Reception role** is for front-desk staff. You can manage bookings, check guests in/out, search for availability, manage the staff roster, and control room status.
 
+## Quick Navigation Tip
+
+**Press ESC at any time to:**
+- Cancel current operation and return to Reception menu
+- Go back from any submenu
+- Exit input fields without making changes
+- Cancel guest selection or booking selection
+
+ESC always takes you back — use it to recover from mistakes or unwanted selections.
+
 ## Logging In
 
 From the main menu:

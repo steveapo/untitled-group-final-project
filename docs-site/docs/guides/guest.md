@@ -2,6 +2,10 @@
 
 **Guest mode** is the entry point for new visitors. You can browse available rooms without creating an account.
 
+## Quick Navigation Tip
+
+**Press ESC at any time to go back to the previous menu.** This works everywhere in the system — you can always escape and return to where you were.
+
 ## Starting as a Guest
 
 From the main menu, select **"1. Continue as Guest"** to view room inventory without authentication.
