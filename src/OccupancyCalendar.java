@@ -89,17 +89,20 @@ public class OccupancyCalendar {
                                    Vector<Bookings> bookings,
                                    boolean showGuestNames,
                                    LocalDate initialWindow) {
-        LocalDate windowStart = initialWindow;
+        // selectedDay is the focused/cursor day; the 7-day window is always
+        // centered on it (3 days before, selected, 3 days after).
+        LocalDate selectedDay = initialWindow;
         while (true) {
+            LocalDate windowStart = selectedDay.minusDays(3);
             CLI.clearScreen();
-            render(rooms, bookings, windowStart);
+            render(rooms, bookings, windowStart, selectedDay);
             String key = CLI.readArrowOrKey(scanner);
             switch (key) {
-                case "LEFT":        windowStart = windowStart.minusDays(1);  break;
-                case "RIGHT":       windowStart = windowStart.plusDays(1);   break;
-                case "SHIFT_LEFT":  windowStart = windowStart.minusWeeks(1); break;
-                case "SHIFT_RIGHT": windowStart = windowStart.plusWeeks(1);  break;
-                case "T":           windowStart = LocalDate.now();            break;
+                case "LEFT":        selectedDay = selectedDay.minusDays(1);  break;
+                case "RIGHT":       selectedDay = selectedDay.plusDays(1);   break;
+                case "SHIFT_LEFT":  selectedDay = selectedDay.minusWeeks(1); break;
+                case "SHIFT_RIGHT": selectedDay = selectedDay.plusWeeks(1);  break;
+                case "T":           selectedDay = LocalDate.now();            break;
                 case "ESC":         return;
                 default:            break;
             }
@@ -108,76 +111,125 @@ public class OccupancyCalendar {
 
     // ── Renderer ─────────────────────────────────────────────────────────
 
+    // Layout constants — every column is exactly COL_W visible chars wide.
+    // The grid draws │ + COL_W chars + │, so header columns must also be COL_W each.
+    private static final int   COL_W      = 4;   // visible width per day column
+    private static final String SEP_LINE  = "────";  // COL_W dashes
+    private static final String CROSS     = "┼";
+    private static final String T_DOWN    = "┬";
+    private static final String T_UP      = "┴";
+    private static final String CORNER_TL = "┌";
+    private static final String CORNER_TR = "┐";
+    private static final String CORNER_BL = "└";
+    private static final String CORNER_BR = "┘";
+    private static final String VERT      = "│";
+    private static final String HORIZ_L   = "├";
+    private static final String HORIZ_R   = "┤";
+
+    // Row label prefix: "  R101  │" — 2 + 4 (room) + 2 + 1 (│) = 9 chars before first cell.
+    // Header prefix must be the same 8 visible chars (no │ — that's part of the grid).
+    private static final String ROW_PREFIX    = "  ";   // 2 spaces before room number
+    private static final int    ROOM_COL_W    = 4;      // room number visible width
+    private static final String ROW_SEPARATOR = "  ";   // 2 spaces between room# and │
+
+    // Full visible prefix width = ROW_PREFIX + ROOM_COL_W + ROW_SEPARATOR = 2+4+2 = 8
+    private static final String HDR_INDENT = "          "; // 10 spaces to align with first cell
+
+    private static final String INVERT = "\033[7m";  // reverse video = cursor highlight
+
     private static void render(Vector<Room> rooms,
                                Vector<Bookings> bookings,
-                               LocalDate windowStart) {
+                               LocalDate windowStart,
+                               LocalDate selectedDay) {
         LocalDate today = LocalDate.now();
         boolean ansi = isAnsiSupported();
 
-        // Banner
-        String weekLabel = windowStart.format(DateTimeFormatter.ofPattern("MMM d"));
-        System.out.println(ansi(BOLD,
+        // Banner — show the selected date prominently
+        String selLabel = selectedDay.format(DateTimeFormatter.ofPattern("EEE MMM d"));
+        String banner =
                 "╔══════════════════════════════════════════════════════════╗\n" +
-                "║         OCCUPANCY CALENDAR (week of " + padRight(weekLabel, 10) + ")         ║\n" +
-                "╚══════════════════════════════════════════════════════════╝"));
+                "║          OCCUPANCY CALENDAR  ▸ " + padRight(selLabel, 14) + "           ║\n" +
+                "╚══════════════════════════════════════════════════════════╝";
+        System.out.println(ansi(BOLD, banner));
 
         if (rooms.isEmpty()) {
             System.out.println("\n  No rooms configured.\n\n  Press Esc to go back.");
             return;
         }
 
-        // Day-of-week names + day numbers header
-        String[] dayNames = new String[7];
-        String[] dayNums  = new String[7];
+        // Build separator lines using COL_W
+        // e.g. "┌────┬────┬────┬────┬────┬────┬────┐"
+        StringBuilder topLine  = new StringBuilder(HDR_INDENT).append(CORNER_TL);
+        StringBuilder midLine  = new StringBuilder(HDR_INDENT).append(HORIZ_L);
+        StringBuilder botLine  = new StringBuilder(HDR_INDENT).append(CORNER_BL);
         for (int i = 0; i < 7; i++) {
-            LocalDate d = windowStart.plusDays(i);
-            dayNames[i] = d.getDayOfWeek().toString().substring(0, 3);
-            dayNums[i]  = String.valueOf(d.getDayOfMonth());
+            topLine.append(SEP_LINE).append(i < 6 ? T_DOWN : CORNER_TR);
+            midLine.append(SEP_LINE).append(i < 6 ? CROSS  : HORIZ_R);
+            botLine.append(SEP_LINE).append(i < 6 ? T_UP   : CORNER_BR);
         }
 
-        // Header row
-        StringBuilder header = new StringBuilder("         ");
+        // Header rows: day-of-week name and day number, each COL_W wide
+        StringBuilder nameRow = new StringBuilder(HDR_INDENT);
+        StringBuilder numRow  = new StringBuilder(HDR_INDENT);
         for (int i = 0; i < 7; i++) {
             LocalDate d = windowStart.plusDays(i);
-            String label = padRight(dayNames[i], 3);
-            if (d.equals(today) && ansi) {
-                header.append(BOLD).append(UNDERLINE).append(label).append(RESET).append(" ");
+            boolean isSelected = d.equals(selectedDay);
+            boolean isToday    = d.equals(today);
+
+            // Build the visible text (COL_W chars each, centred with a leading space)
+            String nameVis = " " + padRight(d.getDayOfWeek().toString().substring(0, 3), COL_W - 1);
+            String numVis  = " " + padRight(String.valueOf(d.getDayOfMonth()), COL_W - 1);
+
+            if (ansi) {
+                if (isSelected) {
+                    // Cursor column: inverse video + bold
+                    nameRow.append(INVERT).append(BOLD).append(nameVis).append(RESET);
+                    numRow .append(INVERT).append(BOLD).append(numVis) .append(RESET);
+                } else if (isToday) {
+                    // Today (not selected): bold + underline
+                    nameRow.append(BOLD).append(UNDERLINE).append(nameVis).append(RESET);
+                    numRow .append(BOLD).append(UNDERLINE).append(numVis) .append(RESET);
+                } else {
+                    nameRow.append(nameVis);
+                    numRow .append(numVis);
+                }
             } else {
-                header.append(label).append(" ");
+                // Dumb terminal: mark selected with [ ] brackets
+                if (isSelected) {
+                    nameRow.append("[").append(d.getDayOfWeek().toString().substring(0, 2)).append("]");
+                    numRow .append("[").append(padRight(String.valueOf(d.getDayOfMonth()), 2)).append("]");
+                } else {
+                    nameRow.append(nameVis);
+                    numRow .append(numVis);
+                }
             }
         }
+
         System.out.println();
-        System.out.println(header);
-
-        StringBuilder numRow = new StringBuilder("         ");
-        for (int i = 0; i < 7; i++) {
-            LocalDate d = windowStart.plusDays(i);
-            String label = padRight(dayNums[i], 3);
-            if (d.equals(today) && ansi) {
-                numRow.append(BOLD).append(UNDERLINE).append(label).append(RESET).append(" ");
-            } else {
-                numRow.append(label).append(" ");
-            }
-        }
+        System.out.println(nameRow);
         System.out.println(numRow);
+        System.out.println(topLine);
 
-        // Grid
-        System.out.println("        ┌───┬───┬───┬───┬───┬───┬───┐");
+        // Grid rows
         for (int r = 0; r < rooms.size(); r++) {
             Room room = rooms.get(r);
             StringBuilder row = new StringBuilder();
-            row.append("  ").append(padRight(room.getRoomNumber(), 4)).append("  │");
+            row.append(ROW_PREFIX)
+               .append(padRight(room.getRoomNumber(), ROOM_COL_W))
+               .append(ROW_SEPARATOR)
+               .append(VERT);
             for (int i = 0; i < 7; i++) {
                 LocalDate d = windowStart.plusDays(i);
                 CellStatus cs = cellFor(room, d, bookings);
-                row.append(styledCell(cs, ansi)).append("│");
+                boolean isSelected = d.equals(selectedDay);
+                row.append(styledCell(cs, ansi, isSelected)).append(VERT);
             }
             System.out.println(row);
             if (r < rooms.size() - 1) {
-                System.out.println("        ├───┼───┼───┼───┼───┼───┼───┤");
+                System.out.println(midLine);
             }
         }
-        System.out.println("        └───┴───┴───┴───┴───┴───┴───┘");
+        System.out.println(botLine);
 
         // Legend
         System.out.println();
@@ -188,10 +240,11 @@ public class OccupancyCalendar {
                     MAGENTA + GLYPH_CHECKED_IN  + RESET + " Checked-in");
             System.out.println("           " +
                     DIM     + GLYPH_CHECKED_OUT + RESET + " Checked-out " +
-                    RED     + GLYPH_MAINTENANCE + RESET + " Maintenance");
+                    RED     + GLYPH_MAINTENANCE + RESET + " Maintenance   " +
+                    INVERT + " " + RESET + " Selected column");
         } else {
             System.out.println("  Legend:  .. Available  ## Confirmed  ## Checked-in");
-            System.out.println("           xx Checked-out  MM Maintenance");
+            System.out.println("           xx Checked-out  MM Maintenance  [..] Selected");
         }
 
         // Hotkey footer
@@ -244,25 +297,36 @@ public class OccupancyCalendar {
 
     // ── Private utilities ─────────────────────────────────────────────────
 
-    private static String styledCell(CellStatus cs, boolean ansi) {
-        if (ansi) {
+    private static String styledCell(CellStatus cs, boolean ansi, boolean selected) {
+        if (!ansi) {
+            String g;
             switch (cs) {
-                case AVAILABLE:   return GREEN   + GLYPH_AVAILABLE   + RESET;
-                case CONFIRMED:   return CYAN    + GLYPH_CONFIRMED   + RESET;
-                case CHECKED_IN:  return MAGENTA + GLYPH_CHECKED_IN  + RESET;
-                case CHECKED_OUT: return DIM     + GLYPH_CHECKED_OUT + RESET;
-                case MAINTENANCE: return RED     + GLYPH_MAINTENANCE + RESET;
+                case AVAILABLE:   g = FALLBACK_AVAILABLE;   break;
+                case CONFIRMED:   g = FALLBACK_CONFIRMED;   break;
+                case CHECKED_IN:  g = FALLBACK_CHECKED_IN;  break;
+                case CHECKED_OUT: g = FALLBACK_CHECKED_OUT; break;
+                case MAINTENANCE: g = FALLBACK_MAINTENANCE; break;
+                default:          g = "??";
             }
-        } else {
-            switch (cs) {
-                case AVAILABLE:   return FALLBACK_AVAILABLE;
-                case CONFIRMED:   return FALLBACK_CONFIRMED;
-                case CHECKED_IN:  return FALLBACK_CHECKED_IN;
-                case CHECKED_OUT: return FALLBACK_CHECKED_OUT;
-                case MAINTENANCE: return FALLBACK_MAINTENANCE;
-            }
+            return selected ? "[" + g.charAt(0) + "]" : " " + g + " ";
         }
-        return "??";
+        // ANSI path: colour glyph, then wrap selected column in inverse-video
+        String colour;
+        String glyph;
+        switch (cs) {
+            case AVAILABLE:   colour = GREEN;   glyph = GLYPH_AVAILABLE;   break;
+            case CONFIRMED:   colour = CYAN;    glyph = GLYPH_CONFIRMED;   break;
+            case CHECKED_IN:  colour = MAGENTA; glyph = GLYPH_CHECKED_IN;  break;
+            case CHECKED_OUT: colour = DIM;     glyph = GLYPH_CHECKED_OUT; break;
+            case MAINTENANCE: colour = RED;     glyph = GLYPH_MAINTENANCE; break;
+            default:          colour = "";      glyph = "??";
+        }
+        // Each cell is COL_W visible chars: space + glyph(2) + space = 4
+        // Selected: invert the whole cell background so it stands out clearly
+        if (selected) {
+            return INVERT + colour + " " + glyph + " " + RESET;
+        }
+        return colour + " " + glyph + " " + RESET;
     }
 
     private static String padRight(String s, int width) {
