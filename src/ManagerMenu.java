@@ -77,70 +77,53 @@ public class ManagerMenu {
         CLI.printBanner("ADD ROOM");
         System.out.println();
 
-        // Room number — must match R followed by exactly 3 digits
-        String roomNo;
-        while (true) {
-            System.out.print(CLI.prompt("Room number (e.g. R401, Esc to go back): "));
-            roomNo = CLI.readLine(scanner);
-            if (roomNo == null) return;
-            roomNo = roomNo.toUpperCase();
-            if (!roomNo.matches("R\\d{3}")) {
-                System.out.println(CLI.warning("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401)."));
-                continue;
-            }
-            boolean exists = false;
-            for (Room r : rooms) {
-                if (r.getRoomNumber().equalsIgnoreCase(roomNo)) { exists = true; break; }
-            }
-            if (exists) {
-                System.out.println(CLI.warning("[ERR_ROOM_DUP] Room " + roomNo + " already exists."));
-                continue;
-            }
-            break;
-        }
+        String roomNo = CLI.promptUntilValid(
+            "Room number (e.g. R401, Esc to go back): ", scanner,
+            s -> {
+                String upper = s.toUpperCase();
+                if (!upper.matches("R\\d{3}")) {
+                    return CLI.Result.err("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401).");
+                }
+                for (Room r : rooms) {
+                    if (r.getRoomNumber().equalsIgnoreCase(upper)) {
+                        return CLI.Result.err("[ERR_ROOM_DUP] Room " + upper + " already exists.");
+                    }
+                }
+                return CLI.Result.ok(upper);
+            });
+        if (roomNo == null) return;
 
-        // Capacity — must be a positive integer
-        int capacity;
-        while (true) {
-            System.out.print(CLI.prompt("Capacity (Esc to go back): "));
-            String capInput = CLI.readLine(scanner);
-            if (capInput == null) return;
-            try {
-                capacity = Integer.parseInt(capInput);
-                if (capacity < 1) throw new NumberFormatException();
-                break;
-            } catch (NumberFormatException e) {
-                System.out.println(CLI.warning("[ERR_CAPACITY] Capacity must be a positive whole number."));
-            }
-        }
+        Integer capacity = CLI.promptUntilValid(
+            "Capacity (Esc to go back): ", scanner,
+            s -> {
+                try {
+                    int n = Integer.parseInt(s);
+                    if (n >= 1) return CLI.Result.ok(n);
+                } catch (NumberFormatException _) { /* fall through */ }
+                return CLI.Result.err("[ERR_CAPACITY] Capacity must be a positive whole number.");
+            });
+        if (capacity == null) return;
 
-        // Price — must be a positive number
-        double price;
-        while (true) {
-            System.out.print(CLI.prompt("Price per night (Esc to go back): "));
-            String priceInput = CLI.readLine(scanner);
-            if (priceInput == null) return;
-            try {
-                price = Double.parseDouble(priceInput);
-                if (price <= 0) throw new NumberFormatException();
-                break;
-            } catch (NumberFormatException e) {
-                System.out.println(CLI.warning("[ERR_PRICE] Price must be a positive number."));
-            }
-        }
+        Double price = CLI.promptUntilValid(
+            "Price per night (Esc to go back): ", scanner,
+            s -> {
+                try {
+                    double p = Double.parseDouble(s);
+                    if (p > 0) return CLI.Result.ok(p);
+                } catch (NumberFormatException _) { /* fall through */ }
+                return CLI.Result.err("[ERR_PRICE] Price must be a positive number.");
+            });
+        if (price == null) return;
 
-        // Type — must be one of the allowed values
-        String type;
-        while (true) {
-            System.out.print(CLI.prompt("Type (Single/Double/Triple/Quad/Suite, Esc to go back): "));
-            type = CLI.readLine(scanner);
-            if (type == null) return;
-            if (type.matches("(?i)Single|Double|Triple|Quad|Suite")) {
-                type = type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
-                break;
-            }
-            System.out.println(CLI.warning("[ERR_TYPE] Type must be one of: Single, Double, Triple, Quad, Suite."));
-        }
+        String type = CLI.promptUntilValid(
+            "Type (Single/Double/Triple/Quad/Suite, Esc to go back): ", scanner,
+            s -> {
+                if (s.matches("(?i)Single|Double|Triple|Quad|Suite")) {
+                    return CLI.Result.ok(s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase());
+                }
+                return CLI.Result.err("[ERR_TYPE] Type must be one of: Single, Double, Triple, Quad, Suite.");
+            });
+        if (type == null) return;
 
         rooms.add(new Room(roomNo, capacity, price, type, "AVAILABLE"));
         file.updateRooms(rooms);
@@ -165,33 +148,33 @@ public class ManagerMenu {
         String opt = CLI.readLine(scanner);
         if (opt == null) return;
         switch (opt) {
-            case "1":
-                while (true) {
-                    System.out.print(CLI.prompt("New price (Esc to go back): "));
-                    String priceStr = CLI.readLine(scanner);
-                    if (priceStr == null) return;
-                    try {
-                        double p = Double.parseDouble(priceStr);
-                        if (p <= 0) throw new NumberFormatException();
-                        target.setPrice(p);
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println(CLI.warning("[ERR_PRICE] Price must be a positive number."));
-                    }
-                }
+            case "1": {
+                Double newPrice = CLI.promptUntilValid(
+                    "New price (Esc to go back): ", scanner,
+                    s -> {
+                        try {
+                            double p = Double.parseDouble(s);
+                            if (p > 0) return CLI.Result.ok(p);
+                        } catch (NumberFormatException _) { /* fall through */ }
+                        return CLI.Result.err("[ERR_PRICE] Price must be a positive number.");
+                    });
+                if (newPrice == null) return;
+                target.setPrice(newPrice);
                 break;
-            case "2":
-                while (true) {
-                    System.out.print(CLI.prompt("New type (Single/Double/Triple/Quad/Suite, Esc to go back): "));
-                    String newType = CLI.readLine(scanner);
-                    if (newType == null) return;
-                    if (newType.matches("(?i)Single|Double|Triple|Quad|Suite")) {
-                        target.setType(newType.substring(0, 1).toUpperCase() + newType.substring(1).toLowerCase());
-                        break;
-                    }
-                    System.out.println(CLI.warning("[ERR_TYPE] Type must be one of: Single, Double, Triple, Quad, Suite."));
-                }
+            }
+            case "2": {
+                String newType = CLI.promptUntilValid(
+                    "New type (Single/Double/Triple/Quad/Suite, Esc to go back): ", scanner,
+                    s -> {
+                        if (s.matches("(?i)Single|Double|Triple|Quad|Suite")) {
+                            return CLI.Result.ok(s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase());
+                        }
+                        return CLI.Result.err("[ERR_TYPE] Type must be one of: Single, Double, Triple, Quad, Suite.");
+                    });
+                if (newType == null) return;
+                target.setType(newType);
                 break;
+            }
             case "3":
                 String[] statuses = {"AVAILABLE", "MAINTENANCE"};
                 int preselect = target.getStatus().equals("MAINTENANCE") ? 1 : 0;
@@ -212,20 +195,18 @@ public class ManagerMenu {
 
     /** Prompt for a room number with R### validation, returning the matched Room or null on ESC. */
     private static Room promptRoomLookup(Scanner scanner, Vector<Room> rooms, String action) {
-        while (true) {
-            System.out.print(CLI.prompt("Room number " + action + " (Esc to go back): "));
-            String input = CLI.readLine(scanner);
-            if (input == null) return null;
-            input = input.toUpperCase();
-            if (!input.matches("R\\d{3}")) {
-                System.out.println(CLI.warning("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401)."));
-                continue;
-            }
-            for (Room r : rooms) {
-                if (r.getRoomNumber().equalsIgnoreCase(input)) return r;
-            }
-            System.out.println(CLI.warning("[ERR_NOT_FOUND] Room " + input + " not found."));
-        }
+        return CLI.promptUntilValid(
+            "Room number " + action + " (Esc to go back): ", scanner,
+            s -> {
+                String upper = s.toUpperCase();
+                if (!upper.matches("R\\d{3}")) {
+                    return CLI.Result.err("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401).");
+                }
+                for (Room r : rooms) {
+                    if (r.getRoomNumber().equalsIgnoreCase(upper)) return CLI.Result.ok(r);
+                }
+                return CLI.Result.err("[ERR_NOT_FOUND] Room " + upper + " not found.");
+            });
     }
 
     private static void deleteRoom(Scanner scanner, Vector<Room> rooms, Files file) {
@@ -318,28 +299,31 @@ public class ManagerMenu {
         CLI.printBanner("DEACTIVATE STAFF");
         System.out.println();
         listAllStaff(users);
-        System.out.print(CLI.prompt("Staff username to deactivate (Esc to go back): "));
-        String username = CLI.readLine(scanner);
-        if (username == null) return;
-        for (Account u : users) {
-            if (u.getUsername().equals(username)
-                    && (u.getRole().equals("RECEPTION") || u.getRole().equals("MANAGER"))) {
-                System.out.print(CLI.prompt("Deactivate '" + username + "'? (yes/no, Esc to go back): "));
-                String deactivateConfirm = CLI.readLine(scanner);
-                if (deactivateConfirm == null) return;
-                if (deactivateConfirm.equalsIgnoreCase("yes")) {
-                    u.setRole("USER");
-                    file.updateUsersFileAll(users);
-                    CLI.randomSpinner("Deactivating account");
-                    System.out.println(CLI.success("Account deactivated (role set to USER)."));
-                } else {
-                    System.out.println(CLI.dim("Deactivation cancelled."));
+
+        Account target = CLI.promptUntilValid(
+            "Staff username to deactivate (Esc to go back): ", scanner,
+            s -> {
+                for (Account u : users) {
+                    if (u.getUsername().equals(s)
+                            && (u.getRole().equals("RECEPTION") || u.getRole().equals("MANAGER"))) {
+                        return CLI.Result.ok(u);
+                    }
                 }
-                Main.pause(scanner);
-                return;
-            }
+                return CLI.Result.err("[ERR_NOT_FOUND] Staff member not found.");
+            });
+        if (target == null) return;
+
+        System.out.print(CLI.prompt("Deactivate '" + target.getUsername() + "'? (yes/no, Esc to go back): "));
+        String deactivateConfirm = CLI.readLine(scanner);
+        if (deactivateConfirm == null) return;
+        if (deactivateConfirm.equalsIgnoreCase("yes")) {
+            target.setRole("USER");
+            file.updateUsersFileAll(users);
+            CLI.randomSpinner("Deactivating account");
+            System.out.println(CLI.success("Account deactivated (role set to USER)."));
+        } else {
+            System.out.println(CLI.dim("Deactivation cancelled."));
         }
-        System.out.println(CLI.warning("[ERR_NOT_FOUND] Staff member not found."));
         Main.pause(scanner);
     }
 

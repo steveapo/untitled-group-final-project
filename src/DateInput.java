@@ -28,26 +28,25 @@ public class DateInput {
      */
     public LocalDate checkInDate() {
         Files file = new Files();
-        while (true) {
-            System.out.print(CLI.prompt("Enter the check in date (dd-MM-yyyy, Esc to go back): "));
-            String userInput = CLI.readLine(scanner);
-            if (userInput == null) return null;
-            try {
-                LocalDate parsedCheckIn = LocalDate.parse(userInput, DATE_FORMATTER);
-                if (parsedCheckIn.isBefore(LocalDate.now())) {
-                    System.out.println(CLI.warning("[ERR_DATE_PAST] Check-in date cannot be prior to current date."));
-                    file.writeErrors("Check-In Date cannot be prior to current date. - " + getClass()
+        LocalDate date = CLI.promptUntilValid(
+            "Enter the check in date (dd-MM-yyyy, Esc to go back): ", scanner,
+            s -> {
+                try {
+                    LocalDate parsed = LocalDate.parse(s, DATE_FORMATTER);
+                    if (parsed.isBefore(LocalDate.now())) {
+                        file.writeErrors("Check-In Date cannot be prior to current date. - " + getClass()
+                                + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                        return CLI.Result.err("[ERR_DATE_PAST] Check-in date cannot be prior to current date.");
+                    }
+                    return CLI.Result.ok(parsed);
+                } catch (DateTimeParseException _) {
+                    file.writeErrors("Invalid date format - " + getClass()
                             + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
-                } else {
-                    System.out.println(CLI.success("Date selected."));
-                    return parsedCheckIn;
+                    return CLI.Result.err("[ERR_DATE_FMT] Invalid date or format. Please use dd-MM-yyyy.");
                 }
-            } catch (DateTimeParseException _) {
-                System.out.println(CLI.warning("[ERR_DATE_FMT] Invalid date or format. Please use dd-MM-yyyy."));
-                file.writeErrors("Invalid date format - " + getClass()
-                        + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
-            }
-        }
+            });
+        if (date != null) System.out.println(CLI.success("Date selected."));
+        return date;
     }
 
     /**
@@ -56,26 +55,25 @@ public class DateInput {
      */
     public LocalDate checkOutDate() {
         Files file = new Files();
-        while (true) {
-            System.out.print(CLI.prompt("Enter the check out date (dd-MM-yyyy, Esc to go back): "));
-            String userInput = CLI.readLine(scanner);
-            if (userInput == null) return null;
-            try {
-                LocalDate parsedCheckOut = LocalDate.parse(userInput, DATE_FORMATTER);
-                if (parsedCheckOut.isBefore(LocalDate.now())) {
-                    System.out.println(CLI.warning("[ERR_DATE_PAST] Check-out date cannot be prior to current date."));
-                    file.writeErrors("Check-Out Date cannot be prior to current date. - " + getClass()
+        LocalDate date = CLI.promptUntilValid(
+            "Enter the check out date (dd-MM-yyyy, Esc to go back): ", scanner,
+            s -> {
+                try {
+                    LocalDate parsed = LocalDate.parse(s, DATE_FORMATTER);
+                    if (parsed.isBefore(LocalDate.now())) {
+                        file.writeErrors("Check-Out Date cannot be prior to current date. - " + getClass()
+                                + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                        return CLI.Result.err("[ERR_DATE_PAST] Check-out date cannot be prior to current date.");
+                    }
+                    return CLI.Result.ok(parsed);
+                } catch (DateTimeParseException _) {
+                    file.writeErrors("Invalid date format - " + getClass()
                             + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
-                } else {
-                    System.out.println(CLI.success("Date selected."));
-                    return parsedCheckOut;
+                    return CLI.Result.err("[ERR_DATE_FMT] Invalid date or format. Please use dd-MM-yyyy.");
                 }
-            } catch (DateTimeParseException _) {
-                System.out.println(CLI.warning("[ERR_DATE_FMT] Invalid date or format. Please use dd-MM-yyyy."));
-                file.writeErrors("Invalid date format - " + getClass()
-                        + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
-            }
-        }
+            });
+        if (date != null) System.out.println(CLI.success("Date selected."));
+        return date;
     }
 
     /**

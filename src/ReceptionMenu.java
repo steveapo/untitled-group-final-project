@@ -68,13 +68,8 @@ public class ReceptionMenu {
         DateInput date = new DateInput(scanner);
         LocalDate checkIn  = date.checkInDate();
         if (checkIn == null) return;
-        LocalDate checkOut = date.checkOutDate();
+        LocalDate checkOut = promptCheckOutAfter(date, checkIn, scanner);
         if (checkOut == null) return;
-        while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
-            System.out.println(CLI.warning("[ERR_DATE_ORDER] Check-out must be after check-in."));
-            checkOut = date.checkOutDate();
-            if (checkOut == null) return;
-        }
         Vector<Room> available = new Vector<>();
         date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
         CLI.randomSpinner("Searching");
@@ -100,33 +95,24 @@ public class ReceptionMenu {
         CLI.clearScreen();
         CLI.printBanner("CREATE BOOKING");
         System.out.println();
-        System.out.print(CLI.prompt("Guest username (Esc to go back): "));
-        String guestUsername = CLI.readLine(scanner);
-        if (guestUsername == null) return;
 
-        boolean guestExists = false;
-        for (Account u : users) {
-            if (u.getUsername().equals(guestUsername) && u.getRole().equals("USER")) {
-                guestExists = true;
-                break;
-            }
-        }
-        if (!guestExists) {
-            System.out.println(CLI.warning("[ERR_NOT_FOUND] Guest not found. Register the guest first."));
-            Main.pause(scanner);
-            return;
-        }
+        String guestUsername = CLI.promptUntilValid(
+            "Guest username (Esc to go back): ", scanner,
+            s -> {
+                for (Account u : users) {
+                    if (u.getUsername().equals(s) && u.getRole().equals("USER")) {
+                        return CLI.Result.ok(s);
+                    }
+                }
+                return CLI.Result.err("[ERR_NOT_FOUND] Guest not found. Register the guest first.");
+            });
+        if (guestUsername == null) return;
 
         DateInput date = new DateInput(scanner);
         LocalDate checkIn  = date.checkInDate();
         if (checkIn == null) return;
-        LocalDate checkOut = date.checkOutDate();
+        LocalDate checkOut = promptCheckOutAfter(date, checkIn, scanner);
         if (checkOut == null) return;
-        while (checkOut.isBefore(checkIn) || checkOut.isEqual(checkIn)) {
-            System.out.println(CLI.warning("[ERR_DATE_ORDER] Check-out must be after check-in."));
-            checkOut = date.checkOutDate();
-            if (checkOut == null) return;
-        }
 
         Vector<Room> available = new Vector<>();
         date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
@@ -148,19 +134,9 @@ public class ReceptionMenu {
                     r.getType(),
                     CLI.yellow(String.format("$%.2f", r.getPrice())));
         }
-        int choice;
-        while (true) {
-            System.out.print(CLI.prompt("Choose room (1-" + bookable.size() + ", Esc to go back): "));
-            String roomInput = CLI.readLine(scanner);
-            if (roomInput == null) return;
-            try {
-                choice = Integer.parseInt(roomInput);
-                if (choice >= 1 && choice <= bookable.size()) break;
-                System.out.println(CLI.warning("[ERR_RANGE] Enter a number between 1 and " + bookable.size() + "."));
-            } catch (NumberFormatException e) {
-                System.out.println(CLI.warning("[ERR_NUM] Please enter a valid number."));
-            }
-        }
+        Integer choice = CLI.promptChoiceInRange(
+            "Choose room (1-" + bookable.size() + ", Esc to go back): ", scanner, bookable.size());
+        if (choice == null) return;
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
         Room chosen = bookable.get(choice - 1);
         final String checkInStr  = checkIn.format(fmt);
@@ -174,6 +150,18 @@ public class ReceptionMenu {
         System.out.println(CLI.success("Booking created for guest '" + guestUsername + "'."));
         Main.pause(scanner);
     }
+
+    /** Prompt for a check-out date that is strictly after {@code checkIn}; re-prompts on error. */
+    private static LocalDate promptCheckOutAfter(DateInput date, LocalDate checkIn, Scanner scanner) {
+        while (true) {
+            LocalDate checkOut = date.checkOutDate();
+            if (checkOut == null) return null;
+            if (checkOut.isAfter(checkIn)) return checkOut;
+            System.out.println(CLI.warning("[ERR_DATE_ORDER] Check-out must be after check-in."));
+            CLI.waitForKey(scanner);
+        }
+    }
+
 
     private static void viewAllBookings(Vector<Bookings> bookings) {
         CLI.randomSpinner("Loading bookings");
@@ -219,19 +207,9 @@ public class ReceptionMenu {
                     CLI.bold(b.getRoom().getRoomNumber()),
                     b.getCheckIn(), b.getCheckOut());
         }
-        int choice;
-        while (true) {
-            System.out.print(CLI.prompt("Choose (1-" + activeBookings.size() + ", Esc to go back): "));
-            String cancelInput = CLI.readLine(scanner);
-            if (cancelInput == null) return;
-            try {
-                choice = Integer.parseInt(cancelInput);
-                if (choice >= 1 && choice <= activeBookings.size()) break;
-                System.out.println(CLI.warning("[ERR_RANGE] Enter a number between 1 and " + activeBookings.size() + "."));
-            } catch (NumberFormatException e) {
-                System.out.println(CLI.warning("[ERR_NUM] Please enter a valid number."));
-            }
-        }
+        Integer choice = CLI.promptChoiceInRange(
+            "Choose (1-" + activeBookings.size() + ", Esc to go back): ", scanner, activeBookings.size());
+        if (choice == null) return;
         activeBookings.get(choice - 1).setStatus("CANCELLED");
         file.updateBookings(bookings);
         CLI.randomSpinner("Cancelling booking");
@@ -370,26 +348,19 @@ public class ReceptionMenu {
         System.out.println();
         viewAllRooms(rooms);
 
-        // Validate room number format and lookup
-        Room target = null;
-        while (true) {
-            System.out.print(CLI.prompt("Room number to update (Esc to go back): "));
-            String roomNo = CLI.readLine(scanner);
-            if (roomNo == null) return;
-            roomNo = roomNo.toUpperCase();
-            if (!roomNo.matches("R\\d{3}")) {
-                System.out.println(CLI.warning("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401)."));
-                continue;
-            }
-            for (Room r : rooms) {
-                if (r.getRoomNumber().equalsIgnoreCase(roomNo)) { target = r; break; }
-            }
-            if (target == null) {
-                System.out.println(CLI.warning("[ERR_NOT_FOUND] Room " + roomNo + " not found."));
-                continue;
-            }
-            break;
-        }
+        Room target = CLI.promptUntilValid(
+            "Room number to update (Esc to go back): ", scanner,
+            s -> {
+                String upper = s.toUpperCase();
+                if (!upper.matches("R\\d{3}")) {
+                    return CLI.Result.err("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401).");
+                }
+                for (Room r : rooms) {
+                    if (r.getRoomNumber().equalsIgnoreCase(upper)) return CLI.Result.ok(r);
+                }
+                return CLI.Result.err("[ERR_NOT_FOUND] Room " + upper + " not found.");
+            });
+        if (target == null) return;
 
         System.out.println("  Current: " + UserMenu.statusColour(target.getStatus()));
         System.out.println();

@@ -83,40 +83,37 @@ public class Account {
         String newUsername = checkUsername(users, scanner);
         if (newUsername == null) return false;
 
-        String newFirstName;
-        while (true) {
-            System.out.print(CLI.prompt("Enter your first name (Esc to go back): "));
-            newFirstName = CLI.readLine(scanner);
-            if (newFirstName == null) return false;
-            if (newFirstName.matches("[A-Za-z]+")) break;
-            System.out.println(CLI.warning("[ERR_NAME] First name must contain only letters."));
-            file.writeErrors("Names cannot have numbers - " + getClass() + LINE_SUFFIX
-                    + Thread.currentThread().getStackTrace()[1].getLineNumber());
-        }
+        String newFirstName = CLI.promptUntilValid(
+            "Enter your first name (Esc to go back): ", scanner,
+            s -> {
+                if (s.matches("[A-Za-z]+")) return CLI.Result.ok(s);
+                file.writeErrors("Names cannot have numbers - " + getClass() + LINE_SUFFIX
+                        + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                return CLI.Result.err("[ERR_NAME] First name must contain only letters.");
+            });
+        if (newFirstName == null) return false;
 
-        String newLastName;
-        while (true) {
-            System.out.print(CLI.prompt("Enter your last name (Esc to go back): "));
-            newLastName = CLI.readLine(scanner);
-            if (newLastName == null) return false;
-            if (newLastName.matches("[A-Za-z]+")) break;
-            System.out.println(CLI.warning("[ERR_NAME] Last name must contain only letters."));
-            file.writeErrors("Surnames cannot have numbers - " + getClass() + LINE_SUFFIX
-                    + Thread.currentThread().getStackTrace()[1].getLineNumber());
-        }
+        String newLastName = CLI.promptUntilValid(
+            "Enter your last name (Esc to go back): ", scanner,
+            s -> {
+                if (s.matches("[A-Za-z]+")) return CLI.Result.ok(s);
+                file.writeErrors("Surnames cannot have numbers - " + getClass() + LINE_SUFFIX
+                        + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                return CLI.Result.err("[ERR_NAME] Last name must contain only letters.");
+            });
+        if (newLastName == null) return false;
 
-        String emailRegex = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
+        final String emailRegex = "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
                 + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$";
-        String newEmail;
-        while (true) {
-            System.out.print(CLI.prompt("Enter your email (Esc to go back): "));
-            newEmail = CLI.readLine(scanner);
-            if (newEmail == null) return false;
-            if (Pattern.matches(emailRegex, newEmail)) break;
-            System.out.println(CLI.warning("[ERR_EMAIL] Invalid email format. Please try again."));
-            file.writeErrors("Invalid email - " + getClass() + LINE_SUFFIX
-                    + Thread.currentThread().getStackTrace()[1].getLineNumber());
-        }
+        String newEmail = CLI.promptUntilValid(
+            "Enter your email (Esc to go back): ", scanner,
+            s -> {
+                if (Pattern.matches(emailRegex, s)) return CLI.Result.ok(s);
+                file.writeErrors("Invalid email - " + getClass() + LINE_SUFFIX
+                        + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                return CLI.Result.err("[ERR_EMAIL] Invalid email format. Please try again.");
+            });
+        if (newEmail == null) return false;
 
         String[] credentials = hashPassword(scanner);
         if (credentials.length == 0) return false;
@@ -158,27 +155,19 @@ public class Account {
      * Returns null if the user types 'e' to cancel.
      */
     public String checkUsername(Vector<Account> users, Scanner scanner) {
-        while (true) {
-            System.out.print(CLI.prompt("Enter your username (Esc to go back): "));
-            String candidateUsername = CLI.readLine(scanner);
-            if (candidateUsername == null) return null;
-
-            boolean isAlreadyTaken = false;
-            for (Account user : users) {
-                if (user.getUsername().equalsIgnoreCase(candidateUsername)) {
-                    isAlreadyTaken = true;
-                    break;
+        Files file = new Files();
+        return CLI.promptUntilValid(
+            "Enter your username (Esc to go back): ", scanner,
+            s -> {
+                for (Account user : users) {
+                    if (user.getUsername().equalsIgnoreCase(s)) {
+                        file.writeErrors("Username already taken - " + getClass() + LINE_SUFFIX
+                                + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                        return CLI.Result.err("[ERR_USER_DUP] Username already taken.");
+                    }
                 }
-            }
-            if (isAlreadyTaken) {
-                System.out.println(CLI.warning("[ERR_USER_DUP] Username already taken."));
-                Files file = new Files();
-                file.writeErrors("Username already taken - " + getClass() + LINE_SUFFIX
-                        + Thread.currentThread().getStackTrace()[1].getLineNumber());
-            } else {
-                return candidateUsername;
-            }
-        }
+                return CLI.Result.ok(s);
+            });
     }
 
     /**
@@ -189,46 +178,37 @@ public class Account {
     public Account login(Vector<Account> users, Scanner scanner) throws Exception {
         Files file = new Files();
 
-        System.out.print(CLI.prompt("Enter your username (Esc to go back): "));
-        String inputUsername = CLI.readLine(scanner);
-        if (inputUsername == null) return null;
-
-        // File-based account lookup
-        Account matchedAccount = null;
-        for (Account user : users) {
-            if (user.getUsername().equals(inputUsername)) {
-                matchedAccount = user;
-                break;
-            }
-        }
-
-        if (matchedAccount == null) {
-            System.out.println(CLI.warning("[ERR_AUTH] Username not found."));
-            Main.pause(scanner);
-            return null;
-        }
+        Account matchedAccount = CLI.promptUntilValid(
+            "Enter your username (Esc to go back): ", scanner,
+            s -> {
+                for (Account user : users) {
+                    if (user.getUsername().equals(s)) return CLI.Result.ok(user);
+                }
+                return CLI.Result.err("[ERR_AUTH] Username not found.");
+            });
+        if (matchedAccount == null) return null;
 
         return loginWithPassword(matchedAccount, scanner, file);
     }
 
     /** Hash the provided password attempt and compare against the stored hash. */
-    private Account loginWithPassword(Account matchedAccount, Scanner scanner, Files file)
-            throws Exception {
-        while (true) {
-            System.out.print(CLI.prompt("Enter your password (Esc to go back): "));
-            String inputPassword = CLI.readPassword(scanner);
-            if (inputPassword == null) return null;
-
-            MessageDigest md = MessageDigest.getInstance("SHA-512");
-            md.update(matchedAccount.getSalt());
-            byte[] attemptHash = md.digest(inputPassword.getBytes(StandardCharsets.UTF_8));
-
-            if (MessageDigest.isEqual(attemptHash, matchedAccount.getHashedPassword())) {
-                return matchedAccount;
-            }
-            System.out.println(CLI.warning("[ERR_AUTH] Wrong password. Try again."));
-            file.writeErrors("Wrong password - " + getClass() + " - user: " + matchedAccount.getUsername());
-        }
+    private Account loginWithPassword(Account matchedAccount, Scanner scanner, Files file) {
+        return CLI.promptPasswordUntilValid(
+            "Enter your password (Esc to go back): ", scanner,
+            inputPassword -> {
+                try {
+                    MessageDigest md = MessageDigest.getInstance("SHA-512");
+                    md.update(matchedAccount.getSalt());
+                    byte[] attemptHash = md.digest(inputPassword.getBytes(StandardCharsets.UTF_8));
+                    if (MessageDigest.isEqual(attemptHash, matchedAccount.getHashedPassword())) {
+                        return CLI.Result.ok(matchedAccount);
+                    }
+                } catch (java.security.NoSuchAlgorithmException e) {
+                    return CLI.Result.err("[ERR_AUTH] Could not verify password.");
+                }
+                file.writeErrors("Wrong password - " + getClass() + " - user: " + matchedAccount.getUsername());
+                return CLI.Result.err("[ERR_AUTH] Wrong password. Try again.");
+            });
     }
 
     /** Serialise to CSV: username,firstName,lastName,email,hashedPassword,salt,role */
