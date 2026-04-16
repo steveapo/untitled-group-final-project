@@ -31,3 +31,14 @@ bin/
 
 ### Build artifacts ###
 build/
+target/
+
+### Maven ###
+*.jar
+!dist/HotelBooking.jar
+
+### Claude Code / agent tooling ###
+.claude/
+
+### Release artefacts (kept out of repo) ###
+HotelBooking-*.zip
