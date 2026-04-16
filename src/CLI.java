@@ -382,6 +382,7 @@ public class CLI {
                 }
                 if (ch >= '1' && ch <= '9') return String.valueOf((char) ch);
                 if (ch == 'e' || ch == 'q') return "ESC";
+                if (ch == 'C' || ch == 'c') return "C";
                 // ignore other keys
             }
         }, null);

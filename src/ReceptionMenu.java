@@ -22,6 +22,7 @@ public class ReceptionMenu {
             CLI.printMenuItem("7", "Check out guest");
             CLI.printMenuItem("8", "View all guests");
             CLI.printMenuItem("9", "Mark room maintenance / available");
+            CLI.printMenuItem("C", "Occupancy calendar");
             CLI.printFooter("Logout");
             String choice = CLI.readChoice(scanner);
 
@@ -35,9 +36,10 @@ public class ReceptionMenu {
                 case "7":  checkOut(scanner, bookings, file);                                      break;
                 case "8":  viewAllGuests(users); Main.pause(scanner);                              break;
                 case "9":  setRoomStatus(scanner, rooms, file);                                    break;
+                case "C":  OccupancyCalendar.show(scanner, rooms, bookings, true);                break;
                 case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–9."));
+                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–9 or C."));
                     Main.pause(scanner);
             }
         }

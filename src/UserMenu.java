@@ -17,17 +17,19 @@ public class UserMenu {
             CLI.printMenuItem("2", "View my bookings");
             CLI.printMenuItem("3", "Cancel a booking");
             CLI.printMenuItem("4", "View my profile");
+            CLI.printMenuItem("C", "Occupancy calendar");
             CLI.printFooter("Logout");
             String choice = CLI.readChoice(scanner);
 
             switch (choice) {
-                case "1": bookRoom(scanner, account, rooms, bookings, file);  break;
-                case "2": viewMyBookings(account, bookings); Main.pause(scanner); break;
-                case "3": cancelBooking(scanner, account, bookings, file);    break;
-                case "4": viewProfile(account); Main.pause(scanner);          break;
+                case "1": bookRoom(scanner, account, rooms, bookings, file);            break;
+                case "2": viewMyBookings(account, bookings); Main.pause(scanner);       break;
+                case "3": cancelBooking(scanner, account, bookings, file);              break;
+                case "4": viewProfile(account); Main.pause(scanner);                    break;
+                case "C": OccupancyCalendar.show(scanner, rooms, bookings, false);     break;
                 case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–4."));
+                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–4 or C."));
                     Main.pause(scanner);
             }
         }

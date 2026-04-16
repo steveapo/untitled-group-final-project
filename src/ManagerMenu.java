@@ -14,17 +14,19 @@ public class ManagerMenu {
             CLI.printMenuItem("2", "Staff Management");
             CLI.printMenuItem("3", "View all bookings");
             CLI.printMenuItem("4", "View statistics");
+            CLI.printMenuItem("C", "Occupancy calendar");
             CLI.printFooter("Logout");
             String choice = CLI.readChoice(scanner);
 
             switch (choice) {
-                case "1": roomManagement(scanner, rooms, file);            break;
-                case "2": staffManagement(scanner, users, file);           break;
-                case "3": viewAllBookings(bookings); Main.pause(scanner);  break;
-                case "4": viewStats(bookings);       Main.pause(scanner);  break;
+                case "1": roomManagement(scanner, rooms, file);                          break;
+                case "2": staffManagement(scanner, users, file);                         break;
+                case "3": viewAllBookings(bookings); Main.pause(scanner);                break;
+                case "4": viewStats(bookings);       Main.pause(scanner);                break;
+                case "C": OccupancyCalendar.show(scanner, rooms, bookings, true);       break;
                 case "ESC": return;
                 default:
-                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–4."));
+                    System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–4 or C."));
                     Main.pause(scanner);
             }
         }
