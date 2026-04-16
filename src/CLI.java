@@ -1,15 +1,24 @@
 /**
- * Cross-platform CLI utilities: ANSI colours, screen clearing, and progress spinners.
+ * Cross-platform CLI utilities: ANSI colours, screen clearing, progress spinners,
+ * raw-mode interactive input (arrow-key menus, single-keypress choices, masked
+ * passwords, ESC hotkey), and clickable hyperlinks.
+ *
+ * Powered by JLine 3 for true cross-OS terminal handling:
+ *   - macOS / Linux: termios via JNA
+ *   - Windows 10+ Terminal / PowerShell 7+: conhost VT mode auto-enabled
+ *   - Legacy cmd.exe: graceful degradation (numbered fallback)
+ *   - IDE consoles (IntelliJ, VS Code): "dumb" terminal — falls back to Scanner
  *
  * Colour output is automatically disabled when:
- *   - stdout is not a real terminal (e.g. piped or redirected)
+ *   - the terminal type is "dumb" (IDEs, redirected stdout)
  *   - the TERM environment variable is "dumb"
  *   - NO_COLOR is set (https://no-color.org)
- *
- * On Windows, ANSI codes work natively in Windows Terminal and PowerShell 7+.
- * Legacy cmd.exe will see plain text (colours suppressed automatically).
  */
 import java.util.Scanner;
+import org.jline.terminal.Attributes;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.NonBlockingReader;
 
 public class CLI {
 
@@ -27,17 +36,63 @@ public class CLI {
     private static final String CYAN    = "\033[36m";
     private static final String WHITE   = "\033[37m";
 
-    // Detect whether the current terminal supports ANSI codes
+    // ── JLine terminal singleton ────────────────────────────────────────
+    private static final Terminal TERMINAL = buildTerminal();
     private static final boolean ANSI_SUPPORTED = detectAnsiSupport();
 
+    private static Terminal buildTerminal() {
+        try {
+            Terminal t = TerminalBuilder.builder()
+                    .system(true)
+                    .dumb(true)           // never throw — fall back gracefully in IDEs
+                    .encoding("UTF-8")
+                    .build();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try { t.close(); } catch (Exception ignored) {}
+            }));
+            return t;
+        } catch (Exception e) {
+            return null; // pure Scanner fallback
+        }
+    }
+
+    private static boolean rawModeAvailable() {
+        return TERMINAL != null && !"dumb".equals(TERMINAL.getType());
+    }
+
     private static boolean detectAnsiSupport() {
-        // Respect the NO_COLOR convention (https://no-color.org)
         if (System.getenv("NO_COLOR") != null) return false;
-        // Dumb terminals don't support escape codes
-        String term = System.getenv("TERM");
-        if ("dumb".equals(term)) return false;
-        // Check if stdout is actually connected to a terminal
-        return System.console() != null;
+        if ("dumb".equals(System.getenv("TERM"))) return false;
+        if (TERMINAL == null) return false;
+        // JLine returns "dumb" for IDE consoles and unsupported cmd.exe,
+        // and a proper name (xterm-256color, windows, etc.) when VT is available.
+        return !"dumb".equals(TERMINAL.getType());
+    }
+
+    /** Functional interface for raw-mode bodies that may throw checked exceptions. */
+    @FunctionalInterface
+    private interface RawAction<T> {
+        T run() throws Exception;
+    }
+
+    /**
+     * Run a block of code with the terminal in raw, no-echo mode and
+     * guarantee restoration of the original attributes on exit.
+     * Returns the action's value, or {@code fallback} if anything goes wrong.
+     */
+    private static <T> T withRawMode(RawAction<T> action, T fallback) {
+        if (!rawModeAvailable()) return fallback;
+        Attributes original = null;
+        try {
+            original = TERMINAL.enterRawMode();
+            return action.run();
+        } catch (Exception e) {
+            return fallback;
+        } finally {
+            if (original != null) {
+                try { TERMINAL.setAttributes(original); } catch (Exception ignored) {}
+            }
+        }
     }
 
     // Wrap text in an ANSI code only if the terminal supports it
@@ -84,38 +139,20 @@ public class CLI {
     }
 
     // ── Screen clearing ──────────────────────────────────────────────────
-    /**
-     * Clear the terminal screen.
-     * Uses the ANSI erase-screen + cursor-home sequence, which works on
-     * macOS, Linux, Windows Terminal, and PowerShell 7+.
-     * Falls back to printing blank lines on dumb terminals.
-     */
     public static void clearScreen() {
         if (ANSI_SUPPORTED) {
             System.out.print("\033[H\033[2J");
             System.out.flush();
         } else {
-            // Fallback: scroll past old content
             for (int i = 0; i < 40; i++) System.out.println();
         }
     }
 
     // ── Spinner / loader ─────────────────────────────────────────────────
     private static final String[] SPINNER_FRAMES = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" };
-    // ASCII fallback for terminals that can't render Braille
     private static final String[] SPINNER_ASCII  = { "|", "/", "-", "\\" };
 
-    /**
-     * Show a spinner for the given duration while a task runs on a background thread.
-     *
-     * Usage:
-     *   CLI.withSpinner("Loading data", 1200, () -> { ... your slow code ... });
-     *
-     * @param label    Text shown next to the spinner
-     * @param task     Runnable to execute while the spinner animates
-     */
     public static void withSpinner(String label, Runnable task) {
-        // Run the real task on a background thread
         Thread worker = new Thread(task);
         worker.start();
 
@@ -132,31 +169,18 @@ public class CLI {
             frameIndex++;
             try { Thread.sleep(80); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
-        // Clear the spinner line, print completion tick
         System.out.print("\r" + ansi(GREEN + BOLD, "\u2714") + "  " + label + "   \n");
         System.out.flush();
     }
 
-    /**
-     * Show a fixed-duration spinner (useful for simulating load in demos).
-     *
-     * @param label      Text shown next to the spinner
-     * @param durationMs How long to spin in milliseconds
-     */
     public static void spinner(String label, int durationMs) {
         withSpinner(label, () -> {
             try { Thread.sleep(durationMs); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         });
     }
 
-    /**
-     * Show a spinner for a random duration between 500 ms and 2000 ms.
-     *
-     * @param label Text shown next to the spinner
-     */
     private static final java.util.Random RANDOM = new java.util.Random();
 
-    /** Returns a random delay between 500 ms and 2000 ms. */
     public static int randomDelayMs() {
         return 500 + RANDOM.nextInt(1501);
     }
@@ -168,64 +192,47 @@ public class CLI {
     // ── Password input ──────────────────────────────────────────────────
     /**
      * Read a password while masking each keystroke with '*'.
-     *
-     * Strategy (tries in order):
-     *   1. stty — works on macOS and Linux terminals; shows live asterisks.
-     *   2. System.console().readPassword() — works on Windows PowerShell /
-     *      Windows Terminal; input is hidden (no asterisks, but not visible).
-     *   3. Plain Scanner — last resort inside IDEs where neither is available.
+     * Returns the password, or {@code null} if the user pressed ESC / Ctrl+C.
      */
     public static String readPassword(Scanner fallbackScanner) {
-        // Attempt 1: stty-based char-by-char masking (macOS / Linux)
-        try {
-            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
-            Process save = savePb.start();
-            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
-            save.waitFor();
-
-            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
-            rawPb.start().waitFor();
-
-            StringBuilder password = new StringBuilder();
-            try {
-                while (true) {
-                    int ch = System.in.read();
-                    if (ch == '\r' || ch == '\n' || ch == -1) {
-                        System.out.println();
-                        break;
-                    } else if (ch == 27) { // ESC
-                        try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-                        if (System.in.available() > 0) {
-                            while (System.in.available() > 0) System.in.read();
-                            continue; // arrow key sequence — ignore
-                        }
-                        System.out.println();
-                        return null; // standalone ESC — cancel
-                    } else if (ch == 127 || ch == 8) { // backspace / delete
-                        if (password.length() > 0) {
-                            password.deleteCharAt(password.length() - 1);
-                            System.out.print("\b \b");
-                            System.out.flush();
-                        }
-                    } else if (ch == 3) { // Ctrl+C
-                        System.out.println();
+        String result = withRawMode(() -> {
+            NonBlockingReader reader = TERMINAL.reader();
+            StringBuilder pw = new StringBuilder();
+            while (true) {
+                int ch = reader.read();
+                if (ch == '\r' || ch == '\n' || ch == -1) {
+                    TERMINAL.writer().println();
+                    TERMINAL.writer().flush();
+                    return pw.toString();
+                } else if (ch == 27) { // ESC
+                    int next = reader.read(50L);
+                    if (next == -2) { // standalone ESC
+                        TERMINAL.writer().println();
+                        TERMINAL.writer().flush();
                         return null;
-                    } else {
-                        password.append((char) ch);
-                        System.out.print("*");
-                        System.out.flush();
                     }
+                    while (reader.read(10L) >= 0) { /* drain CSI sequence */ }
+                } else if (ch == 127 || ch == 8) { // backspace
+                    if (pw.length() > 0) {
+                        pw.deleteCharAt(pw.length() - 1);
+                        TERMINAL.writer().print("\b \b");
+                        TERMINAL.writer().flush();
+                    }
+                } else if (ch == 3) { // Ctrl+C
+                    TERMINAL.writer().println();
+                    TERMINAL.writer().flush();
+                    return null;
+                } else if (ch >= 32) {
+                    pw.append((char) ch);
+                    TERMINAL.writer().print('*');
+                    TERMINAL.writer().flush();
                 }
-            } finally {
-                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
-                restorePb.start().waitFor();
             }
-            return password.toString();
-        } catch (Exception ignored) {
-            // stty not available (Windows) — fall through
-        }
+        }, "__FALLBACK__");
 
-        // Attempt 2: System.console (Windows PowerShell / Windows Terminal — hidden, no asterisks)
+        if (!"__FALLBACK__".equals(result)) return result;
+
+        // IDE fallback: use Console if present, else plain Scanner
         java.io.Console console = System.console();
         if (console != null) {
             char[] chars = console.readPassword();
@@ -234,85 +241,60 @@ public class CLI {
             if (pwd.equalsIgnoreCase("e")) return null;
             return pwd;
         }
-
-        // Attempt 3: plain input (IDEs where console is null)
         String line = fallbackScanner.nextLine();
         if (line.equalsIgnoreCase("e")) return null;
         return line;
     }
 
     // ── Interactive list selector ──────────────────────────────────────
-    /**
-     * Display an interactive list the user navigates with arrow keys.
-     * The currently selected item is highlighted in magenta.
-     * Returns the selected index, or -1 if the user presses Escape / 'e'.
-     *
-     * On terminals without stty (Windows / IDEs) falls back to a
-     * numbered-choice prompt using the Scanner.
-     *
-     * @param labels   Display strings for each option
-     * @param title    Heading shown above the list
-     * @param scanner  Fallback scanner for non-stty environments
-     */
     public static int selectFromList(String[] labels, String title, Scanner scanner) {
         return selectFromList(labels, title, scanner, 0);
     }
 
-    /** Overload that pre-selects a specific index (e.g. the current value in a toggle). */
     public static int selectFromList(String[] labels, String title, Scanner scanner, int initialSelection) {
         if (labels.length == 0) return -1;
 
-        // Attempt interactive mode (macOS / Linux terminal)
-        try {
-            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
-            Process save = savePb.start();
-            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
-            save.waitFor();
-
-            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
-            rawPb.start().waitFor();
-
-            int selected = Math.max(0, Math.min(initialSelection, labels.length - 1));
-            try {
+        if (rawModeAvailable()) {
+            final int[] selectedHolder = { Math.max(0, Math.min(initialSelection, labels.length - 1)) };
+            Integer raw = withRawMode(() -> {
+                NonBlockingReader reader = TERMINAL.reader();
+                int selected = selectedHolder[0];
                 renderList(labels, title, selected);
                 while (true) {
-                    int ch = System.in.read();
+                    int ch = reader.read();
                     if (ch == '\r' || ch == '\n') {
-                        // Move below the list before returning
                         System.out.println();
                         return selected;
-                    } else if (ch == 27) { // ESC — could be arrow key or standalone Escape
-                        int next = System.in.read();
-                        if (next == '[') {
-                            int arrow = System.in.read();
-                            if (arrow == 'A') { // Up
-                                selected = (selected - 1 + labels.length) % labels.length;
-                            } else if (arrow == 'B') { // Down
-                                selected = (selected + 1) % labels.length;
-                            }
-                        } else {
-                            // Standalone Escape — cancel
+                    } else if (ch == 27) { // ESC
+                        int next = reader.read(50L);
+                        if (next == -2) { // standalone ESC — cancel
                             System.out.println();
                             return -1;
+                        }
+                        if (next == '[') {
+                            int arrow = reader.read(50L);
+                            if (arrow == 'A')      selected = (selected - 1 + labels.length) % labels.length;
+                            else if (arrow == 'B') selected = (selected + 1) % labels.length;
+                            // ignore C/D (left/right) and other CSI tails
+                            while (reader.read(10L) >= 0) { /* drain */ }
+                        } else {
+                            while (reader.read(10L) >= 0) { /* drain unknown sequence */ }
                         }
                     } else if (ch == 'e' || ch == 'q') {
                         System.out.println();
                         return -1;
+                    } else {
+                        continue;
                     }
-                    // Re-render: move cursor up to overwrite previous list
                     int linesToClear = labels.length + 2; // labels + hint + blank line
-                    System.out.print("\033[" + linesToClear + "A"); // move up
+                    System.out.print("\033[" + linesToClear + "A");
                     renderList(labels, title, selected);
                 }
-            } finally {
-                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
-                restorePb.start().waitFor();
-            }
-        } catch (Exception ignored) {
-            // Fall through to numbered fallback
+            }, null);
+            if (raw != null) return raw;
         }
 
-        // Fallback: numbered selection (Windows / IDEs)
+        // Fallback: numbered selection (legacy cmd.exe / IDEs)
         System.out.println("  " + header(title));
         System.out.println();
         for (int i = 0; i < labels.length; i++) {
@@ -335,7 +317,7 @@ public class CLI {
         for (int i = 0; i < labels.length; i++) {
             String prefix = (i == selected) ? magenta("  ▸ ") : dim("    ");
             String label  = (i == selected) ? magenta(labels[i]) : "  " + labels[i];
-            System.out.println(prefix + label + "\033[K"); // \033[K clears rest of line
+            System.out.println(prefix + label + "\033[K");
         }
         System.out.println(dim("  ↑↓ Navigate  Enter Select  Esc Cancel") + "\033[K");
     }
@@ -360,81 +342,50 @@ public class CLI {
     }
 
     // ── Hotkey footer ───────────────────────────────────────────────────
-    /** Print a footer bar showing the ESC hotkey and its action. */
     public static void printFooter(String backLabel) {
         printDivider();
         System.out.println(dim("  [Esc] " + backLabel));
     }
 
     // ── Wait for any keypress ───────────────────────────────────────────
-    /** Wait for any keypress (raw mode) or Enter (fallback). */
     public static void waitForKey(Scanner fallbackScanner) {
         System.out.print(dim("  Press any key to continue..."));
-        try {
-            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
-            Process save = savePb.start();
-            String orig = new String(save.getInputStream().readAllBytes()).trim();
-            save.waitFor();
-
-            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
-            rawPb.start().waitFor();
-
+        System.out.flush();
+        Boolean handled = withRawMode(() -> {
+            NonBlockingReader reader = TERMINAL.reader();
             try {
-                System.in.read();
-                try { Thread.sleep(30); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-                while (System.in.available() > 0) System.in.read();
-            } finally {
-                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + orig + " < /dev/tty");
-                restorePb.start().waitFor();
-            }
-            System.out.println();
-            return;
-        } catch (Exception ignored) {
-            // stty not available — fall through to Scanner
-        }
-        fallbackScanner.nextLine();
+                reader.read();
+                while (reader.read(10L) >= 0) { /* drain trailing escape bytes */ }
+            } catch (Exception ignored) {}
+            TERMINAL.writer().println();
+            TERMINAL.writer().flush();
+            return Boolean.TRUE;
+        }, Boolean.FALSE);
+        if (!handled) fallbackScanner.nextLine();
     }
 
     // ── Raw-mode menu choice reader ─────────────────────────────────────
     /**
      * Read a menu choice as a single keypress (no Enter needed).
-     * Returns "1"–"9" for digit keys, or "ESC" when Escape is pressed.
-     * Falls back to Scanner.nextLine() on Windows/IDEs where 'e' also maps to "ESC".
+     * Returns "1"–"9" for digit keys, or "ESC" when Escape (or 'e'/'q') is pressed.
      */
     public static String readChoice(Scanner fallbackScanner) {
-        try {
-            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
-            Process save = savePb.start();
-            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
-            save.waitFor();
-
-            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
-            rawPb.start().waitFor();
-
-            try {
-                while (true) {
-                    int ch = System.in.read();
-                    if (ch == 27) { // ESC
-                        try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-                        if (System.in.available() > 0) {
-                            while (System.in.available() > 0) System.in.read();
-                            continue; // arrow key sequence — ignore
-                        }
-                        return "ESC";
-                    } else if (ch >= '1' && ch <= '9') {
-                        return String.valueOf((char) ch);
-                    } else if (ch == 'e' || ch == 'q') {
-                        return "ESC";
-                    }
-                    // Ignore other keys
+        String result = withRawMode(() -> {
+            NonBlockingReader reader = TERMINAL.reader();
+            while (true) {
+                int ch = reader.read();
+                if (ch == 27) { // ESC
+                    int next = reader.read(50L);
+                    if (next == -2) return "ESC"; // standalone
+                    while (reader.read(10L) >= 0) { /* drain CSI */ }
+                    continue; // arrow / function key — keep waiting
                 }
-            } finally {
-                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
-                restorePb.start().waitFor();
+                if (ch >= '1' && ch <= '9') return String.valueOf((char) ch);
+                if (ch == 'e' || ch == 'q') return "ESC";
+                // ignore other keys
             }
-        } catch (Exception ignored) {
-            // stty not available — fall through to Scanner
-        }
+        }, null);
+        if (result != null) return result;
 
         System.out.print(prompt("Choice: "));
         String input = fallbackScanner.nextLine().trim();
@@ -446,58 +397,152 @@ public class CLI {
     /**
      * Read a line of text with live ESC support.
      * Characters are echoed, Backspace works, ESC cancels immediately (returns null).
-     * Falls back to Scanner.nextLine() in non-raw environments where 'e' also cancels.
      */
     public static String readLine(Scanner fallbackScanner) {
-        try {
-            ProcessBuilder savePb = new ProcessBuilder("/bin/sh", "-c", "stty -g < /dev/tty");
-            Process save = savePb.start();
-            String originalSettings = new String(save.getInputStream().readAllBytes()).trim();
-            save.waitFor();
-
-            ProcessBuilder rawPb = new ProcessBuilder("/bin/sh", "-c", "stty -echo -icanon min 1 < /dev/tty");
-            rawPb.start().waitFor();
-
+        String result = withRawMode(() -> {
+            NonBlockingReader reader = TERMINAL.reader();
             StringBuilder sb = new StringBuilder();
-            try {
-                while (true) {
-                    int ch = System.in.read();
-                    if (ch == '\r' || ch == '\n' || ch == -1) {
-                        System.out.println();
-                        return sb.toString().trim();
-                    } else if (ch == 27) { // ESC
-                        try { Thread.sleep(50); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-                        if (System.in.available() > 0) {
-                            while (System.in.available() > 0) System.in.read();
-                            continue; // arrow key sequence — ignore
-                        }
-                        System.out.println();
-                        return null; // standalone ESC — cancel
-                    } else if (ch == 127 || ch == 8) { // Backspace
-                        if (sb.length() > 0) {
-                            sb.deleteCharAt(sb.length() - 1);
-                            System.out.print("\b \b");
-                            System.out.flush();
-                        }
-                    } else if (ch == 3) { // Ctrl+C
-                        System.out.println();
+            while (true) {
+                int ch = reader.read();
+                if (ch == '\r' || ch == '\n' || ch == -1) {
+                    TERMINAL.writer().println();
+                    TERMINAL.writer().flush();
+                    return sb.toString().trim();
+                } else if (ch == 27) { // ESC
+                    int next = reader.read(50L);
+                    if (next == -2) { // standalone ESC — cancel
+                        TERMINAL.writer().println();
+                        TERMINAL.writer().flush();
                         return null;
-                    } else if (ch >= 32) { // printable characters
-                        sb.append((char) ch);
-                        System.out.print((char) ch);
-                        System.out.flush();
                     }
+                    while (reader.read(10L) >= 0) { /* drain CSI */ }
+                } else if (ch == 127 || ch == 8) {
+                    if (sb.length() > 0) {
+                        sb.deleteCharAt(sb.length() - 1);
+                        TERMINAL.writer().print("\b \b");
+                        TERMINAL.writer().flush();
+                    }
+                } else if (ch == 3) { // Ctrl+C
+                    TERMINAL.writer().println();
+                    TERMINAL.writer().flush();
+                    return null;
+                } else if (ch >= 32) {
+                    sb.append((char) ch);
+                    TERMINAL.writer().print((char) ch);
+                    TERMINAL.writer().flush();
                 }
-            } finally {
-                ProcessBuilder restorePb = new ProcessBuilder("/bin/sh", "-c", "stty " + originalSettings + " < /dev/tty");
-                restorePb.start().waitFor();
             }
-        } catch (Exception ignored) {
-            // stty not available — fall through to Scanner
-        }
+        }, "__FALLBACK__");
 
-        String line = fallbackScanner.nextLine().trim();
-        if (line.equalsIgnoreCase("e")) return null;
-        return line;
+        if ("__FALLBACK__".equals(result)) {
+            String line = fallbackScanner.nextLine().trim();
+            if (line.equalsIgnoreCase("e")) return null;
+            return line;
+        }
+        return result; // may be null (user pressed ESC in raw mode)
+    }
+
+    // ── Validated input ─────────────────────────────────────────────────
+    /**
+     * Result of validating a single input attempt.
+     * Either holds a parsed value ({@link #ok}) or a user-facing error message ({@link #err}).
+     */
+    public static final class Result<T> {
+        public final T value;
+        public final String error;
+
+        private Result(T value, String error) {
+            this.value = value;
+            this.error = error;
+        }
+        public static <T> Result<T> ok(T value)     { return new Result<>(value, null); }
+        public static <T> Result<T> err(String msg) { return new Result<>(null, msg); }
+    }
+
+    /** Validates raw user input and returns a {@link Result}. */
+    @FunctionalInterface
+    public interface Validator<T> {
+        Result<T> validate(String input);
+    }
+
+    /**
+     * Prompt the user, read a line, and validate. On error, show the message,
+     * pause for any keypress, then re-prompt the same field. ESC always cancels
+     * (returns {@code null}).
+     *
+     * @param promptText the prompt label (e.g. "Enter your first name (Esc to go back): ")
+     * @param scanner    fallback scanner for non-raw environments
+     * @param validator  returns {@link Result#ok} or {@link Result#err}
+     * @return the parsed value, or {@code null} if the user pressed ESC
+     */
+    public static <T> T promptUntilValid(String promptText, Scanner scanner, Validator<T> validator) {
+        while (true) {
+            System.out.print(prompt(promptText));
+            String input = readLine(scanner);
+            if (input == null) return null;
+            Result<T> r = validator.validate(input);
+            if (r.error == null) return r.value;
+            System.out.println(warning(r.error));
+            waitForKey(scanner);
+            eraseLastPromptCycle(promptText);
+        }
+    }
+
+    /**
+     * Convenience: prompt for an integer in {@code [1, max]} (inclusive).
+     * Re-prompts on parse error or out-of-range. ESC returns {@code null}.
+     */
+    public static Integer promptChoiceInRange(String promptText, Scanner scanner, int max) {
+        return promptUntilValid(promptText, scanner, s -> {
+            try {
+                int n = Integer.parseInt(s);
+                if (n >= 1 && n <= max) return Result.ok(n);
+                return Result.err("[ERR_RANGE] Enter a number between 1 and " + max + ".");
+            } catch (NumberFormatException _) {
+                return Result.err("[ERR_NUM] Please enter a valid number.");
+            }
+        });
+    }
+
+    /**
+     * Same retry-until-valid contract as {@link #promptUntilValid} but reads
+     * input via {@link #readPassword} (masked with '*').
+     */
+    public static <T> T promptPasswordUntilValid(String promptText, Scanner scanner, Validator<T> validator) {
+        while (true) {
+            System.out.print(prompt(promptText));
+            String input = readPassword(scanner);
+            if (input == null) return null;
+            Result<T> r = validator.validate(input);
+            if (r.error == null) return r.value;
+            System.out.println(warning(r.error));
+            waitForKey(scanner);
+            eraseLastPromptCycle(promptText);
+        }
+    }
+
+    /**
+     * After a failed prompt + error + "press any key" sequence, scrub all of it
+     * from the screen so the re-prompt looks like the same blank line as before.
+     *
+     * Lines erased: every visible line written since the prompt began, namely:
+     *   - the prompt line itself (plus any leading newlines in {@code promptText})
+     *   - the user's typed input (echoed on the same line as the prompt, so no extra)
+     *   - the error line
+     *   - the "Press any key…" line
+     *
+     * Falls back to {@link #clearScreen} on terminals without ANSI cursor support.
+     */
+    private static void eraseLastPromptCycle(String promptText) {
+        if (!ANSI_SUPPORTED) {
+            clearScreen();
+            return;
+        }
+        // 1 (prompt) + leading \n in promptText + 1 (error) + 1 (press-any-key)
+        int leadingNewlines = 0;
+        for (int i = 0; i < promptText.length() && promptText.charAt(i) == '\n'; i++) leadingNewlines++;
+        int linesUp = 3 + leadingNewlines;
+        System.out.print("\033[" + linesUp + "A\r\033[J");
+        System.out.flush();
     }
 }
