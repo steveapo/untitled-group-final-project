@@ -1,35 +1,54 @@
-# Guest Mode
+# Guest Mode Guide
 
-Guest mode allows anyone to browse available rooms without creating an account. Select **"Continue as Guest"** from the main menu.
+**Guest mode** is the entry point for new visitors. You can browse available rooms without creating an account.
 
-## Available Actions
+## Starting as a Guest
 
-### View Available Rooms
+From the main menu, select **"1. Continue as Guest"** to view room inventory without authentication.
 
-Displays all rooms currently marked as **AVAILABLE**, showing:
+## Guest Menu Options
 
-- Room number (e.g. R101, R555)
-- Room type (Single, Double, Triple, Quad, Suite)
-- Nightly price
+| Option | Function |
+|--------|----------|
+| **1. View available rooms** | Browse all rooms with their types, capacities, and nightly rates |
+| **2. Login** | Authenticate with an existing account to unlock booking features |
+| **3. Register** | Create a new account to become a registered User |
 
-Rooms under maintenance are hidden from the guest view.
+## Viewing Rooms
 
-### Login
+When you select "View available rooms", you'll see:
 
-Switch to a registered account from the guest menu. You'll be prompted for your username and password.
+```
+● R401   | Double   | $89.99/night  | AVAILABLE
+● R402   | Single   | $59.99/night  | AVAILABLE
+● R403   | Suite    | $149.99/night | MAINTENANCE
+```
 
-### Register
+**Status Indicators:**
+- **●** (green) = Room is available for booking
+- **●** (red) = Room is under maintenance or occupied
 
-Create a new account directly from the guest menu. You'll need to provide:
+## Next Steps
 
-- Username (must be unique)
-- First and last name (letters only)
-- Email address (validated format)
-- Password (masked input with asterisks)
+### To Book a Room
+You must create an account first. Select **"3. Register"** to create a User account, then log in with your credentials.
 
-After registering, you can log in immediately.
+### Room Types
 
-## Navigation
+The system offers five room types:
 
-- Type the menu number and press **Enter** to select an option
-- Type **4** to return to the main menu
+| Type | Typical Capacity | Features |
+|------|------------------|----------|
+| Single | 1 | Private room for one guest |
+| Double | 2 | Standard room for couples/two guests |
+| Triple | 3 | Room for three guests |
+| Quad | 4 | Spacious room for small groups |
+| Suite | 2+ | Premium room with amenities |
+
+### Pricing
+
+Nightly rates vary by room type. Total booking cost = Nightly Rate × Number of Nights
+
+---
+
+**Ready to book?** [Register and login](/guides/user) to access the full User menu.

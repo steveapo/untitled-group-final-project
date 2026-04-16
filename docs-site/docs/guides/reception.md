@@ -1,65 +1,161 @@
-# Receptionist Guide
+# Reception (Staff) Guide
 
-The Reception menu is designed for front-desk staff. Log in with a **RECEPTION** role account to access these features.
+**Reception role** is for front-desk staff. You can manage bookings, check guests in/out, search for availability, manage the staff roster, and control room status.
 
-## Menu Options
+## Logging In
 
-### 1. View All Rooms
+From the main menu:
+1. Select **"2. Login"**
+2. Enter your username and password
+3. Press Enter
 
-Displays every room in the hotel with:
-- Status indicator (green dot = available, red dot = maintenance)
-- Room number, type, and nightly price
+**Demo account:** username `reception`, password `reception`
 
-### 2. Search Available Rooms by Dates
+## Reception Menu Options
 
-Enter a date range to see which rooms are free. Useful when a walk-in guest asks about availability.
+| Option | Function |
+|--------|----------|
+| **1. View all rooms** | See complete room inventory with status |
+| **2. Search available rooms by dates** | Find rooms available for a given date range |
+| **3. Create booking for a guest** | Manually create a booking on behalf of a guest |
+| **4. View all bookings** | See all hotel bookings across all guests |
+| **5. Cancel a booking** | Cancel any booking (guest or staff-created) |
+| **6. Check in guest** | Mark a CONFIRMED booking as CHECKED_IN |
+| **7. Check out guest** | Mark a CHECKED_IN booking as CHECKED_OUT |
+| **8. View all guests** | See the complete guest roster and staff accounts |
+| **9. Mark room maintenance / available** | Change room status for maintenance or availability |
+| **C. Occupancy calendar** | View the full interactive occupancy calendar |
 
-### 3. Create Booking for a Guest
+## Managing Rooms
 
-Book a room on behalf of a registered guest:
+### View All Rooms
 
-1. Enter the guest's **username** (must be a registered USER account)
-2. Enter check-in and check-out dates
-3. Select from available rooms
-4. Booking is saved automatically
+Displays every room with:
+```
+● R401   | Double   | $89.99/night  | AVAILABLE
+● R402   | Single   | $59.99/night  | AVAILABLE
+● R403   | Suite    | $149.99/night | MAINTENANCE
+```
 
-### 4. View All Bookings
+**Color coding:**
+- **Green ●** = AVAILABLE (ready for guests)
+- **Red ●** = MAINTENANCE or OCCUPIED
 
-Lists every booking in the system with status, dates, room, and guest name.
+### Search Available Rooms
 
-### 5. Cancel a Booking
+Find rooms for a specific date range:
+1. Enter check-in date (dd-MM-yyyy format)
+2. Enter check-out date
+3. System shows only available rooms for those dates
 
-Cancel a booking by guest username. Shows only that guest's **CONFIRMED** bookings for selection.
+Useful for helping guests find suitable options or for front-desk planning.
 
-### 6. Check In Guest
+## Booking Management
 
-Uses an **interactive arrow-key selector** to pick the guest:
+### Create Booking for a Guest
 
-1. A list of guests with CONFIRMED bookings appears
-2. Navigate with **arrow keys** (up/down)
-3. Press **Enter** to select
-4. If the guest has multiple bookings, a second selector lets you pick which one
+Manually create a booking without requiring guest login:
+1. Enter the guest's username
+2. Select number of guests
+3. Choose room from availability list
+4. Enter check-in and check-out dates
+5. System creates CONFIRMED booking immediately
 
-The booking status changes from `CONFIRMED` to `CHECKED_IN`.
+**Useful for:**
+- Phone/in-person bookings
+- Group reservations
+- Guest assistance with difficulty using terminal
 
-### 7. Check Out Guest
+### View All Bookings
 
-Same interactive selector as check-in, but for guests with `CHECKED_IN` status. Changes the booking to `CHECKED_OUT`.
+See every booking in the system with:
+- Guest username
+- Room number
+- Check-in and check-out dates
+- Current status (CONFIRMED, CHECKED_IN, CHECKED_OUT)
 
-### 8. View All Guests
+### Cancel Booking
 
-Lists all registered USER accounts with their username, full name, and email.
+Cancel any booking. After cancellation:
+- Booking is removed from the system
+- Room becomes available again
+- Action is logged in error logs
 
-### 9. Mark Room Maintenance / Available
+## Guest Check-In/Check-Out
 
-Toggle a room's status using the **arrow-key selector**:
+### Check In Guest
 
-- The current status is pre-highlighted
-- Use arrow keys to switch between AVAILABLE and MAINTENANCE
-- Press Enter to confirm
+Convert a CONFIRMED booking to CHECKED_IN:
+1. Enter guest's username
+2. Select their booking from the list
+3. System updates booking status
 
-Rooms in MAINTENANCE won't appear in availability searches or booking flows.
+**After check-in:**
+- Guest can access room
+- Booking status changes to CHECKED_IN
 
-### 10. Logout
+### Check Out Guest
 
-Returns to the main menu.
+Convert a CHECKED_IN booking to CHECKED_OUT:
+1. Enter guest's username
+2. Select their booking
+3. System marks as CHECKED_OUT
+
+**After check-out:**
+- Room becomes available for next guests
+- Booking is archived
+
+## Managing Staff & Guests
+
+### View All Guests
+
+See complete roster of:
+- **Users** (registered guests with USER role)
+- **Reception staff** (other staff members)
+- **Managers** (hotel administrators)
+
+Displays: username, first name, last name, email, role
+
+### Room Status Management
+
+Mark rooms for maintenance or availability:
+
+1. Select a room
+2. Choose status:
+   - **AVAILABLE** — Room is ready for guests
+   - **MAINTENANCE** — Room is under maintenance (not available for booking)
+
+**Maintenance rooms:**
+- Show as red (●) in room lists
+- Do not appear in availability searches
+- Can be marked AVAILABLE again once maintenance is complete
+
+## Occupancy Calendar
+
+Press **C** to view the interactive calendar with full color coding:
+- **Green (██)** = Available rooms
+- **Red (██)** = Booked/occupied rooms
+- **Pink (██)** = Maintenance status
+
+Navigate with arrow keys to check occupancy by date.
+
+## Daily Workflow
+
+**Morning:**
+1. View all bookings to see today's check-ins
+2. Check in arriving guests
+3. Verify room status
+
+**Throughout day:**
+1. Handle new booking requests (create manual bookings)
+2. Assist guests with enquiries (search availability)
+3. Mark rooms for maintenance as needed
+
+**Evening:**
+1. Check out departing guests
+2. Verify all rooms accounted for
+3. Review next day's arrivals
+
+---
+
+**Manager contact:** For staffing changes or system issues, contact the manager.

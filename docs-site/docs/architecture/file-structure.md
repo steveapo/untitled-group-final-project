@@ -1,67 +1,290 @@
 # File Structure
 
-## Project Layout
+Overview of the Hotel Room Booking System project layout.
+
+## Repository Structure
 
 ```
 untitled-group-final-project/
-├── src/                          # Java source files
-│   ├── Main.java                 # Entry point and main menu
-│   ├── CLI.java                  # Terminal UI utilities
-│   ├── Account.java              # User accounts and auth
-│   ├── Bookings.java             # Booking data model
-│   ├── Room.java                 # Room data model
-│   ├── DateInput.java            # Date validation and availability
-│   ├── Files.java                # CSV file I/O
-│   ├── SeedManager.java          # Admin account seeding
-│   ├── GuestMenu.java            # Guest browsing menu
-│   ├── UserMenu.java             # Registered user menu
-│   ├── ReceptionMenu.java        # Receptionist menu
-│   └── ManagerMenu.java          # Manager/owner menu
-├── Bookings                      # Booking data (CSV)
-├── Rooms                         # Room inventory (CSV)
-├── Users                         # User accounts (CSV, hashed passwords)
-├── Errors                        # Validation error log
-├── build.sh / build.bat          # Build scripts
-├── run.sh / run.bat              # Launch scripts
-├── docs/                         # Project documentation (PDFs)
-└── docs-site/                    # This documentation website
+├── src/                                    # Java source code
+│   ├── Main.java                          # Entry point & main menu loop
+│   ├── Account.java                       # User accounts & authentication
+│   ├── Room.java                          # Room model
+│   ├── Bookings.java                      # Booking model
+│   ├── CLI.java                           # Terminal interface (JLine 3)
+│   ├── Files.java                         # CSV persistence layer
+│   ├── DateInput.java                     # Date validation & parsing
+│   ├── SeedManager.java                   # Initial admin seeding
+│   ├── GuestMenu.java                     # Guest role menu
+│   ├── UserMenu.java                      # User role menu
+│   ├── ReceptionMenu.java                 # Reception staff menu
+│   ├── ManagerMenu.java                   # Manager/admin menu
+│   └── OccupancyCalendar.java            # Interactive calendar
+│
+├── test/                                   # Unit tests
+│   ├── AccountTest.java
+│   ├── CLITest.java
+│   ├── FilesTest.java
+│   ├── SeedManagerTest.java
+│   └── DateInputTest.java
+│
+├── dist/                                   # Build output (generated)
+│   ├── HotelBooking.jar                   # Executable JAR
+│   ├── run.sh                             # Unix launcher
+│   ├── run.bat                            # Windows launcher
+│   ├── Users                              # User account data
+│   ├── Rooms                              # Room inventory
+│   ├── Bookings                           # Reservation data
+│   └── Errors                             # Error log
+│
+├── build.sh                                # Unix build script
+├── build.bat                               # Windows build script
+├── run.sh                                  # Unix launcher (root)
+├── run.bat                                 # Windows launcher (root)
+│
+├── pom.xml                                 # Maven build configuration
+│
+├── docs/                                   # Developer documentation
+│   └── superpowers/                       # Project specs & plans
+│       ├── specs/
+│       └── plans/
+│
+├── docs-site/                              # VitePress documentation site
+│   ├── docs/                              # Markdown documentation
+│   │   ├── index.md                       # Home page
+│   │   ├── getting-started.md             # Installation guide
+│   │   ├── releases.md                    # Release history
+│   │   ├── guides/                        # User role guides
+│   │   │   ├── guest.md
+│   │   │   ├── user.md
+│   │   │   ├── reception.md
+│   │   │   └── manager.md
+│   │   ├── features/                      # Feature documentation
+│   │   │   ├── authentication.md
+│   │   │   ├── booking-system.md
+│   │   │   └── cli-interface.md
+│   │   └── architecture/                  # Architecture documentation
+│   │       ├── overview.md
+│   │       ├── data-model.md
+│   │       └── file-structure.md
+│   ├── .vitepress/
+│   │   └── config.mts                     # VitePress configuration
+│   ├── package.json                       # Node dependencies
+│   └── .certs/                            # SSL certificates (dev only)
+│
+├── releases/                               # GitHub release packages
+│   ├── HotelBooking-v1.3.tar.gz           # macOS/Linux package
+│   ├── HotelBooking-v1.3.zip              # Windows package
+│   └── RELEASE_NOTES.md                   # Release changelog
+│
+├── .github/
+│   └── workflows/                         # GitHub Actions CI/CD
+│
+├── .gitignore                              # Git ignore rules
+├── README.md                               # Project readme
+├── LICENSE                                 # License file
+└── .env.example                           # Environment template
 ```
 
-## Source Files by Category
+## Key Directories
 
-### Data Models (3 files)
-- `Room.java` — Room entity with CSV serialisation
-- `Bookings.java` — Booking entity with status tracking
-- `Account.java` — User entity with password hashing and login logic
+### `src/` — Source Code
+- **13 Java classes** implementing core functionality
+- Models: Account, Room, Bookings
+- Menus: GuestMenu, UserMenu, ReceptionMenu, ManagerMenu
+- Services: CLI (terminal), Files (persistence), OccupancyCalendar
+- Utilities: DateInput, SeedManager
 
-### Business Logic (2 files)
-- `DateInput.java` — Date parsing, validation, and room availability engine
-- `SeedManager.java` — First-run admin seeding and CLI hash generator
+### `test/` — Unit Tests
+- Test coverage for Account, Files, CLI, DateInput
+- Maven test-phase execution
+- Validates core functionality before build
 
-### Presentation (5 files)
-- `Main.java` — Application entry point and role-based routing
-- `GuestMenu.java` — Anonymous room browsing
-- `UserMenu.java` — Guest booking management
-- `ReceptionMenu.java` — Front-desk operations
-- `ManagerMenu.java` — Administrative functions
+### `dist/` — Build Output
+**Generated by build script (not committed):**
+- Compiled JAR file
+- Launcher scripts (run.sh, run.bat)
+- Data files created on first run
 
-### Infrastructure (2 files)
-- `CLI.java` — Cross-platform terminal utilities
-- `Files.java` — Centralised CSV file I/O
+### `docs-site/` — Documentation Website
+- **VitePress** static site generator
+- Markdown files in `docs/` subdirectory
+- Built to HTML and deployed to Vercel
+- Accessible at https://untitled-group-self.vercel.app
 
-## Data Files
+### `releases/` — GitHub Packages
+- Pre-built JAR with launchers
+- Two formats: tar.gz (Unix) and zip (Windows)
+- Versioned (v1.3, v1.2, etc.)
 
-All data files are plain CSV stored alongside the JAR. No database is required.
+## Build Pipeline
 
-| File | Fields per line | Example |
-|------|----------------|---------|
-| `Users` | 7 | `user1,Alice,Smith,alice@hotel.com,hash,salt,USER` |
-| `Rooms` | 5 | `R101,1,70.0,Single,AVAILABLE` |
-| `Bookings` | 5 | `R101,01-04-2026,05-04-2026,user1,CONFIRMED` |
-| `Errors` | 1 | `Invalid date format - class DateInput - Line: 41` |
+### Build Scripts
 
-### File Update Strategy
+**macOS/Linux (`build.sh`):**
+```bash
+./build.sh
+```
 
-- **Rooms and Users** — full file overwrite when any record changes
-- **Bookings** — atomic write via temporary file + rename (prevents corruption)
-- **Errors** — append-only log
+**Windows (`build.bat`):**
+```cmd
+build.bat
+```
+
+**Build process:**
+1. Compile all Java files in `src/` → `dist/`
+2. Run tests in `test/`
+3. Package compiled classes into `dist/HotelBooking.jar`
+4. Copy launcher scripts to `dist/`
+5. Copy data files to `dist/` (if present)
+
+### Maven Configuration
+- **File:** `pom.xml`
+- **Properties:**
+  - Java source: 11
+  - Java target: 11
+  - Main class: Main
+  - Dependencies: JLine 3
+  - Plugins: Compiler, Jar, Surefire (tests)
+
+### Launcher Scripts
+
+**macOS/Linux (`run.sh`):**
+```bash
+#!/bin/bash
+cd "$(dirname "$0")"
+java -jar HotelBooking.jar
+```
+
+**Windows (`run.bat`):**
+```cmd
+@echo off
+cd /d "%~dp0"
+java -jar HotelBooking.jar
+```
+
+Both:
+- Change to script directory
+- Execute JAR
+- Inherit environment variables
+
+## Documentation Site
+
+### VitePress Configuration
+- **File:** `docs-site/.vitepress/config.mts`
+- **Features:**
+  - Navigation menu (Home, Getting Started, Releases)
+  - Sidebar with nested sections
+  - Local search capability
+  - GitHub link integration
+
+### Building Documentation Locally
+```bash
+cd docs-site
+npm install
+npm run dev      # Dev server at http://localhost:5173
+npm run build    # Static HTML output
+```
+
+### Deployment
+- **Vercel:** Automatic deployment on push to `main`
+- **Build command:** `npm run build`
+- **Output:** Static HTML to Vercel CDN
+- **URL:** https://untitled-group-self.vercel.app
+
+## Data Files Location
+
+### During Development
+- Created in `dist/` directory after first run
+- Can manually copy to project root for testing
+
+### After Release
+- Located in same directory as `HotelBooking.jar`
+- Portable (move JAR and data files together)
+- Backed up before modifications
+
+### File Formats
+- **Users** — CSV (comma-separated)
+- **Rooms** — CSV
+- **Bookings** — CSV
+- **Errors** — Plain text, one per line
+
+All human-readable and editable with any text editor.
+
+## GitHub Integration
+
+### Workflows
+- **Location:** `.github/workflows/`
+- **Purpose:** Automated testing on push/PR
+- **Triggers:** Push to main, PRs
+
+### Releases
+- **Manual creation:** `gh release create`
+- **Assets:** Upload tar.gz and zip packages
+- **Notes:** Generated from RELEASE_NOTES.md
+
+## Ignore Rules
+
+### `.gitignore`
+```
+dist/                  # Compiled output
+target/                # Maven cache
+*.class                # Compiled Java
+.DS_Store              # macOS
+Users                  # Production data (privacy)
+Rooms                  # Production data
+Bookings               # Production data
+Errors                 # Production logs
+.env                   # Environment secrets
+```
+
+## Development Workflow
+
+### Local Setup
+```bash
+# Clone repo
+git clone https://github.com/steveapo/untitled-group-final-project.git
+cd untitled-group-final-project
+
+# Build
+./build.sh              # macOS/Linux
+build.bat              # Windows
+
+# Run
+cd dist
+./run.sh               # macOS/Linux
+run.bat                # Windows
+```
+
+### Making Changes
+```bash
+# Edit source files in src/
+vim src/UserMenu.java
+
+# Rebuild
+./build.sh
+
+# Test
+cd dist
+./run.sh
+```
+
+### Documentation Updates
+```bash
+# Edit documentation
+vim docs-site/docs/guides/user.md
+
+# Test locally
+cd docs-site
+npm run dev
+
+# Commit and push
+git add docs-site/
+git commit -m "docs: update user guide"
+git push origin main
+# → Vercel auto-deploys
+```
+
+---
+
+**Next:** Check the [getting started guide](/getting-started) to run the application.

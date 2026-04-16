@@ -1,69 +1,220 @@
-# Manager / Owner Guide
+# Manager (Administrator) Guide
 
-The Manager menu provides full control over the hotel. Log in with a **MANAGER** role account (default: `admin` / `admin`).
+**Manager role** is for hotel owners and administrators. You have full system control including room inventory, staff management, booking oversight, and analytics.
 
-## 1. Room Management
+## Logging In
 
-A sub-menu for managing the hotel's room inventory.
+From the main menu:
+1. Select **"2. Login"**
+2. Enter your username and password
+
+**Demo account:** username `admin`, password `admin`
+
+## Manager Menu Options
+
+| Option | Function |
+|--------|----------|
+| **1. Room Management** | Create, edit, delete, and manage room inventory |
+| **2. Staff Management** | Manage user accounts and staff roles |
+| **3. View all bookings** | See all hotel bookings with full details |
+| **4. View statistics** | Analyze booking data and occupancy trends |
+| **C. Occupancy calendar** | View the complete interactive occupancy calendar |
+
+---
+
+## Room Management
+
+Access the complete room management suite:
 
 ### List All Rooms
 
-Shows every room with status indicator, type, price, and availability.
+View all rooms with full details:
+```
+● R401   | Double   | $89.99/night  | AVAILABLE
+● R402   | Single   | $59.99/night  | AVAILABLE
+● R403   | Suite    | $149.99/night | MAINTENANCE
+```
 
 ### Add a Room
 
-Create a new room by entering:
-- **Room number** (e.g. `R401`) — must be unique
-- **Capacity** — number of guests
-- **Price per night** — in dollars
-- **Type** — Single, Double, Triple, Quad, or Suite
+Create a new room with:
+- **Room number** (format: R### e.g., R401)
+- **Capacity** (1-4 guests per room, or more for suites)
+- **Price** (nightly rate in dollars)
+- **Type** (Single, Double, Triple, Quad, Suite)
+- **Status** (AVAILABLE or MAINTENANCE)
+
+**Room number format:** Must follow R### pattern (R followed by 3 digits)
+- Example: R101, R201, R1001
+
+**Room types:**
+| Type | Typical Use | Capacity |
+|------|-------------|----------|
+| Single | Solo travelers | 1 |
+| Double | Couples/two guests | 2 |
+| Triple | Small families | 3 |
+| Quad | Groups | 4+ |
+| Suite | Premium guests | 2+ |
 
 ### Edit a Room
 
-Modify an existing room's:
-- **Price** — update the nightly rate
-- **Type** — change the room category
-- **Status** — toggle between AVAILABLE and MAINTENANCE using the arrow-key selector
+Modify existing room properties:
+- Update price
+- Change capacity
+- Modify room type
+- Update status
+- Cannot change room number (identified by number)
+
+**Use case:** Adjust pricing seasonally or re-classify room type
 
 ### Delete a Room
 
-Remove a room from the inventory. Requires confirmation before deletion.
+Permanently remove a room from inventory.
 
-> **Note:** Deleting a room does not automatically cancel existing bookings for that room.
+**Warning:** Deleting a room with active bookings may cause system issues. Ensure the room has no CONFIRMED or CHECKED_IN bookings before deletion.
 
-## 2. Staff Management
+---
 
-Manage hotel staff accounts.
+## Staff Management
 
-### List All Staff
+Manage all user accounts and roles:
 
-Shows all accounts with RECEPTION or MANAGER roles, including username, name, email, and role.
+### View All Staff
 
-### Add Receptionist
+See complete roster with:
+- Username
+- Full name (first + last)
+- Email address
+- Current role
 
-Creates a new account through the standard registration flow, then automatically promotes it to the RECEPTION role.
+### Add a Staff Member
 
-### Deactivate Staff Account
+Create new staff/user account:
+1. Enter username (unique identifier)
+2. Enter first name
+3. Enter last name
+4. Enter email address
+5. Enter password
+6. Assign role:
+   - **USER** = Guest account
+   - **RECEPTION** = Front-desk staff
+   - **MANAGER** = Administrator (rare)
 
-Demotes a staff member by changing their role from RECEPTION or MANAGER to USER. The account is not deleted — they can still log in as a regular guest.
+### Edit Staff Account
 
-## 3. View All Bookings
+Modify existing account:
+- Change name
+- Update email
+- **Change role** (USER ↔ RECEPTION ↔ MANAGER)
 
-Shows every booking in the system with room number, status, dates, and guest username.
+**Use case:** Promote a USER to RECEPTION when hiring new staff
 
-## 4. View Statistics
+### Delete Staff Account
 
-Displays a dashboard of booking metrics:
+Remove a staff or user account from the system.
 
-| Metric | Description |
-|--------|-------------|
-| **Active bookings** | CONFIRMED + CHECKED_IN count |
-| **Cancelled** | Total cancelled bookings |
-| **Checked out** | Completed stays |
-| **Revenue** | Total income from CHECKED_OUT bookings (nights x price) |
+**Note:** If the account has active bookings, those bookings will become orphaned. Consider disabling instead of deleting for active accounts.
 
-Revenue is calculated by multiplying the number of nights by the room's nightly price for each completed booking.
+---
 
-## 5. Logout
+## Viewing All Bookings
 
-Returns to the main menu.
+See every booking in the hotel:
+
+| Field | Information |
+|-------|-------------|
+| Guest | Username |
+| Room | Room number |
+| Check-in | Date (dd-MM-yyyy) |
+| Check-out | Date (dd-MM-yyyy) |
+| Status | CONFIRMED, CHECKED_IN, or CHECKED_OUT |
+
+**Useful for:**
+- Daily occupancy overview
+- Identifying no-shows
+- Revenue tracking
+- Guest history analysis
+
+---
+
+## Statistics
+
+Analyze hotel performance metrics:
+
+**Available statistics include:**
+- Total bookings (all-time)
+- Current occupancy rate
+- Occupancy by room type
+- Average booking duration
+- Revenue summary (total nights × rates)
+
+**Use cases:**
+- Monthly performance reports
+- Seasonal trend analysis
+- Room type popularity analysis
+- Staff shift planning based on occupancy
+
+---
+
+## Occupancy Calendar
+
+Press **C** to view the interactive calendar covering all rooms and dates:
+
+**Navigation:**
+- **Arrow keys** (↑↓←→) = Move day-by-day
+- **Shift+Arrows** = Jump by week
+- **Esc** = Exit
+
+**Color coding:**
+- **Green (██)** = Room available
+- **Red (██)** = Room booked/occupied
+- **Pink (██)** = Room under maintenance
+
+View multiple months to plan capacity and maintenance schedules.
+
+---
+
+## Administrative Workflows
+
+### Opening Day Setup
+1. Add all rooms to inventory
+2. Set initial room statuses
+3. Create reception staff accounts
+4. Set nightly pricing
+
+### Daily Operations
+1. Check occupancy (occupancy calendar)
+2. Review today's check-ins/check-outs
+3. Monitor staff activity
+4. Adjust room status as needed
+
+### Seasonal Management
+1. Update pricing for high/low seasons
+2. Plan maintenance windows
+3. Adjust room inventory if needed
+4. Analyze booking trends
+
+### End-of-Month Review
+1. View statistics and revenue
+2. Generate occupancy reports
+3. Plan staffing for next month
+4. Identify under-utilized room types
+
+### Staff Onboarding
+1. Create new RECEPTION role account
+2. Provide login credentials
+3. Guide them through reception guide
+4. Monitor initial bookings
+
+---
+
+## Security Notes
+
+- **Manager accounts should be limited** — Only hotel owners/administrators
+- **Password management** — Encourage strong passwords
+- **Data integrity** — Regular backups recommended (save CSV files)
+- **Audit trail** — Error logs are written to `Errors` file for all major operations
+
+---
+
+**Questions?** Refer to [Architecture](/architecture/overview) for technical details about the system design.

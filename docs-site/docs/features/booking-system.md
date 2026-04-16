@@ -1,65 +1,223 @@
 # Booking System
 
+The booking system provides an intuitive, interactive experience for reserving hotel rooms with visual date selection and real-time availability checking.
+
 ## Booking Lifecycle
 
-Every booking follows a defined state machine:
-
 ```
-CONFIRMED  →  CHECKED_IN  →  CHECKED_OUT
-    ↓
-CANCELLED
+CONFIRMED → CHECKED_IN → CHECKED_OUT
+   (booked)   (in hotel)    (departed)
 ```
 
-| Status | Meaning | Who can trigger |
-|--------|---------|-----------------|
-| CONFIRMED | Reservation made, awaiting arrival | User or Reception |
-| CHECKED_IN | Guest has arrived and is staying | Reception only |
-| CHECKED_OUT | Guest has departed | Reception only |
-| CANCELLED | Reservation cancelled | User or Reception |
+### Booking States
 
-## Availability Engine
+| State | Meaning | Who Created | Can Cancel? |
+|-------|---------|-------------|------------|
+| **CONFIRMED** | Room is reserved, ready for check-in | User or Reception | Yes |
+| **CHECKED_IN** | Guest has arrived and checked in | Reception | No |
+| **CHECKED_OUT** | Guest has departed | Reception | No |
 
-When searching for rooms, the system checks for **date overlaps** against all active bookings:
+## User Booking Flow
 
-- A room is available if no active booking overlaps the requested date range
-- **Cancelled bookings are ignored** — they don't block availability
-- **Same-day turnaround is allowed** — a new check-in on the same day as another booking's check-out is permitted (check-out day is not an occupied night)
+Users can book rooms through the **Search and book a room** option in the User menu.
 
-### Overlap Detection
-
-Two date ranges overlap when:
+### Step 1: Number of Guests
 
 ```
-requestedStart < bookedEnd AND requestedEnd > bookedStart
+Enter number of guests (1-9): _
 ```
 
-This correctly handles all edge cases including partial overlaps, containment, and adjacent bookings.
+Specify how many people will stay. This filters room availability by capacity.
 
-## Room Types
+### Step 2: Interactive Date & Room Selection
 
-| Type | Typical Capacity | Price Range |
-|------|-----------------|-------------|
-| Single | 1 guest | $70 - $75 |
-| Double | 2 guests | $90 - $110 |
-| Triple | 3 guests | $120 - $140 |
-| Quad | 4 guests | $150 - $180 |
-| Suite | 5 guests | $500 |
-
-## Room Status
-
-Rooms have two possible statuses:
-
-- **AVAILABLE** — can be booked by guests
-- **MAINTENANCE** — hidden from searches and booking flows
-
-Reception and Manager roles can toggle room status using an interactive arrow-key selector.
-
-## Revenue Tracking
-
-The Manager statistics dashboard calculates revenue from completed stays:
+**Visual Occupancy Calendar** with real-time availability:
 
 ```
-Revenue = sum of (nights × price per night) for all CHECKED_OUT bookings
+        MAR 2026        
+    Mon Tue Wed Thu Fri Sat Sun
+ 1   ██  ░░  ██  ░░  ██  ░░  ██
+ 2   ░░  ██  ░░  ██  ░░  ██  ░░
+ 3   ██  ░░  ██  ░░  ██  ░░  ██
+ 4   ░░  ██  ░░  ██  ░░  ██  ░░
 ```
 
-Where `nights` is the number of days between check-in and check-out dates.
+**Color coding:**
+- **Green (██)** = Room available for that date
+- **Red (██)** = Room booked/occupied
+- **Pink (██)** = Room under maintenance
+
+**Navigation:**
+| Key | Action |
+|-----|--------|
+| ↑ ↓ ← → | Move by one day |
+| Shift+← → | Jump one week |
+| h j k l | Vim-mode navigation |
+| Enter | Select date or room |
+| Esc | Cancel booking flow |
+
+**Booking sequence:**
+1. Navigate to **check-in date** → Press Enter
+2. Navigate to **room** → Press Enter (highlights only available rooms)
+3. Navigate to **check-out date** → Press Enter
+4. Review and confirm booking
+
+### Step 3: Booking Confirmation
+
+```
+Room     : R401  Double  (capacity 2)
+Check-in : 15-03-2026
+Check-out: 17-03-2026
+Nights   : 2
+Total    : $179.98
+
+Confirm? (yes/no, Esc to cancel): _
+```
+
+- Type `yes`/`y` to confirm
+- Type `no`/`n` to cancel
+- Type `esc` or press Esc to cancel
+- Invalid input re-prompts cleanly
+
+On confirmation:
+- Booking is saved to Bookings file
+- Status set to CONFIRMED
+- Room marked as occupied for those dates
+- Success message displayed
+
+## Reception Booking Creation
+
+Reception staff can create bookings on behalf of guests through **Create booking for a guest**:
+
+1. Enter guest's username
+2. Enter number of guests
+3. Select available room
+4. Confirm check-in and check-out dates
+5. Booking created immediately with CONFIRMED status
+
+**Use cases:**
+- Phone reservations
+- Guest assistance (language barrier, elderly guests)
+- Group bookings
+- Walk-in arrivals
+
+## Check-In / Check-Out
+
+### Check-In
+Convert CONFIRMED → CHECKED_IN:
+1. Reception enters guest's username
+2. Selects which booking to check in
+3. Booking status updated
+4. Guest can now access room
+
+### Check-Out
+Convert CHECKED_IN → CHECKED_OUT:
+1. Reception enters guest's username
+2. Selects which booking to check out
+3. Booking status updated
+4. Room becomes available again
+
+## Availability Calculation
+
+The system determines room availability by checking:
+
+1. **Room status** — Not in MAINTENANCE
+2. **Booking conflicts** — No existing booking that overlaps with requested dates
+3. **Guest capacity** — Room capacity ≥ number of guests
+
+**Date overlap rules:**
+- `BOOKED: 2026-03-15 to 2026-03-17`
+- Request 2026-03-14 to 2026-03-15 = **Available** (check-out/check-in on same date allowed)
+- Request 2026-03-15 to 2026-03-18 = **NOT available** (overlaps existing booking)
+- Request 2026-03-17 to 2026-03-19 = **Available** (no overlap)
+
+## Pricing
+
+### Rate Calculation
+```
+Total Cost = (Check-out Date - Check-in Date) × Room Nightly Rate
+Example: 3 nights × $89.99/night = $269.97
+```
+
+### Price Display
+Prices are shown:
+- Per night (in room listings)
+- Total cost (in booking confirmation)
+- All in USD format with 2 decimal places
+
+## Booking Cancellation
+
+### User Cancellation
+Users can cancel CONFIRMED bookings:
+1. Select **Cancel a booking**
+2. Choose booking from list of active bookings
+3. Confirm cancellation
+4. Booking is deleted, room becomes available
+
+**Cannot cancel:** CHECKED_IN or CHECKED_OUT bookings (must go through reception)
+
+### Reception Cancellation
+Reception can cancel any booking:
+1. Select **Cancel a booking**
+2. Enter guest's username
+3. Choose booking
+4. Confirm cancellation
+5. Booking removed from system
+
+## Booking Search & Filtering
+
+### Users
+Users see only their own bookings:
+- All CONFIRMED bookings
+- All CHECKED_IN bookings (active stays)
+- All CHECKED_OUT bookings (past stays)
+
+### Reception
+Reception staff see:
+- All bookings in the system
+- Filtered by guest username when needed
+- Full booking history
+
+### Managers
+Managers can:
+- View all bookings
+- Analyze booking statistics
+- Plan capacity based on booking trends
+
+## Date Format
+
+All booking dates use: **dd-MM-yyyy**
+
+Examples:
+- 15-03-2026 (March 15, 2026)
+- 01-01-2026 (January 1, 2026)
+- 31-12-2026 (December 31, 2026)
+
+**Validation:**
+- Invalid dates rejected (e.g., 31-02-2026)
+- Check-out must be after check-in
+- Dates in past rejected for new bookings
+
+## Features
+
+### Smart Availability Display
+The interactive calendar shows:
+- Real-time occupancy visualization
+- Color-coded room status
+- Capacity-aware filtering
+- Instant feedback on date selection
+
+### Input Validation Loop
+- Invalid confirmation input re-prompts (doesn't cancel)
+- Clean error messages
+- Automatic line cleanup to prevent UI creep
+- Flexible input (yes/y/no/n, case-insensitive)
+
+### Cross-Role Booking
+- Users can self-book through calendar
+- Reception staff can create bookings on behalf of guests
+- Managers can review all bookings
+
+---
+
+**Ready to book?** Start with [Guest Mode](/guides/guest), then [Register and Login](/guides/user).

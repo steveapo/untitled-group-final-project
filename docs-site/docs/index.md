@@ -1,6 +1,6 @@
 # Hotel Room Booking System
 
-A cross-platform CLI application for managing hotel room reservations, built with Java.
+A cross-platform CLI application for managing hotel room reservations, built with Java. Features role-based access control, interactive occupancy calendar, and secure authentication.
 
 <div style="margin: 1.5rem 0;">
   <a href="https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--vp-c-brand-1); color: var(--vp-c-white); border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1.05rem;">
@@ -11,22 +11,50 @@ A cross-platform CLI application for managing hotel room reservations, built wit
 
 ## Overview
 
-The Hotel Room Booking System is a terminal-based application that supports three distinct user roles, each with purpose-built menus and capabilities:
+The Hotel Room Booking System is a terminal-based application with four distinct user roles, each with purpose-built menus and capabilities:
 
-| Role | Description |
-|------|-------------|
-| **Guest** | Browse available rooms without an account |
-| **User** | Registered guests who can search, book, and manage reservations |
-| **Reception** | Front-desk staff who handle check-ins, check-outs, and booking management |
-| **Manager** | Hotel owner with full control over rooms, staff, bookings, and statistics |
+| Role | Description | Capabilities |
+|------|-------------|---|
+| **Guest** | Browse available rooms without authentication | View room inventory and rates |
+| **User** | Registered guests who can book rooms | Search, book, view/cancel reservations |
+| **Reception** | Front-desk staff | Guest management, check-in/out, booking operations, staff oversight |
+| **Manager** | Hotel owner/administrator | Full system control, room management, staff administration, analytics |
 
-## Key Highlights
+## Key Features
 
-- **Cross-platform** — runs on macOS, Linux, and Windows (PowerShell / Terminal)
-- **Secure authentication** — SHA-512 password hashing with random salts
-- **Interactive CLI** — ANSI colors, spinners, arrow-key selectors, and masked password input
-- **File-based persistence** — CSV data files, no database required
-- **Role-based access control** — four distinct permission levels
+### Authentication & Security
+- **SHA-512 password hashing** with random salt per account
+- Role-based access control (RBAC) with four permission levels
+- Secure account management with email validation
+- Password masking during input
+
+### Interactive Booking System
+- **Visual occupancy calendar** with arrow-key navigation (↑↓←→)
+- **Interactive date picker** for check-in and check-out dates
+- Shift+arrow keys for week-at-a-time navigation
+- Vim keybindings support (hjkl)
+- Real-time room availability display with status indicators
+- Smart booking confirmation with input validation
+
+### Cross-Platform Compatibility
+- **macOS/Linux**: Full ANSI color support with Unicode glyphs
+- **Windows 10+**: Terminal/PowerShell 7+ with VT mode auto-detection
+- **Windows Legacy**: Graceful degradation to numbered menus in cmd.exe
+- **IDE Consoles**: Fallback rendering in IntelliJ, VS Code, etc.
+- Powered by JLine 3 for true cross-OS terminal handling
+
+### Room Management
+- Create, edit, delete, and manage room inventory
+- Room types: Single, Double, Triple, Quad, Suite
+- Capacity tracking and nightly pricing
+- Maintenance status tracking
+- Real-time occupancy visualization
+
+### Data Management
+- **File-based persistence** — no database required
+- CSV-format data files (human-readable and editable)
+- Automatic data validation and error logging
+- Booking lifecycle management: CONFIRMED → CHECKED_IN → CHECKED_OUT
 
 ## Quick Start
 
@@ -41,9 +69,15 @@ See [Getting Started](/getting-started) for full installation instructions.
 
 ## Demo Accounts
 
+Use these credentials to explore the system:
+
 | Username | Password | Role |
 |----------|----------|------|
-| `user1` | `user1` | Guest (User) |
-| `user2` | `user1` | Guest (User) |
-| `reception` | `reception` | Receptionist |
-| `admin` | `admin` | Manager / Owner |
+| `user1` | `user1` | User |
+| `user2` | `user1` | User |
+| `reception` | `reception` | Reception |
+| `admin` | `admin` | Manager |
+
+---
+
+**Built for ITC2205 Final Project** — A terminal-based booking system showcasing Java CLI development, cross-platform compatibility, and role-based architecture.

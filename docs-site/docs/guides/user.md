@@ -1,54 +1,95 @@
-# User Guide (Registered Guest)
+# User (Registered Guest) Guide
 
-After logging in with a **USER** role account, you'll see the User Menu with a personalised welcome message.
+**User role** is for registered guests. You can search for available rooms, make bookings, manage reservations, and view your profile.
 
-## 1. Search and Book a Room
+## Logging In
 
-Book a room in four steps:
+From the main menu:
+1. Select **"2. Login"**
+2. Enter your username
+3. Enter your password (masked with *)
+4. Press Enter
 
-1. **Enter check-in date** — format `dd-MM-yyyy`, must be today or later
-2. **Enter check-out date** — must be after the check-in date
-3. **Select a room** — only rooms available for your dates are shown
-4. **Confirm** — type `yes` to finalise the booking
+**Demo account:** username `user1`, password `user1`
 
-The system checks for date overlaps against all existing active bookings, so you'll never double-book a room.
+## User Menu Options
 
-### Date Validation
+| Option | Function |
+|--------|----------|
+| **1. Search and book a room** | Interactive booking flow with visual date picker |
+| **2. View my bookings** | See all your confirmed, checked-in, and past reservations |
+| **3. Cancel a booking** | Cancel an active CONFIRMED booking |
+| **4. View my profile** | See your account details (username, name, email) |
+| **C. Occupancy calendar** | View the full hotel occupancy calendar |
 
-- Dates must be in `dd-MM-yyyy` format (e.g. `15-06-2026`)
-- Check-in cannot be in the past
-- Check-out must be after check-in
-- Type `e` at any prompt to cancel
+## Booking a Room
 
-## 2. View My Bookings
+### Step 1: Enter Guest Count
+Specify how many guests will stay (1-9 people).
 
-Displays all your bookings with colour-coded statuses:
+### Step 2: Select Dates Visually
 
-| Status | Colour | Meaning |
-|--------|--------|---------|
-| CONFIRMED | Green | Upcoming reservation |
-| CHECKED_IN | Cyan | Currently staying |
-| CHECKED_OUT | Dim | Completed stay |
-| CANCELLED | Red | Cancelled reservation |
+You'll see an **interactive occupancy calendar**:
+- Navigate with **arrow keys** (↑↓←→) or **Vim keys** (hjkl)
+- Use **Shift+Arrow** for week-at-a-time jumps
+- **Green cells** (██) = Available rooms
+- **Red cells** (██) = Occupied or unavailable
+- **Pink cells** (██) = Maintenance
 
-## 3. Cancel a Booking
+**To select dates:**
+1. Navigate to your check-in date and press **Enter**
+2. Select a room (automatically highlights available rooms)
+3. Navigate to check-out date and press **Enter**
+4. Press **Esc** to cancel at any time
 
-Lists your **CONFIRMED** bookings and lets you select one to cancel. Only future bookings that haven't been checked in can be cancelled.
+### Step 3: Confirm Booking
 
-## 4. View My Profile
+Review the booking summary:
+- Room number and type
+- Check-in and check-out dates
+- Number of nights
+- Total cost
 
-Shows your account details:
+Type **"yes"** or **"y"** to confirm, or **"no"**/**"n"** to cancel.
+
+## Viewing Your Bookings
+
+Lists all your active and past bookings with:
+- Room number
+- Check-in date
+- Check-out date
+- Current status
+
+### Booking Statuses
+- **CONFIRMED** — Booking is confirmed, ready to check in
+- **CHECKED_IN** — You've checked in for this booking
+- **CHECKED_OUT** — Your stay has ended
+
+## Cancelling a Booking
+
+Only **CONFIRMED** bookings can be cancelled. The system will:
+1. Show you a list of your active bookings
+2. Let you select which one to cancel
+3. Confirm the cancellation
+
+Once cancelled, the booking cannot be restored.
+
+## Viewing Your Profile
+
+See your account information:
 - Username
-- Full name
+- First and Last Name
 - Email address
-- Account role
 
-## 5. Logout
+**Note:** Profile editing is not available via the User menu. Contact reception to update your account details.
 
-Returns to the main menu.
+## Occupancy Calendar
 
-## Tips
+Press **C** to view the full hotel calendar:
+- See all room occupancy at a glance
+- Navigate by month
+- Useful for planning your stay or checking room availability trends
 
-- Type `e` at any input prompt to go back without making changes
-- Booking a room shows a confirmation prompt before saving
-- The system uses a loading spinner when saving data
+---
+
+**Need help?** Contact reception staff at the front desk.
