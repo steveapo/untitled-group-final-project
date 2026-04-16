@@ -7,155 +7,281 @@
 From the main menu:
 1. Select **"2. Login"**
 2. Enter your username and password
-3. Press Enter
 
 **Demo account:** username `reception`, password `reception`
 
-## Reception Menu Options
+## Reception Menu
 
-| Option | Function |
-|--------|----------|
-| **1. View all rooms** | See complete room inventory with status |
-| **2. Search available rooms by dates** | Find rooms available for a given date range |
-| **3. Create booking for a guest** | Manually create a booking on behalf of a guest |
-| **4. View all bookings** | See all hotel bookings across all guests |
-| **5. Cancel a booking** | Cancel any booking (guest or staff-created) |
-| **6. Check in guest** | Mark a CONFIRMED booking as CHECKED_IN |
-| **7. Check out guest** | Mark a CHECKED_IN booking as CHECKED_OUT |
-| **8. View all guests** | See the complete guest roster and staff accounts |
-| **9. Mark room maintenance / available** | Change room status for maintenance or availability |
-| **C. Occupancy calendar** | View the full interactive occupancy calendar |
+```
+╔══════════════════════════════════════╗
+║     RECEPTION MENU                   ║
+║  Logged in as: reception             ║
+╚══════════════════════════════════════╝
 
-## Managing Rooms
+  1. View all rooms
+  2. Search available rooms by dates
+  3. Create booking for a guest
+  4. View all bookings
+  5. Cancel a booking
+  6. Check in guest
+  7. Check out guest
+  8. View all guests
+  9. Mark room maintenance / available
+  C. Occupancy calendar
+
+─────────────────────────────────────────
+  [Esc] Logout
+```
+
+## Typical Reception Workflow
+
+### Morning: Check Today's Arrivals
+
+Select **"4. View all bookings"**:
+
+```
+╔══════════════════════════════════════╗
+║     ALL BOOKINGS                     ║
+╚══════════════════════════════════════╝
+
+  1. user1      | R102 | 15-03-2026 → 17-03-2026 | CONFIRMED
+  2. user2      | R104 | 15-03-2026 → 18-03-2026 | CONFIRMED
+  3. user1      | R101 | 10-03-2026 → 12-03-2026 | CHECKED_OUT
+  4. admin      | R105 | 20-03-2026 → 23-03-2026 | CONFIRMED
+
+─────────────────────────────────────────
+```
+
+You can see all guests checking in today (CONFIRMED bookings for today's date).
+
+### Throughout Day: Create Booking for Walk-In Guest
+
+Select **"3. Create booking for a guest"**:
+
+```
+╔══════════════════════════════════════╗
+║    CREATE BOOKING                    ║
+╚══════════════════════════════════════╝
+
+Enter guest username (Esc to go back): user1
+Number of guests (1-9, Esc to go back): 3
+
+[Interactive calendar appears - select dates]
+
+Select check-in date: 20-03-2026
+Select room (for 3 guests): R103 (Triple, $119.99/night)
+Select check-out date: 23-03-2026
+
+╔══════════════════════════════════════╗
+║     CONFIRM BOOKING                  ║
+╚══════════════════════════════════════╝
+
+  Room    : R103  Triple  (capacity 3)
+  Check-in: 20-03-2026
+  Check-out: 23-03-2026
+  Nights  : 3
+  Total   : $359.97
+
+Confirm? (yes/no, Esc to cancel): yes
+
+⠙ Saving booking...
+✔ Booking created!
+```
+
+### Guest Check-In
+
+Select **"6. Check in guest"**:
+
+```
+╔══════════════════════════════════════╗
+║    CHECK IN GUEST                    ║
+╚══════════════════════════════════════╝
+
+Enter guest username (Esc to go back): user1
+
+  Bookings for user1:
+  
+  1. Room R102 | 15-03-2026 → 17-03-2026 | CONFIRMED
+  2. Room R101 | 20-03-2026 → 22-03-2026 | CONFIRMED
+
+Select booking (1-2, Esc to go back): 1
+
+✔ Guest checked in!
+
+Press any key to continue...
+```
+
+**After check-in:**
+- Room R102 status changes to CHECKED_IN
+- Guest can access their room
+- Booking moves from CONFIRMED to CHECKED_IN
+
+### Guest Check-Out
+
+Select **"7. Check out guest"**:
+
+```
+╔══════════════════════════════════════╗
+║    CHECK OUT GUEST                   ║
+╚══════════════════════════════════════╝
+
+Enter guest username (Esc to go back): user1
+
+  Checked-in bookings for user1:
+  
+  1. Room R102 | 15-03-2026 → 17-03-2026 | CHECKED_IN
+
+Select booking (1, Esc to go back): 1
+
+✔ Guest checked out!
+
+Press any key to continue...
+```
+
+**After check-out:**
+- Room R102 status changes to CHECKED_OUT
+- Booking is archived
+- Room becomes available for next guests
+
+## Room Management
 
 ### View All Rooms
 
-Displays every room with:
+Select **"1. View all rooms"**:
+
 ```
-● R401   | Double   | $89.99/night  | AVAILABLE
-● R402   | Single   | $59.99/night  | AVAILABLE
-● R403   | Suite    | $149.99/night | MAINTENANCE
+╔══════════════════════════════════════╗
+║     ALL ROOMS                        ║
+╚══════════════════════════════════════╝
+
+  ● R101   | Single   | $59.99/night  | AVAILABLE
+  ● R102   | Double   | $89.99/night  | AVAILABLE
+  ● R103   | Triple   | $119.99/night | AVAILABLE
+  ● R104   | Quad     | $149.99/night | AVAILABLE
+  ● R105   | Suite    | $199.99/night | MAINTENANCE
+
+─────────────────────────────────────────
 ```
 
-**Color coding:**
-- **Green ●** = AVAILABLE (ready for guests)
-- **Red ●** = MAINTENANCE or OCCUPIED
+Quick overview of all rooms and their status.
 
-### Search Available Rooms
+### Search Available Rooms by Date
 
-Find rooms for a specific date range:
-1. Enter check-in date (dd-MM-yyyy format)
-2. Enter check-out date
-3. System shows only available rooms for those dates
+Select **"2. Search available rooms by dates"**:
 
-Useful for helping guests find suitable options or for front-desk planning.
+```
+╔══════════════════════════════════════╗
+║    SEARCH ROOMS BY DATE              ║
+╚══════════════════════════════════════╝
 
-## Booking Management
+Enter check-in date (dd-MM-yyyy, Esc to go back): 20-03-2026
+Enter check-out date (dd-MM-yyyy, Esc to go back): 23-03-2026
 
-### Create Booking for a Guest
+⠙ Searching...
 
-Manually create a booking without requiring guest login:
-1. Enter the guest's username
-2. Select number of guests
-3. Choose room from availability list
-4. Enter check-in and check-out dates
-5. System creates CONFIRMED booking immediately
+  Available Rooms
+  
+  ● R101   | Single   | $59.99/night
+  ● R102   | Double   | $89.99/night
+  ● R103   | Triple   | $119.99/night
 
-**Useful for:**
-- Phone/in-person bookings
-- Group reservations
-- Guest assistance with difficulty using terminal
+─────────────────────────────────────────
+```
 
-### View All Bookings
+Shows only rooms available for the requested date range. Useful for assisting guests with date-specific enquiries.
 
-See every booking in the system with:
-- Guest username
-- Room number
-- Check-in and check-out dates
-- Current status (CONFIRMED, CHECKED_IN, CHECKED_OUT)
+### Mark Room Maintenance
 
-### Cancel Booking
+Select **"9. Mark room maintenance / available"**:
 
-Cancel any booking. After cancellation:
-- Booking is removed from the system
-- Room becomes available again
-- Action is logged in error logs
+```
+╔══════════════════════════════════════╗
+║  ROOM STATUS MANAGEMENT              ║
+╚══════════════════════════════════════╝
 
-## Guest Check-In/Check-Out
+  All Rooms:
+  
+  1. R101 | Single   | AVAILABLE
+  2. R102 | Double   | AVAILABLE
+  3. R103 | Triple   | AVAILABLE
+  4. R104 | Quad     | AVAILABLE
+  5. R105 | Suite    | MAINTENANCE
 
-### Check In Guest
+Select room (1-5, Esc to go back): 3
 
-Convert a CONFIRMED booking to CHECKED_IN:
-1. Enter guest's username
-2. Select their booking from the list
-3. System updates booking status
+Choose status:
+  1. AVAILABLE
+  2. MAINTENANCE
 
-**After check-in:**
-- Guest can access room
-- Booking status changes to CHECKED_IN
+Choice: 2
 
-### Check Out Guest
+✔ Room R103 status updated to MAINTENANCE!
+```
 
-Convert a CHECKED_IN booking to CHECKED_OUT:
-1. Enter guest's username
-2. Select their booking
-3. System marks as CHECKED_OUT
+Mark rooms for maintenance (cleaning, repairs) or back to AVAILABLE.
 
-**After check-out:**
-- Room becomes available for next guests
-- Booking is archived
-
-## Managing Staff & Guests
+## Staff & Guest Management
 
 ### View All Guests
 
-See complete roster of:
-- **Users** (registered guests with USER role)
-- **Reception staff** (other staff members)
-- **Managers** (hotel administrators)
+Select **"8. View all guests"**:
 
-Displays: username, first name, last name, email, role
+```
+╔══════════════════════════════════════╗
+║     ALL GUESTS                       ║
+╚══════════════════════════════════════╝
 
-### Room Status Management
+  user1           | John        | Doe     | USER
+  user2           | Jane        | Smith   | USER
+  reception       | Reception   | Staff   | RECEPTION
+  admin           | Admin       | User    | MANAGER
 
-Mark rooms for maintenance or availability:
+─────────────────────────────────────────
+```
 
-1. Select a room
-2. Choose status:
-   - **AVAILABLE** — Room is ready for guests
-   - **MAINTENANCE** — Room is under maintenance (not available for booking)
+Complete staff and guest roster. Shows roles for context.
 
-**Maintenance rooms:**
-- Show as red (●) in room lists
-- Do not appear in availability searches
-- Can be marked AVAILABLE again once maintenance is complete
+## Interactive Occupancy Calendar
 
-## Occupancy Calendar
+Press **C** at any menu to view the occupancy calendar:
 
-Press **C** to view the interactive calendar with full color coding:
-- **Green (██)** = Available rooms
-- **Red (██)** = Booked/occupied rooms
-- **Pink (██)** = Maintenance status
+```
+╔══════════════════════════════════════╗
+║  MARCH 2026 - OCCUPANCY CALENDAR     ║
+╚══════════════════════════════════════╝
 
-Navigate with arrow keys to check occupancy by date.
+       Mon Tue Wed Thu Fri Sat Sun
+  1   │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │
+  2   │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │
+  ...
+```
 
-## Daily Workflow
+- **Green (██)** = Available
+- **Red (██)** = Booked
+- **Pink (██)** = Maintenance
 
-**Morning:**
-1. View all bookings to see today's check-ins
-2. Check in arriving guests
-3. Verify room status
+Use for capacity planning and occupancy overview.
 
-**Throughout day:**
-1. Handle new booking requests (create manual bookings)
-2. Assist guests with enquiries (search availability)
+## Daily Reception Workflow
+
+### Morning Checklist
+1. View all bookings → Check today's arrivals
+2. View all rooms → Verify status
+3. Note any maintenance issues
+4. Prepare for check-ins
+
+### Throughout Day
+1. Handle new booking requests → Create booking
+2. Assist guests with enquiries → Search availability
 3. Mark rooms for maintenance as needed
+4. Update room status
 
-**Evening:**
-1. Check out departing guests
-2. Verify all rooms accounted for
-3. Review next day's arrivals
+### Evening Routine
+1. Check in arriving guests
+2. Check out departing guests
+3. Review next day's bookings
+4. Note any issues in error log
 
 ---
 
-**Manager contact:** For staffing changes or system issues, contact the manager.
+**Questions?** Check [Booking System](/features/booking-system) for detailed procedures.

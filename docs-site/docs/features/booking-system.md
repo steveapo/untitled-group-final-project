@@ -24,76 +24,119 @@ Users can book rooms through the **Search and book a room** option in the User m
 ### Step 1: Number of Guests
 
 ```
-Enter number of guests (1-9): _
+╔══════════════════════════════════════╗
+║      BOOK A ROOM                     ║
+╚══════════════════════════════════════╝
+
+Number of guests (1-9, Esc to go back): █
 ```
 
 Specify how many people will stay. This filters room availability by capacity.
 
-### Step 2: Interactive Date & Room Selection
+### Step 2: Interactive Occupancy Calendar
 
-**Visual Occupancy Calendar** with real-time availability:
+The system displays a **real-time visual calendar** showing room availability:
 
 ```
-        MAR 2026        
-    Mon Tue Wed Thu Fri Sat Sun
- 1   ██  ░░  ██  ░░  ██  ░░  ██
- 2   ░░  ██  ░░  ██  ░░  ██  ░░
- 3   ██  ░░  ██  ░░  ██  ░░  ██
- 4   ░░  ██  ░░  ██  ░░  ██  ░░
+╔══════════════════════════════════════╗
+║    MARCH 2026 - OCCUPANCY CALENDAR   ║
+╚══════════════════════════════════════╝
+
+       Mon Tue Wed Thu Fri Sat Sun
+  1  │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │
+  2  │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │
+  3  │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │
+  4  │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │
+  5  │ ██ │ ░░ │ ██ │ ░░ │ ██ │ ░░ │ ██ │
+
+  ↑↓ Navigate  Enter Select  Shift+→ Week  Esc Cancel
 ```
 
-**Color coding:**
-- **Green (██)** = Room available for that date
-- **Red (██)** = Room booked/occupied
-- **Pink (██)** = Room under maintenance
+**Cell Meanings:**
+- **Green solid (██)** = Room available for booking
+- **Red solid (██)** = Room booked or occupied
+- **Pink solid (██)** = Room under maintenance
+- **Dotted (░░)** = Normal cell (not selected)
+- **Solid (██)** = Cursor/selected cell
 
 **Navigation:**
+
 | Key | Action |
 |-----|--------|
-| ↑ ↓ ← → | Move by one day |
-| Shift+← → | Jump one week |
-| h j k l | Vim-mode navigation |
-| Enter | Select date or room |
-| Esc | Cancel booking flow |
+| **↑ ↓** | Navigate up/down by day |
+| **← →** | Navigate left/right by day |
+| **Shift+← →** | Jump forward/backward by week |
+| **h/j/k/l** | Vim-mode navigation (alternate) |
+| **Enter** | Select date or room |
+| **Esc** | Cancel booking flow |
 
-**Booking sequence:**
-1. Navigate to **check-in date** → Press Enter
-2. Navigate to **room** → Press Enter (highlights only available rooms)
-3. Navigate to **check-out date** → Press Enter
-4. Review and confirm booking
+**Booking Sequence:**
+
+```
+1. Navigate to check-in date
+   ↓ Press Enter
+   ↓
+2. Calendar filters to show only available rooms
+   Navigate to your desired room
+   ↓ Press Enter
+   ↓
+3. Navigate to check-out date
+   ↓ Press Enter
+   ↓
+4. View confirmation screen
+```
 
 ### Step 3: Booking Confirmation
 
-```
-Room     : R401  Double  (capacity 2)
-Check-in : 15-03-2026
-Check-out: 17-03-2026
-Nights   : 2
-Total    : $179.98
+The system shows a summary of your booking and asks for confirmation:
 
-Confirm? (yes/no, Esc to cancel): _
+```
+╔══════════════════════════════════════╗
+║     CONFIRM BOOKING                  ║
+╚══════════════════════════════════════╝
+
+  Room     : R401  Double  (capacity 2)
+  Check-in : 15-03-2026
+  Check-out: 17-03-2026
+  Nights   : 2
+  Total    : $179.98
+
+Confirm? (yes/no, Esc to cancel): █
 ```
 
-- Type `yes`/`y` to confirm
-- Type `no`/`n` to cancel
-- Type `esc` or press Esc to cancel
-- Invalid input re-prompts cleanly
+**Valid responses:**
+- `yes` or `y` → Confirm and create booking
+- `no` or `n` → Cancel booking
+- `Esc` → Cancel and return to User menu
+- Any other input → Re-prompt (doesn't cancel)
 
 On confirmation:
-- Booking is saved to Bookings file
-- Status set to CONFIRMED
+- Booking is saved to Bookings file with CONFIRMED status
 - Room marked as occupied for those dates
 - Success message displayed
+
+```
+✔ Booking confirmed!
+
+Press any key to continue...
+```
 
 ## Reception Booking Creation
 
 Reception staff can create bookings on behalf of guests through **Create booking for a guest**:
 
-1. Enter guest's username
-2. Enter number of guests
-3. Select available room
-4. Confirm check-in and check-out dates
-5. Booking created immediately with CONFIRMED status
+```
+╔══════════════════════════════════════╗
+║      CREATE BOOKING                  ║
+╚══════════════════════════════════════╝
+
+  Enter guest username (Esc to go back): user1
+  Number of guests (1-9, Esc to go back): 2
+  
+  [Calendar appears - select dates and room]
+  
+  ✔ Booking created!
+```
 
 **Use cases:**
 - Phone reservations
@@ -104,18 +147,40 @@ Reception staff can create bookings on behalf of guests through **Create booking
 ## Check-In / Check-Out
 
 ### Check-In
+
 Convert CONFIRMED → CHECKED_IN:
-1. Reception enters guest's username
-2. Selects which booking to check in
-3. Booking status updated
-4. Guest can now access room
+
+```
+╔══════════════════════════════════════╗
+║     CHECK IN GUEST                   ║
+╚══════════════════════════════════════╝
+
+  Enter guest username (Esc to go back): user1
+  
+  1. Room R401 | 15-03-2026 → 17-03-2026 | CONFIRMED
+  
+  Select booking: █
+  
+  ✔ Guest checked in!
+```
 
 ### Check-Out
+
 Convert CHECKED_IN → CHECKED_OUT:
-1. Reception enters guest's username
-2. Selects which booking to check out
-3. Booking status updated
-4. Room becomes available again
+
+```
+╔══════════════════════════════════════╗
+║    CHECK OUT GUEST                   ║
+╚══════════════════════════════════════╝
+
+  Enter guest username (Esc to go back): user1
+  
+  1. Room R401 | 15-03-2026 → 17-03-2026 | CHECKED_IN
+  
+  Select booking: █
+  
+  ✔ Guest checked out!
+```
 
 ## Availability Calculation
 
@@ -149,20 +214,40 @@ Prices are shown:
 
 ### User Cancellation
 Users can cancel CONFIRMED bookings:
-1. Select **Cancel a booking**
-2. Choose booking from list of active bookings
-3. Confirm cancellation
-4. Booking is deleted, room becomes available
+
+```
+╔══════════════════════════════════════╗
+║   CANCEL A BOOKING                   ║
+╚══════════════════════════════════════╝
+
+  Your active bookings:
+  
+  1. Room R401 | 15-03-2026 → 17-03-2026 | $179.98
+  2. Room R102 | 20-03-2026 → 22-03-2026 | $179.98
+  
+  Select booking to cancel: █
+  
+  ✔ Booking cancelled!
+```
 
 **Cannot cancel:** CHECKED_IN or CHECKED_OUT bookings (must go through reception)
 
 ### Reception Cancellation
 Reception can cancel any booking:
-1. Select **Cancel a booking**
-2. Enter guest's username
-3. Choose booking
-4. Confirm cancellation
-5. Booking removed from system
+
+```
+╔══════════════════════════════════════╗
+║   CANCEL A BOOKING                   ║
+╚══════════════════════════════════════╝
+
+  Enter guest username (Esc to go back): user1
+  
+  1. Room R401 | 15-03-2026 → 17-03-2026 | CONFIRMED
+  
+  Select booking to cancel: █
+  
+  ✔ Booking cancelled!
+```
 
 ## Booking Search & Filtering
 
@@ -203,7 +288,7 @@ Examples:
 ### Smart Availability Display
 The interactive calendar shows:
 - Real-time occupancy visualization
-- Color-coded room status
+- Color-coded room status (green/red/pink)
 - Capacity-aware filtering
 - Instant feedback on date selection
 
