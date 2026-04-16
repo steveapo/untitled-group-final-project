@@ -13,28 +13,36 @@ java -version
 ## Option 1: Download the Release (Recommended)
 
 1. Go to the [GitHub Releases page](https://github.com/steveapo/untitled-group-final-project/releases)
-2. Download `HotelBooking-v1.1.zip`
-3. Extract the zip file
+2. Download the latest release:
+   - **macOS/Linux:** `HotelBooking-v1.0.tar.gz`
+   - **Windows:** `HotelBooking-v1.0.zip`
+3. Extract the archive
 4. Run the application:
 
 ```bash
 # macOS / Linux
+tar -xzf HotelBooking-v1.0.tar.gz
 ./run.sh
 
 # Windows (double-click or run in terminal)
+# Extract HotelBooking-v1.0.zip
 run.bat
 ```
 
-The zip contains everything you need:
+The package contains everything you need:
 
 | File | Purpose |
 |------|---------|
-| `HotelBooking.jar` | The application |
-| `run.sh` | macOS / Linux launcher |
-| `run.bat` | Windows launcher |
-| `Rooms` | Room data |
-| `Bookings` | Booking data |
-| `Users` | User accounts |
+| `HotelBooking.jar` | The application (executable) |
+| `run.sh` | macOS / Linux launcher script |
+| `run.bat` | Windows launcher script |
+
+### What's New in v1.0
+
+- ✨ **Interactive calendar**: Visual date picker with arrow key navigation
+- ✨ **Smart confirmation**: Input validation loop that doesn't cancel on invalid input
+- ✨ **Perfect alignment**: Fixed calendar header and cell highlighting
+- ✨ **Cross-platform**: Full ANSI support on macOS/Linux, graceful fallback on Windows
 
 ## Option 2: Build from Source
 
