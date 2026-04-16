@@ -14,18 +14,18 @@ java -version
 
 1. Go to the [GitHub Releases page](https://github.com/steveapo/untitled-group-final-project/releases)
 2. Download the latest release:
-   - **macOS/Linux:** `HotelBooking-v1.0.tar.gz`
-   - **Windows:** `HotelBooking-v1.0.zip`
+   - **macOS/Linux:** `HotelBooking-v1.3.tar.gz`
+   - **Windows:** `HotelBooking-v1.3.zip`
 3. Extract the archive
 4. Run the application:
 
 ```bash
 # macOS / Linux
-tar -xzf HotelBooking-v1.0.tar.gz
+tar -xzf HotelBooking-v1.3.tar.gz
 ./run.sh
 
 # Windows (double-click or run in terminal)
-# Extract HotelBooking-v1.0.zip
+# Extract HotelBooking-v1.3.zip
 run.bat
 ```
 

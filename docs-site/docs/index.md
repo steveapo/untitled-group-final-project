@@ -3,8 +3,8 @@
 A cross-platform CLI application for managing hotel room reservations, built with Java.
 
 <div style="margin: 1.5rem 0;">
-  <a href="https://github.com/steveapo/untitled-group-final-project/releases/download/v1.0/HotelBooking-v1.0.zip" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--vp-c-brand-1); color: var(--vp-c-white); border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1.05rem;">
-    ⬇ Download Program (v1.0)
+  <a href="https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--vp-c-brand-1); color: var(--vp-c-white); border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 1.05rem;">
+    ⬇ Download Program (v1.3)
   </a>
   <span style="margin-left: 0.75rem; opacity: 0.6; font-size: 0.9rem;">Requires Java 11+ • <a href="/releases" style="color: var(--vp-c-brand-1); text-decoration: none;">View all releases</a></span>
 </div>

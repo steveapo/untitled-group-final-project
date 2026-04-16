@@ -1,10 +1,10 @@
 # Releases
 
-## v1.0 - April 17, 2026
+## v1.3 - April 17, 2026
 
 **Download:** 
-- [HotelBooking-v1.0.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.0/HotelBooking-v1.0.tar.gz) (macOS/Linux)
-- [HotelBooking-v1.0.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.0/HotelBooking-v1.0.zip) (Windows)
+- [HotelBooking-v1.3.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.tar.gz) (macOS/Linux)
+- [HotelBooking-v1.3.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip) (Windows)
 
 ### New Features
 - ✨ **Interactive Occupancy Calendar** - Visual date picker with arrow key navigation

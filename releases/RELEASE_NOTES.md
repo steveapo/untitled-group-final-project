@@ -1,4 +1,4 @@
-# Hotel Room Booking System - v1.0 Release
+# Hotel Room Booking System - v1.3 Release
 
 **Release Date:** April 17, 2026
 
