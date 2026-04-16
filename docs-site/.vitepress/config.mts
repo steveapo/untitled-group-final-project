@@ -14,6 +14,9 @@ export default defineConfig({
   title: 'Hotel Booking System',
   description: 'Documentation for the Hotel Room Booking System — ITC2205 Final Project',
   srcDir: 'docs',
+  markdown: {
+    html: false
+  },
   vite: {
     server: hasLocalCerts ? {
       https: {

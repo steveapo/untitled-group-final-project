@@ -14,14 +14,8 @@ java -version
 
 The easiest way to get started — everything is pre-packaged and ready to run.
 
-<div style="display: flex; gap: 1rem; margin: 1.5rem 0;">
-  <a href="https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.tar.gz" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--vp-c-brand-1); color: var(--vp-c-white); border-radius: 8px; font-weight: 600; text-decoration: none;">
-    📦 Download for macOS/Linux
-  </a>
-  <a href="https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--vp-c-brand-1); color: var(--vp-c-white); border-radius: 8px; font-weight: 600; text-decoration: none;">
-    📦 Download for Windows
-  </a>
-</div>
+- **[📦 Download for macOS/Linux](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.tar.gz)**
+- **[📦 Download for Windows](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip)**
 
 ### macOS / Linux Setup
 

@@ -143,7 +143,7 @@ switch (account.getRole()) {
 ### Functional Input Validation
 ```java
 CLI.promptUntilValid(promptText, scanner, input -> {
-    // Validate and return Result.ok() or Result.err()
+    // Validate and return Result.ok/err
 });
 ```
 
