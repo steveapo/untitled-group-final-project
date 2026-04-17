@@ -1,6 +1,6 @@
 # Releases
 
-## v1.6 — April 17, 2026 (Current)
+## v1.6 — April 18, 2026 (Current)
 
 **Download:**
 - [HotelBooking-v1.6.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.tar.gz) (macOS/Linux)
@@ -13,8 +13,14 @@
 - 📅 **Scheduled maintenance in the edit flow** — picking **MAINTENANCE** under *Edit room → Status* now prompts for start + end dates and writes a dated MAINTENANCE booking (same shape the calendar's `M` hotkey has always produced). Maintenance can no longer get stuck past its end date.
 - 📊 **Redesigned Booking Statistics dashboard** for managers: overview, booking-status bar chart, revenue breakdown (Realised / Booked / Lost / Total), 7-day occupancy heat map, and top-earning rooms — all inline in the terminal.
 - 🎯 **Room-deletion impact preview** — before deleting a room, managers now see a breakdown of every booking attached to it and a warning if any are active/upcoming. Deletion cascades through linked bookings.
-- 🎛 **Calendar cursor refinements** — cursor-on-booked now renders solid **white** (vs. the solid-green idle cell) so it's actually visible; cursor-on-maintenance renders solid **purple** (was dotted).
+- 🎛 **Arrow-key selectors in Edit Room** — field, type, and status are all picked with ↑↓ + Enter; no free-text entry required.
+- 🎛 **Calendar cursor refinements** — cursor-on-booked now renders solid **white** (vs. the solid-green idle cell) so it's always visible; cursor-on-maintenance renders solid **purple** (was dotted).
 - ⌨ **Single universal cancel key** — `e` / `q` no longer act as cancel shortcuts in raw mode, freeing them as regular input. ESC is the only cancel key in a real terminal. The `e` sentinel remains in the dumb-terminal fallback because IDE consoles can't transmit a real Escape byte.
+
+### Calendar navigation improvements
+- **Tab / Shift+Tab** — jump forward / back one calendar month in all calendar instances (staff view, booking picker). Cross-platform: the same keys work identically on macOS, Linux, and Windows.
+- **L key (staff)** — remove maintenance from a date range directly in the calendar. Press **L** on a maintenance cell to anchor the start, navigate to the end of the block, press **L** again to clear. Esc cancels at any point.
+- **Legend consistency** — the user-facing calendar legend now correctly shows the dotted glyph (░░) for unavailable cells, matching how they actually appear in the grid.
 
 ### Tech & code quality
 - `Vector` replaced with `ArrayList` / `List` across the codebase (10 files, zero behavioural change).
@@ -22,12 +28,15 @@
 - Unified date format (strict `dd-MM-uuuu`) across `DateInput`, `OccupancyCalendar`, and storage — lenient parsing that silently accepted malformed input is gone.
 - Test suite bumped to **84 tests passing**; flipped two tests that previously *asserted* the silent-accept-malformed-line bug.
 - README: new **Data Files & Concurrency** and **Keyboard Reference** sections.
+- Statistics screen date-label alignment fixed — ANSI escape bytes no longer throw off `printf` column widths.
 
 ### Bug fixes
 - 🔧 Polluted `Bookings` file (24 stale rows from broken seed scripts) cleaned out.
 - 🔧 CSV drift between the Java writers and the shell seeders — the root cause that corrupted the bookings file — fixed at the source.
 - 🔧 `GuestMenu` no longer freezes on a blank screen after a cancelled registration.
 - 🔧 Calendar cursor invisible on booked rows (solid-green-on-solid-green) — fixed.
+- 🔧 User calendar legend showed solid red (██) for unavailable; cells actually render dotted red (░░) — legend corrected.
+- 🔧 Reception guide colour legend said green = available; staff view uses gray = available — corrected.
 
 ### System requirements
 - **Java:** 22 or later (bundled JLine build targets a modern JDK)
