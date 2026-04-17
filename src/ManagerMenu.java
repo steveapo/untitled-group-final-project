@@ -142,14 +142,14 @@ public class ManagerMenu {
         if (target == null) return;
         String roomNo = target.getRoomNumber();
 
-        CLI.printMenuItem("1", "Price");
-        CLI.printMenuItem("2", "Type");
-        CLI.printMenuItem("3", "Status");
-        System.out.print(CLI.prompt("Edit (Esc to go back): "));
-        String opt = CLI.readLine(scanner);
-        if (opt == null) return;
-        switch (opt) {
-            case "1": {
+        String[] fields = {"Price  ($" + String.format("%.2f", target.getPrice()) + "/night)",
+                           "Type   (" + target.getType() + ")",
+                           "Status (" + target.getStatus() + ")"};
+        int fieldChoice = CLI.selectFromList(fields, "What to edit", scanner);
+        if (fieldChoice == -1) return;
+
+        switch (fieldChoice) {
+            case 0: {
                 Double newPrice = CLI.promptUntilValid(
                     "New price (Esc to go back): ", scanner,
                     s -> {
@@ -163,30 +163,26 @@ public class ManagerMenu {
                 target.setPrice(newPrice);
                 break;
             }
-            case "2": {
-                String newType = CLI.promptUntilValid(
-                    "New type (Single/Double/Triple/Quad/Suite, Esc to go back): ", scanner,
-                    s -> {
-                        if (s.matches("(?i)Single|Double|Triple|Quad|Suite")) {
-                            return CLI.Result.ok(s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase());
-                        }
-                        return CLI.Result.err("[ERR_TYPE] Type must be one of: Single, Double, Triple, Quad, Suite.");
-                    });
-                if (newType == null) return;
-                target.setType(newType);
+            case 1: {
+                String[] types = {"Single", "Double", "Triple", "Quad", "Suite"};
+                int currentType = 0;
+                for (int i = 0; i < types.length; i++) {
+                    if (types[i].equalsIgnoreCase(target.getType())) { currentType = i; break; }
+                }
+                int typeChoice = CLI.selectFromList(types, "New type", scanner, currentType);
+                if (typeChoice == -1) return;
+                target.setType(types[typeChoice]);
                 break;
             }
-            case "3":
+            case 2: {
                 String[] statuses = {"AVAILABLE", "MAINTENANCE"};
                 int preselect = target.getStatus().equals("MAINTENANCE") ? 1 : 0;
                 int statusChoice = CLI.selectFromList(statuses, "New status", scanner, preselect);
                 if (statusChoice == -1) return;
                 target.setStatus(statuses[statusChoice]);
                 break;
-            default:
-                System.out.println(CLI.warning("[ERR_OPTION] Invalid option."));
-                Main.pause(scanner);
-                return;
+            }
+            default: return;
         }
         file.updateRooms(rooms);
         CLI.randomSpinner("Saving changes");
