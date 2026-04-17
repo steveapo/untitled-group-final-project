@@ -43,6 +43,35 @@ public class SeedManager {
         }
     }
 
+    /**
+     * Create and seed the Rooms file with default rooms.
+     * Called automatically by Main on first run.
+     */
+    public static void seedRooms(Files file) {
+        try {
+            file.createRoomsFile();
+            file.createNewRoom("R101", 1, 59.99, "Single", "AVAILABLE");
+            file.createNewRoom("R102", 2, 89.99, "Double", "AVAILABLE");
+            file.createNewRoom("R103", 3, 119.99, "Triple", "AVAILABLE");
+            file.createNewRoom("R104", 4, 149.99, "Quad", "AVAILABLE");
+            file.createNewRoom("R105", 2, 199.99, "Suite", "AVAILABLE");
+        } catch (Exception e) {
+            System.err.println("Failed to seed rooms: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Create the Bookings file (empty initially).
+     * Called automatically by Main on first run.
+     */
+    public static void seedBookings(Files file) {
+        try {
+            file.createBookingsFile();
+        } catch (Exception e) {
+            System.err.println("Failed to create bookings file: " + e.getMessage());
+        }
+    }
+
     /** Standalone CLI tool — print hashed user records to stdout for manual seeding. */
     public static void main(String[] args) throws Exception {
         Scanner scanner = new Scanner(System.in);

@@ -15,20 +15,21 @@ public class Main {
         Vector<Bookings> bookings = new Vector<>();
         Vector<Account>  users    = new Vector<>();
 
-        // Auto-seed admin account on first run
+        // Auto-seed admin account and data files on first run
         CLI.withSpinner("Initialising system", () -> {
             if (!file.adminExists()) {
                 file.createUsersFile();
                 SeedManager.seedAdmin(file);
             }
+            if (!file.roomsFileExists()) {
+                SeedManager.seedRooms(file);
+            }
+            if (!file.bookingsFileExists()) {
+                SeedManager.seedBookings(file);
+            }
         });
 
         file.getUsers(users);
-
-        if (!file.checkFile()) {
-            System.out.println(CLI.error("Critical data files (Rooms or Bookings) are missing. Exiting."));
-            return;
-        }
 
         CLI.withSpinner("Loading rooms and bookings", () -> {
             file.populateRooms(rooms);

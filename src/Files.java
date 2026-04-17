@@ -111,6 +111,16 @@ public class Files {
         }
     }
 
+    /** Check if the Rooms file exists. */
+    public boolean roomsFileExists() {
+        return ROOMS_FILE.exists();
+    }
+
+    /** Check if the Bookings file exists. */
+    public boolean bookingsFileExists() {
+        return BOOKINGS_FILE.exists();
+    }
+
     /** Overwrite the Bookings file with all current in-memory bookings (5 fields per line). */
     public void updateBookings(Vector<Bookings> bookings) {
         File original = BOOKINGS_FILE;
@@ -151,6 +161,37 @@ public class Files {
             }
         } catch (IOException e) {
             System.err.println("Error creating Users file");
+        }
+    }
+
+    /** Create the Rooms file (empty). */
+    public void createRoomsFile() {
+        try {
+            if (ROOMS_FILE.createNewFile()) {
+                System.out.println("Rooms file created");
+            }
+        } catch (IOException e) {
+            System.err.println("Error creating Rooms file");
+        }
+    }
+
+    /** Create the Bookings file (empty). */
+    public void createBookingsFile() {
+        try {
+            if (BOOKINGS_FILE.createNewFile()) {
+                System.out.println("Bookings file created");
+            }
+        } catch (IOException e) {
+            System.err.println("Error creating Bookings file");
+        }
+    }
+
+    /** Add a new room record to the Rooms file (5 CSV fields). */
+    public void createNewRoom(String roomNumber, int capacity, double price, String type, String status) {
+        try (FileWriter writer = new FileWriter(ROOMS_FILE, true)) {
+            writer.write(roomNumber + "," + capacity + "," + price + "," + type + "," + status + "\n");
+        } catch (IOException e) {
+            System.err.println("Error writing room");
         }
     }
 
