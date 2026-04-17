@@ -57,9 +57,10 @@ echo "  • 5 additional user accounts (user2-user6)"
 echo "  • 4 additional rooms (R105-R108)"
 echo "  • Sample bookings for demo/testing"
 echo
-read -p "Continue? (yes/no): " response
-# Remove any carriage returns from input
-response=$(echo "$response" | tr -d '\r')
+printf "Continue? (yes/no): "
+IFS= read -r response
+# Remove any trailing whitespace and carriage returns
+response=$(printf '%s' "$response" | sed 's/[[:space:]]*$//')
 
 if [[ ! "$response" =~ ^[Yy][Ee][Ss]?$ ]]; then
     echo "Seeding cancelled."
