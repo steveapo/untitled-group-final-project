@@ -36,7 +36,7 @@ public class ReceptionMenu {
                 case "7":  checkOut(scanner, bookings, file);                                      break;
                 case "8":  viewAllGuests(users); Main.pause(scanner);                              break;
                 case "9":  setRoomStatus(scanner, rooms, file);                                    break;
-                case "C":  OccupancyCalendar.show(scanner, rooms, bookings, true);                break;
+                case "C":  OccupancyCalendar.show(scanner, rooms, bookings, true, file);             break;
                 case "ESC": return;
                 default:
                     System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–9 or C."));
@@ -348,20 +348,8 @@ public class ReceptionMenu {
         CLI.clearScreen();
         CLI.printBanner("SET ROOM STATUS");
         System.out.println();
-        viewAllRooms(rooms);
 
-        Room target = CLI.promptUntilValid(
-            "Room number to update (Esc to go back): ", scanner,
-            s -> {
-                String upper = s.toUpperCase();
-                if (!upper.matches("R\\d{3}")) {
-                    return CLI.Result.err("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401).");
-                }
-                for (Room r : rooms) {
-                    if (r.getRoomNumber().equalsIgnoreCase(upper)) return CLI.Result.ok(r);
-                }
-                return CLI.Result.err("[ERR_NOT_FOUND] Room " + upper + " not found.");
-            });
+        Room target = CLI.selectRoom(rooms, "Select room to update", scanner);
         if (target == null) return;
 
         System.out.println("  Current: " + UserMenu.statusColour(target.getStatus()));

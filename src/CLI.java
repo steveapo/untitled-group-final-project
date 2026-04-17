@@ -15,6 +15,7 @@
  *   - NO_COLOR is set (https://no-color.org)
  */
 import java.util.Scanner;
+import java.util.Vector;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
@@ -322,6 +323,108 @@ public class CLI {
         System.out.println(dim("  ↑↓ Navigate  Enter Select  Esc Cancel") + "\033[K");
     }
 
+    // ── Interactive room selector ───────────────────────────────────────
+
+    /**
+     * Arrow-key room selector with magenta highlight.
+     * Shows room number, type, price, capacity, and status dot.
+     * Returns selected Room or null on ESC.
+     */
+    public static Room selectRoom(Vector<Room> rooms, String title, Scanner scanner) {
+        return selectRoom(rooms, title, scanner, 0);
+    }
+
+    public static Room selectRoom(Vector<Room> rooms, String title, Scanner scanner, int initialSelection) {
+        if (rooms.isEmpty()) return null;
+
+        if (rawModeAvailable()) {
+            final int[] selectedHolder = { Math.max(0, Math.min(initialSelection, rooms.size() - 1)) };
+            Integer raw = withRawMode(() -> {
+                NonBlockingReader reader = TERMINAL.reader();
+                int selected = selectedHolder[0];
+                renderRoomList(rooms, title, selected);
+                while (true) {
+                    int ch = reader.read();
+                    if (ch == '\r' || ch == '\n') {
+                        System.out.println();
+                        return selected;
+                    } else if (ch == 27) { // ESC
+                        int next = reader.read(50L);
+                        if (next == -2) {
+                            System.out.println();
+                            return -1;
+                        }
+                        if (next == '[') {
+                            int arrow = reader.read(50L);
+                            if (arrow == 'A')      selected = (selected - 1 + rooms.size()) % rooms.size();
+                            else if (arrow == 'B') selected = (selected + 1) % rooms.size();
+                            while (reader.read(10L) >= 0) { /* drain */ }
+                        } else {
+                            while (reader.read(10L) >= 0) { /* drain */ }
+                        }
+                    } else if (ch == 'e' || ch == 'q') {
+                        System.out.println();
+                        return -1;
+                    } else if (ch == 'k') {
+                        selected = (selected - 1 + rooms.size()) % rooms.size();
+                    } else if (ch == 'j') {
+                        selected = (selected + 1) % rooms.size();
+                    } else {
+                        continue;
+                    }
+                    int linesToClear = rooms.size() + 2;
+                    System.out.print("\033[" + linesToClear + "A");
+                    renderRoomList(rooms, title, selected);
+                }
+            }, null);
+            if (raw != null && raw >= 0) return rooms.get(raw);
+            if (raw != null) return null; // cancelled
+        }
+
+        // Fallback: numbered selection
+        System.out.println("  " + header(title));
+        System.out.println();
+        for (int i = 0; i < rooms.size(); i++) {
+            Room r = rooms.get(i);
+            String dot = r.getStatus().equals("AVAILABLE") ? green("●") : red("●");
+            System.out.printf("  %s %s  %-6s | %-8s | %s/night | %dp | %s%n",
+                    cyan((i + 1) + "."), dot,
+                    bold(r.getRoomNumber()), r.getType(),
+                    yellow(String.format("$%.2f", r.getPrice())),
+                    r.getCapacity(),
+                    UserMenu.statusColour(r.getStatus()));
+        }
+        System.out.print(prompt("Choice (1-" + rooms.size() + ", or 'e' to cancel): "));
+        String input = scanner.nextLine().trim();
+        if (input.equalsIgnoreCase("e")) return null;
+        try {
+            int choice = Integer.parseInt(input);
+            if (choice >= 1 && choice <= rooms.size()) return rooms.get(choice - 1);
+        } catch (NumberFormatException e) { /* fall through */ }
+        System.out.println(warning("Invalid selection."));
+        return null;
+    }
+
+    /** Render the room selector list with the currently highlighted item in magenta. */
+    private static void renderRoomList(Vector<Room> rooms, String title, int selected) {
+        System.out.println();
+        for (int i = 0; i < rooms.size(); i++) {
+            Room r = rooms.get(i);
+            String dot = r.getStatus().equals("AVAILABLE") ? green("●") : red("●");
+            String info = String.format("%-6s | %-8s | %s/night | %dp | %s",
+                    r.getRoomNumber(), r.getType(),
+                    String.format("$%.2f", r.getPrice()),
+                    r.getCapacity(),
+                    r.getStatus());
+            if (i == selected) {
+                System.out.println(magenta("  ▸ ") + dot + "  " + magenta(info) + "\033[K");
+            } else {
+                System.out.println(dim("    ") + dot + "  " + info + "\033[K");
+            }
+        }
+        System.out.println(dim("  ↑↓ Navigate  Enter Select  Esc Cancel") + "\033[K");
+    }
+
     // ── Banner / divider helpers ─────────────────────────────────────────
     public static void printBanner(String title) {
         String line = "═".repeat(38);
@@ -588,6 +691,7 @@ public class CLI {
                     continue; // unrecognised — keep waiting
                 }
                 if (ch == 'T' || ch == 't') return "T";
+                if (ch == 'M' || ch == 'm') return "M";
                 if (ch == '\r' || ch == '\n') return "ENTER";
                 // all other keys ignored
             }
@@ -606,6 +710,7 @@ public class CLI {
             case "k": return "UP";
             case "j": return "DOWN";
             case "t": case "T": return "T";
+            case "m": case "M": return "M";
             default:  return "ESC";
         }
     }

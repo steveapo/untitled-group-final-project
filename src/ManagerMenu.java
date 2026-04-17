@@ -19,11 +19,11 @@ public class ManagerMenu {
             String choice = CLI.readChoice(scanner);
 
             switch (choice) {
-                case "1": roomManagement(scanner, rooms, file);                          break;
+                case "1": roomManagement(scanner, rooms, bookings, file);                break;
                 case "2": staffManagement(scanner, users, file);                         break;
                 case "3": viewAllBookings(bookings); Main.pause(scanner);                break;
                 case "4": viewStats(bookings);       Main.pause(scanner);                break;
-                case "C": OccupancyCalendar.show(scanner, rooms, bookings, true);       break;
+                case "C": OccupancyCalendar.show(scanner, rooms, bookings, true, file); break;
                 case "ESC": return;
                 default:
                     System.out.println(CLI.warning("[ERR_OPTION] Invalid option. Enter 1–4 or C."));
@@ -33,7 +33,7 @@ public class ManagerMenu {
     }
 
     // ─── Room Management ───────────────────────────────────────────────
-    private static void roomManagement(Scanner scanner, Vector<Room> rooms, Files file) {
+    private static void roomManagement(Scanner scanner, Vector<Room> rooms, Vector<Bookings> bookings, Files file) {
         while (true) {
             CLI.clearScreen();
             CLI.printBanner("ROOM MANAGEMENT");
@@ -138,8 +138,7 @@ public class ManagerMenu {
         CLI.clearScreen();
         CLI.printBanner("EDIT ROOM");
         System.out.println();
-        listAllRooms(rooms);
-        Room target = promptRoomLookup(scanner, rooms, "to edit");
+        Room target = CLI.selectRoom(rooms, "Select room to edit", scanner);
         if (target == null) return;
         String roomNo = target.getRoomNumber();
 
@@ -195,28 +194,11 @@ public class ManagerMenu {
         Main.pause(scanner);
     }
 
-    /** Prompt for a room number with R### validation, returning the matched Room or null on ESC. */
-    private static Room promptRoomLookup(Scanner scanner, Vector<Room> rooms, String action) {
-        return CLI.promptUntilValid(
-            "Room number " + action + " (Esc to go back): ", scanner,
-            s -> {
-                String upper = s.toUpperCase();
-                if (!upper.matches("R\\d{3}")) {
-                    return CLI.Result.err("[ERR_ROOM_FMT] Room number must follow R### format (e.g. R401).");
-                }
-                for (Room r : rooms) {
-                    if (r.getRoomNumber().equalsIgnoreCase(upper)) return CLI.Result.ok(r);
-                }
-                return CLI.Result.err("[ERR_NOT_FOUND] Room " + upper + " not found.");
-            });
-    }
-
     private static void deleteRoom(Scanner scanner, Vector<Room> rooms, Files file) {
         CLI.clearScreen();
         CLI.printBanner("DELETE ROOM");
         System.out.println();
-        listAllRooms(rooms);
-        Room toRemove = promptRoomLookup(scanner, rooms, "to delete");
+        Room toRemove = CLI.selectRoom(rooms, "Select room to delete", scanner);
         if (toRemove == null) return;
         String roomNo = toRemove.getRoomNumber();
         System.out.print(CLI.prompt("Confirm delete " + roomNo + "? (yes/no, Esc to go back): "));
