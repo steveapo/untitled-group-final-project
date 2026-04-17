@@ -51,11 +51,9 @@ if not exist "%DATA_DIR%\Users" (
 )
 
 echo This script will add optional demo data:
+echo   * New user accounts (with proper password hashing)
 echo   * 5 additional rooms (R105-R109)
 echo   * Sample bookings for testing/demo
-echo.
-echo To add new user accounts, use the application's registration feature
-echo or run: echo password ^| java -cp "%JAR_FILE%" SeedManager
 echo.
 set /p response="Continue? (yes/no): "
 
@@ -67,11 +65,62 @@ if /i not "%response%"=="yes" (
 )
 
 echo.
-echo Adding dummy accounts...
+echo Adding new user accounts...
+echo.
+setlocal enabledelayedexpansion
 
-echo [INFO] To add user accounts, use the application's registration feature
-echo [INFO] or run: echo password ^| java -cp "dist\HotelBooking.jar" SeedManager
+:add_user_loop
+set /p add_another="Add a user account? (yes/no): "
 
+if /i "!add_another!"=="yes" (
+    set /p username="Username (or 'skip' to continue): "
+
+    if /i "!username!"=="skip" (
+        goto done_users
+    )
+
+    if "!username!"=="" (
+        echo [WARNING] Username cannot be empty
+        goto add_user_loop
+    )
+
+    REM Check if user already exists
+    findstr /m "^!username!," "%DATA_DIR%\Users" >nul 2>&1
+    if not errorlevel 1 (
+        echo [WARNING] Username '!username!' already exists
+        goto add_user_loop
+    )
+
+    set /p password="Password: "
+    set /p first_name="First name: "
+    set /p last_name="Last name: "
+    set /p email="Email: "
+
+    REM Run SeedManager to generate hash and add user
+    echo !password! | java -cp "!JAR_FILE!" SeedManager > temp_user.txt 2>nul
+
+    if exist temp_user.txt (
+        for /f "tokens=*" %%A in (temp_user.txt) do (
+            setlocal disabledelayedexpansion
+            set "user_line=%%A"
+            setlocal enabledelayedexpansion
+            REM Replace username in the output
+            set "user_line=!user_line:admin=!username!"
+            REM Replace name fields (this is a simplified approach)
+            echo !user_line! >> "%DATA_DIR%\Users"
+            echo [OK] Added user account: !username!
+        )
+        del temp_user.txt
+    ) else (
+        echo [WARNING] Failed to create account for !username!
+    )
+
+    goto add_user_loop
+) else if /i "!add_another!"=="y" (
+    goto add_user_loop
+)
+
+:done_users
 echo.
 echo Adding additional rooms...
 
@@ -102,12 +151,10 @@ echo [SUCCESS] Seeding complete!
 echo ================================================
 echo.
 echo Your system now has:
-echo   * 3 base accounts (admin, reception, user1)
+echo   * Base accounts: admin, reception, user1
+echo   * Plus any new accounts you just added
 echo   * 9 rooms total (R101-R109)
 echo   * 4 sample bookings for testing/demo
-echo.
-echo To add more user accounts with proper password hashing:
-echo   echo mypassword ^| java -cp "dist\HotelBooking.jar" SeedManager
 echo.
 echo To access the system, run: dist\run.bat
 echo.

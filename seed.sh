@@ -90,6 +90,82 @@ if [[ ! "$response" =~ ^[Yy][Ee][Ss]?$ ]]; then
 fi
 
 echo
+echo -e "${GREEN}Adding new user accounts...${NC}"
+echo
+printf "Add a new user account? (yes/no): "
+IFS= read -r add_user_response
+add_user_response=$(printf '%s' "$add_user_response" | sed 's/[[:space:]]*$//')
+
+if [[ "$add_user_response" =~ ^[Yy][Ee][Ss]?$ ]]; then
+    while true; do
+        printf "Username (or 'skip' to continue): "
+        IFS= read -r username
+        username=$(printf '%s' "$username" | sed 's/[[:space:]]*$//')
+
+        if [[ "$username" == "skip" ]]; then
+            break
+        fi
+
+        if [ -z "$username" ]; then
+            echo -e "${YELLOW}Username cannot be empty${NC}"
+            continue
+        fi
+
+        # Check if user already exists
+        if grep -q "^$username," "$DATA_DIR/Users" 2>/dev/null; then
+            echo -e "${YELLOW}⚠ Username '$username' already exists${NC}"
+            continue
+        fi
+
+        printf "Password (hidden): "
+        read -rs password
+        echo
+
+        if [ -z "$password" ]; then
+            echo -e "${YELLOW}Password cannot be empty${NC}"
+            continue
+        fi
+
+        printf "First name: "
+        IFS= read -r first_name
+        first_name=$(printf '%s' "$first_name" | sed 's/[[:space:]]*$//')
+
+        printf "Last name: "
+        IFS= read -r last_name
+        last_name=$(printf '%s' "$last_name" | sed 's/[[:space:]]*$//')
+
+        printf "Email: "
+        IFS= read -r email
+        email=$(printf '%s' "$email" | sed 's/[[:space:]]*$//')
+
+        # Run SeedManager to generate hash and add user
+        echo -n "$password" | java -cp "$JAR_FILE" SeedManager > /tmp/user_seed.txt 2>/dev/null
+
+        if [ -s /tmp/user_seed.txt ]; then
+            user_line=$(cat /tmp/user_seed.txt)
+            # Replace default values with user input
+            user_line=$(echo "$user_line" | sed "s/^[^,]*/$username/")
+            user_line=$(echo "$user_line" | sed "s/,Admin,/,$first_name,/" | sed "s/User,/$last_name,/")
+            user_line=$(echo "$user_line" | sed "s/admin@hotel.com/$email/")
+
+            echo "$user_line" >> "$DATA_DIR/Users"
+            echo -e "${GREEN}✓ Added user account: $username${NC}"
+            rm /tmp/user_seed.txt
+        else
+            echo -e "${YELLOW}⚠ Failed to create account for $username${NC}"
+            rm /tmp/user_seed.txt 2>/dev/null || true
+        fi
+
+        printf "\nAdd another account? (yes/no): "
+        IFS= read -r another
+        another=$(printf '%s' "$another" | sed 's/[[:space:]]*$//')
+        if [[ ! "$another" =~ ^[Yy][Ee][Ss]?$ ]]; then
+            break
+        fi
+    done
+fi
+
+echo
 echo -e "${GREEN}Adding additional rooms...${NC}"
 
 cat >> "$DATA_DIR/Rooms" << 'EOF'
@@ -122,12 +198,10 @@ echo -e "${GREEN}✓ Seeding complete!${NC}"
 echo -e "${BLUE}================================================${NC}"
 echo
 echo "Your system now has:"
-echo "  • 3 base accounts (admin, reception, user1)"
+echo "  • Base accounts: admin, reception, user1"
+echo "  • Plus any new accounts you just added"
 echo "  • 9 rooms total (R101-R109)"
 echo "  • 4 sample bookings for testing/demo"
-echo
-echo "To add more user accounts with proper password hashing:"
-echo "  echo 'mypassword' | java -cp \"dist/HotelBooking.jar\" SeedManager"
 echo
 echo "To access the system, run: ./dist/run.sh"
 echo
