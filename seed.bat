@@ -24,7 +24,7 @@ REM ############################################################################
 setlocal enabledelayedexpansion
 
 set JAR_FILE=dist\HotelBooking.jar
-set DATA_DIR=.
+set DATA_DIR=dist
 
 cls
 echo.

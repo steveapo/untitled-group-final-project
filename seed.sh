@@ -23,7 +23,7 @@
 ###############################################################################
 
 JAR_FILE="dist/HotelBooking.jar"
-DATA_DIR="."
+DATA_DIR="dist"
 
 # Color codes for output
 GREEN='\033[0;32m'
@@ -45,9 +45,8 @@ fi
 
 # Check if data files exist (they should, after first run)
 if [ ! -f "$DATA_DIR/Users" ] || [ ! -f "$DATA_DIR/Rooms" ] || [ ! -f "$DATA_DIR/Bookings" ]; then
-    echo -e "${YELLOW}⚠ Warning:${NC} Data files not found."
+    echo -e "${YELLOW}⚠ Warning:${NC} Data files not found in $DATA_DIR/"
     echo "Please run the main application first (./dist/run.sh) to initialize the system."
-    echo "The seed script only adds to an existing installation."
     exit 1
 fi
 
@@ -55,23 +54,20 @@ fi
 if grep -q "^R105," "$DATA_DIR/Rooms" 2>/dev/null; then
     echo -e "${YELLOW}⚠ Seed data already exists${NC} (R105 room found)"
     echo
-    printf "Reseed (delete and repopulate demo data)? (yes/no): "
-    IFS= read -r reseed_response
+    read -p "Delete and reseed? (yes/no): " -r reseed_response
     reseed_response=$(printf '%s' "$reseed_response" | sed 's/[[:space:]]*$//')
 
     if [[ "$reseed_response" =~ ^[Yy][Ee][Ss]?$ ]]; then
         echo "Backing up and cleaning seed data..."
-        cp "$DATA_DIR/Users" "$DATA_DIR/Users.backup.$(date +%s)" 2>/dev/null || true
         cp "$DATA_DIR/Rooms" "$DATA_DIR/Rooms.backup.$(date +%s)" 2>/dev/null || true
         cp "$DATA_DIR/Bookings" "$DATA_DIR/Bookings.backup.$(date +%s)" 2>/dev/null || true
 
-        # Remove only the seeded demo rooms (R105+)
+        # Remove only the seeded demo rooms (R105+) and their bookings
         grep -v "^R10[5-9]," "$DATA_DIR/Rooms" > "$DATA_DIR/Rooms.tmp" && mv "$DATA_DIR/Rooms.tmp" "$DATA_DIR/Rooms"
-        # Clean bookings with demo rooms
         awk '!/^R10[5-9],/' "$DATA_DIR/Bookings" > "$DATA_DIR/Bookings.tmp" && mv "$DATA_DIR/Bookings.tmp" "$DATA_DIR/Bookings"
         echo -e "${GREEN}✓ Cleaned up existing seed data${NC}"
     else
-        echo "Seeding skipped."
+        echo "Seeding cancelled."
         exit 0
     fi
 fi
@@ -80,8 +76,8 @@ echo "This script will add demo data to simulate a working hotel environment:"
 echo "  • 5 additional rooms (R105-R109)"
 echo "  • 12 sample bookings showing occupancy and reservation history"
 echo
-printf "Continue? (yes/no): "
-IFS= read -r response
+
+read -p "Continue? (yes/no): " -r response
 response=$(printf '%s' "$response" | sed 's/[[:space:]]*$//')
 
 if [[ ! "$response" =~ ^[Yy][Ee][Ss]?$ ]]; then
