@@ -1,10 +1,10 @@
 #!/bin/bash
 
 ###############################################################################
-# Hotel Room Booking System - Seed Script (Optional Dummy Data)
+# Hotel Room Booking System - Seed Script (Optional Demo Data)
 #
-# Purpose: Add optional dummy accounts, rooms, bookings, and statistics
-#          to an existing HotelBooking installation.
+# Purpose: Add optional demo rooms and bookings to simulate a working
+#          hotel environment with occupancy and reservation history.
 #
 # Usage:   ./seed.sh
 #
@@ -15,8 +15,10 @@
 #   - 3 accounts: admin, reception, user1
 #   - 4 rooms: R101 (Single), R102 (Double), R103 (Triple), R104 (Quad)
 #
-# This script allows you to interactively add more accounts via the app,
-# and adds sample rooms and bookings for testing/demo purposes.
+# This script adds:
+#   - 5 additional rooms (R105-R109)
+#   - 12 sample bookings with various statuses (CHECKED_OUT, CHECKED_IN, CONFIRMED)
+#     showing realistic occupancy patterns for the pre-loaded users
 #
 ###############################################################################
 
@@ -50,22 +52,23 @@ if [ ! -f "$DATA_DIR/Users" ] || [ ! -f "$DATA_DIR/Rooms" ] || [ ! -f "$DATA_DIR
 fi
 
 # Check if seed data already exists
-if grep -q "user2" "$DATA_DIR/Users" 2>/dev/null; then
-    echo -e "${YELLOW}⚠ Seed data already exists${NC} (user2 account found)"
+if grep -q "^R105," "$DATA_DIR/Rooms" 2>/dev/null; then
+    echo -e "${YELLOW}⚠ Seed data already exists${NC} (R105 room found)"
     echo
-    printf "Reset and reseed? (yes/no): "
+    printf "Reseed (delete and repopulate demo data)? (yes/no): "
     IFS= read -r reseed_response
     reseed_response=$(printf '%s' "$reseed_response" | sed 's/[[:space:]]*$//')
 
     if [[ "$reseed_response" =~ ^[Yy][Ee][Ss]?$ ]]; then
         echo "Backing up and cleaning seed data..."
         cp "$DATA_DIR/Users" "$DATA_DIR/Users.backup.$(date +%s)" 2>/dev/null || true
+        cp "$DATA_DIR/Rooms" "$DATA_DIR/Rooms.backup.$(date +%s)" 2>/dev/null || true
+        cp "$DATA_DIR/Bookings" "$DATA_DIR/Bookings.backup.$(date +%s)" 2>/dev/null || true
 
-        # Remove only the seeded demo accounts (user2-user6) and rooms (R105+)
-        grep -v "^user[2-6]," "$DATA_DIR/Users" > "$DATA_DIR/Users.tmp" && mv "$DATA_DIR/Users.tmp" "$DATA_DIR/Users"
+        # Remove only the seeded demo rooms (R105+)
         grep -v "^R10[5-9]," "$DATA_DIR/Rooms" > "$DATA_DIR/Rooms.tmp" && mv "$DATA_DIR/Rooms.tmp" "$DATA_DIR/Rooms"
-        # Clean bookings with demo users
-        awk '!/^R10[1-9],user[2-6],/' "$DATA_DIR/Bookings" > "$DATA_DIR/Bookings.tmp" && mv "$DATA_DIR/Bookings.tmp" "$DATA_DIR/Bookings"
+        # Clean bookings with demo rooms
+        awk '!/^R10[5-9],/' "$DATA_DIR/Bookings" > "$DATA_DIR/Bookings.tmp" && mv "$DATA_DIR/Bookings.tmp" "$DATA_DIR/Bookings"
         echo -e "${GREEN}✓ Cleaned up existing seed data${NC}"
     else
         echo "Seeding skipped."
@@ -73,12 +76,9 @@ if grep -q "user2" "$DATA_DIR/Users" 2>/dev/null; then
     fi
 fi
 
-echo "This script will add optional demo data:"
+echo "This script will add demo data to simulate a working hotel environment:"
 echo "  • 5 additional rooms (R105-R109)"
-echo "  • Sample bookings for testing/demo"
-echo
-echo "To add new user accounts, use the application's registration feature"
-echo "or run: echo 'password' | java -cp \"$JAR_FILE\" SeedManager"
+echo "  • 12 sample bookings showing occupancy and reservation history"
 echo
 printf "Continue? (yes/no): "
 IFS= read -r response
@@ -87,82 +87,6 @@ response=$(printf '%s' "$response" | sed 's/[[:space:]]*$//')
 if [[ ! "$response" =~ ^[Yy][Ee][Ss]?$ ]]; then
     echo "Seeding cancelled."
     exit 0
-fi
-
-echo
-echo -e "${GREEN}Adding new user accounts...${NC}"
-echo
-printf "Add a new user account? (yes/no): "
-IFS= read -r add_user_response
-add_user_response=$(printf '%s' "$add_user_response" | sed 's/[[:space:]]*$//')
-
-if [[ "$add_user_response" =~ ^[Yy][Ee][Ss]?$ ]]; then
-    while true; do
-        printf "Username (or 'skip' to continue): "
-        IFS= read -r username
-        username=$(printf '%s' "$username" | sed 's/[[:space:]]*$//')
-
-        if [[ "$username" == "skip" ]]; then
-            break
-        fi
-
-        if [ -z "$username" ]; then
-            echo -e "${YELLOW}Username cannot be empty${NC}"
-            continue
-        fi
-
-        # Check if user already exists
-        if grep -q "^$username," "$DATA_DIR/Users" 2>/dev/null; then
-            echo -e "${YELLOW}⚠ Username '$username' already exists${NC}"
-            continue
-        fi
-
-        printf "Password (hidden): "
-        read -rs password
-        echo
-
-        if [ -z "$password" ]; then
-            echo -e "${YELLOW}Password cannot be empty${NC}"
-            continue
-        fi
-
-        printf "First name: "
-        IFS= read -r first_name
-        first_name=$(printf '%s' "$first_name" | sed 's/[[:space:]]*$//')
-
-        printf "Last name: "
-        IFS= read -r last_name
-        last_name=$(printf '%s' "$last_name" | sed 's/[[:space:]]*$//')
-
-        printf "Email: "
-        IFS= read -r email
-        email=$(printf '%s' "$email" | sed 's/[[:space:]]*$//')
-
-        # Run SeedManager to generate hash and add user
-        echo -n "$password" | java -cp "$JAR_FILE" SeedManager > /tmp/user_seed.txt 2>/dev/null
-
-        if [ -s /tmp/user_seed.txt ]; then
-            user_line=$(cat /tmp/user_seed.txt)
-            # Replace default values with user input
-            user_line=$(echo "$user_line" | sed "s/^[^,]*/$username/")
-            user_line=$(echo "$user_line" | sed "s/,Admin,/,$first_name,/" | sed "s/User,/$last_name,/")
-            user_line=$(echo "$user_line" | sed "s/admin@hotel.com/$email/")
-
-            echo "$user_line" >> "$DATA_DIR/Users"
-            echo -e "${GREEN}✓ Added user account: $username${NC}"
-            rm /tmp/user_seed.txt
-        else
-            echo -e "${YELLOW}⚠ Failed to create account for $username${NC}"
-            rm /tmp/user_seed.txt 2>/dev/null || true
-        fi
-
-        printf "\nAdd another account? (yes/no): "
-        IFS= read -r another
-        another=$(printf '%s' "$another" | sed 's/[[:space:]]*$//')
-        if [[ ! "$another" =~ ^[Yy][Ee][Ss]?$ ]]; then
-            break
-        fi
-    done
 fi
 
 echo
@@ -179,18 +103,27 @@ EOF
 echo -e "${GREEN}✓ Added 5 additional rooms (R105-R109)${NC}"
 
 echo
-echo -e "${GREEN}Adding sample bookings for demonstration...${NC}"
+echo -e "${GREEN}Adding sample bookings to simulate occupancy...${NC}"
 
-# Use fixed dates to avoid platform-specific date math issues
-# Bookings in different states: CHECKED_OUT, CHECKED_IN, CONFIRMED
+# Sample bookings showing realistic occupancy patterns
+# Using pre-loaded users: admin, reception, user1
+# Format: roomNumber,guestUsername,checkInDate,checkOutDate,totalPrice,status
 cat >> "$DATA_DIR/Bookings" << 'EOF'
-R101,user1,10-04-2026,13-04-2026,240.00,CHECKED_OUT
-R102,admin,15-04-2026,17-04-2026,180.00,CHECKED_IN
-R103,reception,18-04-2026,25-04-2026,840.00,CONFIRMED
-R105,user1,20-04-2026,22-04-2026,400.00,CONFIRMED
+R101,user1,10-04-2026,13-04-2026,180.00,CHECKED_OUT
+R101,admin,15-04-2026,17-04-2026,120.00,CHECKED_IN
+R102,user1,12-04-2026,15-04-2026,270.00,CHECKED_OUT
+R102,reception,17-04-2026,19-04-2026,180.00,CONFIRMED
+R103,admin,08-04-2026,12-04-2026,480.00,CHECKED_OUT
+R103,user1,20-04-2026,27-04-2026,840.00,CONFIRMED
+R104,reception,11-04-2026,14-04-2026,450.00,CHECKED_OUT
+R105,admin,16-04-2026,18-04-2026,400.00,CHECKED_IN
+R106,user1,14-04-2026,16-04-2026,150.00,CHECKED_OUT
+R107,reception,19-04-2026,22-04-2026,450.00,CONFIRMED
+R108,admin,09-04-2026,13-04-2026,800.00,CHECKED_OUT
+R109,user1,21-04-2026,24-04-2026,900.00,CONFIRMED
 EOF
 
-echo -e "${GREEN}✓ Added 4 sample bookings with various statuses${NC}"
+echo -e "${GREEN}✓ Added 12 sample bookings with realistic occupancy patterns${NC}"
 
 echo
 echo -e "${BLUE}================================================${NC}"
@@ -198,10 +131,12 @@ echo -e "${GREEN}✓ Seeding complete!${NC}"
 echo -e "${BLUE}================================================${NC}"
 echo
 echo "Your system now has:"
-echo "  • Base accounts: admin, reception, user1"
-echo "  • Plus any new accounts you just added"
+echo "  • 3 user accounts (admin, reception, user1)"
 echo "  • 9 rooms total (R101-R109)"
-echo "  • 4 sample bookings for testing/demo"
+echo "  • 12 sample bookings showing:"
+echo "    - Past reservations (CHECKED_OUT)"
+echo "    - Current reservations (CHECKED_IN)"
+echo "    - Upcoming reservations (CONFIRMED)"
 echo
 echo "To access the system, run: ./dist/run.sh"
 echo
