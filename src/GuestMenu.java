@@ -1,9 +1,9 @@
 import java.util.Scanner;
-import java.util.Vector;
+import java.util.List;
 
 public class GuestMenu {
 
-    public static Account show(Scanner scanner, Vector<Room> rooms, Vector<Account> users)
+    public static Account show(Scanner scanner, List<Room> rooms, List<Account> users)
             throws Exception {
         while (true) {
             CLI.clearScreen();
@@ -30,8 +30,8 @@ public class GuestMenu {
                 case "3":
                     if (new Account().register(users, scanner)) {
                         CLI.randomSpinner("Creating account");
+                        Main.pause(scanner);
                     }
-                    Main.pause(scanner);
                     break;
                 case "ESC":
                     return null;
@@ -42,7 +42,7 @@ public class GuestMenu {
         }
     }
 
-    private static void viewRooms(Vector<Room> rooms) {
+    private static void viewRooms(List<Room> rooms) {
         CLI.randomSpinner("Loading rooms");
         CLI.clearScreen();
         CLI.printBanner("AVAILABLE ROOMS");

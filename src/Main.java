@@ -1,5 +1,6 @@
 import java.util.Scanner;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Application entry point — initialises data, seeds the admin on first run, then drives the top-level menu loop. */
 public class Main {
@@ -11,9 +12,9 @@ public class Main {
         Files file = new Files();
         file.errorLogging();
 
-        Vector<Room>     rooms    = new Vector<>();
-        Vector<Bookings> bookings = new Vector<>();
-        Vector<Account>  users    = new Vector<>();
+        List<Room>     rooms    = new ArrayList<>();
+        List<Bookings> bookings = new ArrayList<>();
+        List<Account>  users    = new ArrayList<>();
 
         // Auto-seed default accounts and data files on first run
         CLI.withSpinner("Initialising system", () -> {
@@ -85,8 +86,8 @@ public class Main {
 
     /** Route the authenticated account to its role-specific menu. */
     private static void dispatch(Scanner scanner, Account account,
-                                  Vector<Room> rooms, Vector<Bookings> bookings,
-                                  Vector<Account> users, Files file) throws Exception {
+                                  List<Room> rooms, List<Bookings> bookings,
+                                  List<Account> users, Files file) throws Exception {
         switch (account.getRole()) {
             case "USER":
                 UserMenu.show(scanner, account, rooms, bookings, file);

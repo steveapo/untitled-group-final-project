@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -77,7 +78,7 @@ public class Account {
      * New accounts always receive the USER role.
      * Returns false if the user types 'e' to cancel at any prompt.
      */
-    public boolean register(Vector<Account> users, Scanner scanner) throws Exception {
+    public boolean register(List<Account> users, Scanner scanner) throws Exception {
         Files file = new Files();
 
         String newUsername = checkUsername(users, scanner);
@@ -154,7 +155,7 @@ public class Account {
      * Prompt for a username and verify it is not already taken.
      * Returns null if the user types 'e' to cancel.
      */
-    public String checkUsername(Vector<Account> users, Scanner scanner) {
+    public String checkUsername(List<Account> users, Scanner scanner) {
         Files file = new Files();
         return CLI.promptUntilValid(
             "Enter your username (Esc to go back): ", scanner,
@@ -175,7 +176,7 @@ public class Account {
      * Re-asks only the password after a wrong attempt (not the username).
      * Returns null if the user types 'e' to go back.
      */
-    public Account login(Vector<Account> users, Scanner scanner) throws Exception {
+    public Account login(List<Account> users, Scanner scanner) throws Exception {
         Files file = new Files();
 
         Account matchedAccount = CLI.promptUntilValid(

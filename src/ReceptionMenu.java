@@ -1,14 +1,15 @@
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
 import java.util.Scanner;
-import java.util.Vector;
 
 public class ReceptionMenu {
 
     public static void show(Scanner scanner, Account account,
-                            Vector<Room> rooms, Vector<Bookings> bookings,
-                            Vector<Account> users, Files file) throws Exception {
+                            List<Room> rooms, List<Bookings> bookings,
+                            List<Account> users, Files file) throws Exception {
         while (true) {
             CLI.clearScreen();
             CLI.printBanner("RECEPTION MENU");
@@ -45,7 +46,7 @@ public class ReceptionMenu {
         }
     }
 
-    private static void viewAllRooms(Vector<Room> rooms) {
+    private static void viewAllRooms(List<Room> rooms) {
         CLI.randomSpinner("Loading rooms");
         CLI.clearScreen();
         CLI.printBanner("ALL ROOMS");
@@ -63,7 +64,7 @@ public class ReceptionMenu {
         CLI.printDivider();
     }
 
-    private static void searchAvailableRooms(Scanner scanner, Vector<Room> rooms, Vector<Bookings> bookings) throws Exception {
+    private static void searchAvailableRooms(Scanner scanner, List<Room> rooms, List<Bookings> bookings) throws Exception {
         CLI.clearScreen();
         CLI.printBanner("SEARCH ROOMS BY DATE");
         System.out.println();
@@ -72,7 +73,7 @@ public class ReceptionMenu {
         if (checkIn == null) return;
         LocalDate checkOut = promptCheckOutAfter(date, checkIn, scanner);
         if (checkOut == null) return;
-        Vector<Room> available = new Vector<>();
+        List<Room> available = new ArrayList<>();
         date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
         CLI.randomSpinner("Searching");
         System.out.println("\n" + CLI.header("  Available Rooms") + "\n");
@@ -91,8 +92,8 @@ public class ReceptionMenu {
         CLI.printDivider();
     }
 
-    private static void createBooking(Scanner scanner, Vector<Room> rooms,
-                                       Vector<Bookings> bookings, Vector<Account> users,
+    private static void createBooking(Scanner scanner, List<Room> rooms,
+                                       List<Bookings> bookings, List<Account> users,
                                        Files file) throws Exception {
         CLI.clearScreen();
         CLI.printBanner("CREATE BOOKING");
@@ -116,9 +117,9 @@ public class ReceptionMenu {
         LocalDate checkOut = promptCheckOutAfter(date, checkIn, scanner);
         if (checkOut == null) return;
 
-        Vector<Room> available = new Vector<>();
+        List<Room> available = new ArrayList<>();
         date.checkBookingsDate(checkIn, checkOut, available, rooms, bookings);
-        Vector<Room> bookable = new Vector<>();
+        List<Room> bookable = new ArrayList<>();
         for (Room r : available) {
             if (r.getStatus().equals("AVAILABLE")) bookable.add(r);
         }
@@ -165,7 +166,7 @@ public class ReceptionMenu {
     }
 
 
-    private static void viewAllBookings(Vector<Bookings> bookings) {
+    private static void viewAllBookings(List<Bookings> bookings) {
         CLI.randomSpinner("Loading bookings");
         CLI.clearScreen();
         CLI.printBanner("ALL BOOKINGS");
@@ -183,7 +184,7 @@ public class ReceptionMenu {
         CLI.printDivider();
     }
 
-    private static void cancelBooking(Scanner scanner, Vector<Bookings> bookings, Files file) {
+    private static void cancelBooking(Scanner scanner, List<Bookings> bookings, Files file) {
         CLI.clearScreen();
         CLI.printBanner("CANCEL BOOKING");
         System.out.println();
@@ -191,7 +192,7 @@ public class ReceptionMenu {
         String username = CLI.readLine(scanner);
         if (username == null) return;
 
-        Vector<Bookings> activeBookings = new Vector<>();
+        List<Bookings> activeBookings = new ArrayList<>();
         for (Bookings b : bookings) {
             if (b.getUsername().equals(username) && b.getStatus().equals("CONFIRMED")) {
                 activeBookings.add(b);
@@ -219,13 +220,13 @@ public class ReceptionMenu {
         Main.pause(scanner);
     }
 
-    private static void checkIn(Scanner scanner, Vector<Bookings> bookings, Files file) {
+    private static void checkIn(Scanner scanner, List<Bookings> bookings, Files file) {
         CLI.clearScreen();
         CLI.printBanner("CHECK IN");
         System.out.println();
 
         // Collect unique guests with CONFIRMED bookings
-        Vector<String> guestNames = new Vector<>();
+        List<String> guestNames = new ArrayList<>();
         for (Bookings b : bookings) {
             if (b.getStatus().equals("CONFIRMED") && !guestNames.contains(b.getUsername())) {
                 guestNames.add(b.getUsername());
@@ -243,7 +244,7 @@ public class ReceptionMenu {
         String username = guestNames.get(guestIdx);
 
         // Collect that guest's CONFIRMED bookings
-        Vector<Bookings> confirmed = new Vector<>();
+        List<Bookings> confirmed = new ArrayList<>();
         for (Bookings b : bookings) {
             if (b.getUsername().equals(username) && b.getStatus().equals("CONFIRMED")) {
                 confirmed.add(b);
@@ -272,13 +273,13 @@ public class ReceptionMenu {
         Main.pause(scanner);
     }
 
-    private static void checkOut(Scanner scanner, Vector<Bookings> bookings, Files file) {
+    private static void checkOut(Scanner scanner, List<Bookings> bookings, Files file) {
         CLI.clearScreen();
         CLI.printBanner("CHECK OUT");
         System.out.println();
 
         // Collect unique guests with CHECKED_IN bookings
-        Vector<String> guestNames = new Vector<>();
+        List<String> guestNames = new ArrayList<>();
         for (Bookings b : bookings) {
             if (b.getStatus().equals("CHECKED_IN") && !guestNames.contains(b.getUsername())) {
                 guestNames.add(b.getUsername());
@@ -296,7 +297,7 @@ public class ReceptionMenu {
         String username = guestNames.get(guestIdx);
 
         // Collect that guest's CHECKED_IN bookings
-        Vector<Bookings> checkedIn = new Vector<>();
+        List<Bookings> checkedIn = new ArrayList<>();
         for (Bookings b : bookings) {
             if (b.getUsername().equals(username) && b.getStatus().equals("CHECKED_IN")) {
                 checkedIn.add(b);
@@ -325,7 +326,7 @@ public class ReceptionMenu {
         Main.pause(scanner);
     }
 
-    private static void viewAllGuests(Vector<Account> users) {
+    private static void viewAllGuests(List<Account> users) {
         CLI.randomSpinner("Loading guests");
         CLI.clearScreen();
         CLI.printBanner("REGISTERED GUESTS");
@@ -344,7 +345,7 @@ public class ReceptionMenu {
         CLI.printDivider();
     }
 
-    private static void setRoomStatus(Scanner scanner, Vector<Room> rooms, Files file) {
+    private static void setRoomStatus(Scanner scanner, List<Room> rooms, Files file) {
         CLI.clearScreen();
         CLI.printBanner("SET ROOM STATUS");
         System.out.println();

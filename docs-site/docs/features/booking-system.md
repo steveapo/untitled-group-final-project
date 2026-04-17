@@ -186,15 +186,17 @@ Convert CHECKED_IN → CHECKED_OUT:
 
 The system determines room availability by checking:
 
-1. **Room status** — Not in MAINTENANCE
-2. **Booking conflicts** — No existing booking that overlaps with requested dates
-3. **Guest capacity** — Room capacity ≥ number of guests
+1. **Room status** — Not permanently MAINTENANCE.
+2. **Booking conflicts** — No existing non-cancelled booking (including dated MAINTENANCE windows) that overlaps with the requested dates.
+3. **Guest capacity** — Room capacity ≥ number of guests.
+
+**Scheduled maintenance** is stored as a booking with status `MAINTENANCE` (guest `SYSTEM`), not as a permanent flag. This means a scheduled window blocks the room only for its date range — the day after the window ends, the room is available again automatically. Managers schedule windows either by pressing `M` in the occupancy calendar or by picking MAINTENANCE under *Edit Room → Status* and entering start + end dates.
 
 **Date overlap rules:**
 - `BOOKED: 2026-03-15 to 2026-03-17`
-- Request 2026-03-14 to 2026-03-15 = **Available** (check-out/check-in on same date allowed)
-- Request 2026-03-15 to 2026-03-18 = **NOT available** (overlaps existing booking)
-- Request 2026-03-17 to 2026-03-19 = **Available** (no overlap)
+- Request 2026-03-14 to 2026-03-15 = **Available** (check-out / check-in on the same date is allowed).
+- Request 2026-03-15 to 2026-03-18 = **Not available** (overlaps the existing booking).
+- Request 2026-03-17 to 2026-03-19 = **Available** (no overlap — check-out day is not an occupied night).
 
 ## Pricing
 

@@ -85,16 +85,14 @@ class FilesTest {
     }
 
     @Test
-    @DisplayName("populateRooms defaults type and status for short lines")
+    @DisplayName("populateRooms skips malformed short lines (strict 5-field CSV)")
     void populateRoomsDefaultsForShortLines() throws IOException {
         writeFile("Rooms", "R101,1,70.0\n");
 
         Vector<Room> rooms = new Vector<>();
         files.populateRooms(rooms);
 
-        assertEquals(1, rooms.size());
-        assertEquals("Single", rooms.get(0).getType());
-        assertEquals("AVAILABLE", rooms.get(0).getStatus());
+        assertTrue(rooms.isEmpty(), "Short lines must be rejected, not silently completed");
     }
 
     // ── populateBookings ─────────────────────────────────────────────────
@@ -119,7 +117,7 @@ class FilesTest {
     }
 
     @Test
-    @DisplayName("populateBookings defaults username and status for short lines")
+    @DisplayName("populateBookings skips malformed short lines (strict 5-field CSV)")
     void populateBookingsDefaultsShortLines() throws IOException {
         writeFile("Rooms", "R101,1,70.0,Single,AVAILABLE\n");
         writeFile("Bookings", "R101,01-05-2026,05-05-2026\n");
@@ -129,9 +127,7 @@ class FilesTest {
         Vector<Bookings> bookings = new Vector<>();
         files.populateBookings(rooms, bookings);
 
-        assertEquals(1, bookings.size());
-        assertEquals("unknown", bookings.get(0).getUsername());
-        assertEquals("CONFIRMED", bookings.get(0).getStatus());
+        assertTrue(bookings.isEmpty(), "Short lines must be rejected, not silently completed");
     }
 
     @Test

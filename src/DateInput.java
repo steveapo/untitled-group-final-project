@@ -1,9 +1,10 @@
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.Scanner;
-import java.util.Vector;
 
 /**
  * Handles date input and room-availability filtering for bookings.
@@ -12,7 +13,7 @@ import java.util.Vector;
 public class DateInput {
 
     private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("d-M-uuuu").withResolverStyle(ResolverStyle.STRICT);
+            DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
     private static final String LINE_SUFFIX = " - Line: ";
 
     private final Scanner scanner;
@@ -77,14 +78,38 @@ public class DateInput {
     }
 
     /**
+     * Generic date prompt. Re-prompts on invalid input and on dates earlier than
+     * {@code minInclusive} (pass {@code null} to skip the floor check).
+     * Returns {@code null} if the user pressed Esc.
+     */
+    public LocalDate promptDate(String label, LocalDate minInclusive, String minErrorMsg) {
+        Files file = new Files();
+        return CLI.promptUntilValid(label, scanner, s -> {
+            try {
+                LocalDate parsed = LocalDate.parse(s, DATE_FORMATTER);
+                if (minInclusive != null && parsed.isBefore(minInclusive)) {
+                    file.writeErrors("Date before minimum - " + getClass()
+                            + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                    return CLI.Result.err(minErrorMsg);
+                }
+                return CLI.Result.ok(parsed);
+            } catch (DateTimeParseException _) {
+                file.writeErrors("Invalid date format - " + getClass()
+                        + LINE_SUFFIX + Thread.currentThread().getStackTrace()[1].getLineNumber());
+                return CLI.Result.err("[ERR_DATE_FMT] Invalid date or format. Please use dd-MM-yyyy.");
+            }
+        });
+    }
+
+    /**
      * Filter the rooms list to those with no active booking that overlaps the requested date range.
      * Uses the in-memory bookings vector rather than re-reading from disk, keeping data access
      * centralised in the Files class.
      */
-    public Vector<Room> checkBookingsDate(LocalDate requestedStart, LocalDate requestedEnd,
-                                           Vector<Room> available, Vector<Room> rooms,
-                                           Vector<Bookings> bookings) {
-        Vector<String> processedRoomNumbers = new Vector<>();
+    public List<Room> checkBookingsDate(LocalDate requestedStart, LocalDate requestedEnd,
+                                           List<Room> available, List<Room> rooms,
+                                           List<Bookings> bookings) {
+        List<String> processedRoomNumbers = new ArrayList<>();
 
         for (Room room : rooms) {
             if (processedRoomNumbers.contains(room.getRoomNumber())) continue;

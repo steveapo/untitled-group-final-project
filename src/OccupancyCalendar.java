@@ -1,9 +1,10 @@
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.Scanner;
-import java.util.Vector;
 
 /**
  * Interactive ASCII occupancy calendar.
@@ -19,9 +20,10 @@ import java.util.Vector;
  */
 public class OccupancyCalendar {
 
-    private static final DateTimeFormatter FMT     = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    private static final DateTimeFormatter FMT_OUT =
+    // Single source of truth for date serialisation across the app.
+    private static final DateTimeFormatter FMT =
             DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT);
+    private static final DateTimeFormatter FMT_OUT = FMT;
 
     // ── Cell status ──────────────────────────────────────────────────────
 
@@ -59,12 +61,11 @@ public class OccupancyCalendar {
     private static final String FG_RED    = "\033[31m";
     private static final String FG_YELLOW = "\033[33m";
     private static final String FG_GRAY   = "\033[90m";   // bright black = dark gray
-    private static final String FG_PINK   = "\033[95m";   // bright magenta ≈ pink
+    private static final String FG_PINK   = "\033[95m";   // bright magenta ≈ pink / purple
+    private static final String FG_WHITE  = "\033[97m";   // bright white (cursor highlight)
 
     private static boolean isAnsi() {
-        if (System.getenv("NO_COLOR") != null) return false;
-        if ("dumb".equals(System.getenv("TERM"))) return false;
-        return !CLI.bold("X").equals("X");
+        return CLI.supportsAnsi();
     }
 
     // Wrap text in an ANSI code only if ANSI is supported.
@@ -108,8 +109,8 @@ public class OccupancyCalendar {
     /** VIEW mode — read-only, all rooms passed in, ESC exits.
      *  Staff can press M to enter maintenance marking mode. */
     public static void show(Scanner scanner,
-                            Vector<Room> rooms,
-                            Vector<Bookings> bookings,
+                            List<Room> rooms,
+                            List<Bookings> bookings,
                             boolean isStaff) {
         show(scanner, rooms, bookings, isStaff, null);
     }
@@ -119,8 +120,8 @@ public class OccupancyCalendar {
      * @param file  if non-null, staff can press M to mark maintenance ranges
      */
     public static void show(Scanner scanner,
-                            Vector<Room> rooms,
-                            Vector<Bookings> bookings,
+                            List<Room> rooms,
+                            List<Bookings> bookings,
                             boolean isStaff,
                             Files file) {
         LocalDate weekStart    = mondayOf(LocalDate.now());
@@ -217,10 +218,10 @@ public class OccupancyCalendar {
      * Returns a {@link BookingSelection} or {@code null} on cancel.
      */
     public static BookingSelection pickDates(Scanner scanner,
-                                             Vector<Room> allRooms,
-                                             Vector<Bookings> bookings,
+                                             List<Room> allRooms,
+                                             List<Bookings> bookings,
                                              int minCapacity) {
-        Vector<Room> rooms = new Vector<>();
+        List<Room> rooms = new ArrayList<>();
         for (Room r : allRooms) {
             if (r.getCapacity() >= minCapacity) rooms.add(r);
         }
@@ -282,8 +283,8 @@ public class OccupancyCalendar {
     // ── Renderer ─────────────────────────────────────────────────────────
 
     /** Render overload without maintenance row (backward compat). */
-    private static void renderGrid(Vector<Room> rooms,
-                                   Vector<Bookings> bookings,
+    private static void renderGrid(List<Room> rooms,
+                                   List<Bookings> bookings,
                                    LocalDate weekStart,
                                    int colCursor,
                                    int rowCursor,
@@ -306,8 +307,8 @@ public class OccupancyCalendar {
      * @param pickMode   true when used for booking selection
      * @param maintRow   row index locked for maintenance marking (-1 if none)
      */
-    private static void renderGrid(Vector<Room> rooms,
-                                   Vector<Bookings> bookings,
+    private static void renderGrid(List<Room> rooms,
+                                   List<Bookings> bookings,
                                    LocalDate weekStart,
                                    int colCursor,
                                    int rowCursor,
@@ -510,7 +511,7 @@ public class OccupancyCalendar {
 
     // ── Cell computation ─────────────────────────────────────────────────
 
-    static CellStatus cellFor(Room room, LocalDate date, Vector<Bookings> bookings) {
+    static CellStatus cellFor(Room room, LocalDate date, List<Bookings> bookings) {
         if ("MAINTENANCE".equalsIgnoreCase(room.getStatus())) return CellStatus.MAINTENANCE;
         for (Bookings b : bookings) {
             if (!b.getRoom().getRoomNumber().equals(room.getRoomNumber())) continue;
@@ -534,7 +535,7 @@ public class OccupancyCalendar {
     }
 
     private static boolean allAvailable(Room room, LocalDate from, LocalDate to,
-                                         Vector<Bookings> bookings) {
+                                         List<Bookings> bookings) {
         for (LocalDate d = from; d.isBefore(to); d = d.plusDays(1)) {
             if (cellFor(room, d, bookings) != CellStatus.AVAILABLE) return false;
         }
@@ -608,21 +609,28 @@ public class OccupancyCalendar {
 
     /**
      * Returns a 2-char solid ANSI-coloured glyph for cursor mode.
-     * When selected, unavailable cells show as solid red, available as solid green.
+     *
+     * <p>Design: the cursor must visibly contrast against its surrounding non-cursor cell.
+     * <ul>
+     *   <li>Staff booked cells render solid-green in idle, so the cursor flips to
+     *       solid-white — otherwise the cursor vanishes as it crosses booked rows.</li>
+     *   <li>Staff maintenance cells render dotted-pink in idle ({@code ▒▒}), so the
+     *       cursor swaps to a solid-pink/purple block ({@code ██}) — same colour,
+     *       different fill.</li>
+     *   <li>User-scheme cells keep the original green / red cursor.</li>
+     * </ul>
      */
     private static String statusSolidGlyph(CellStatus cs, boolean isStaff, boolean pickMode) {
         if (isStaff) {
-            // Staff scheme: all solid in cursor mode
             switch (cs) {
-                case AVAILABLE:   return a(FG_GREEN, GLYPH_OCCUPIED);  // solid available
-                case MAINTENANCE: return a(FG_PINK,  GLYPH_MAINTENANCE);  // solid maintenance
-                default:          return a(FG_GREEN, GLYPH_OCCUPIED);  // solid booking
+                case AVAILABLE:   return a(FG_GREEN, GLYPH_OCCUPIED);  // solid green on empty day
+                case MAINTENANCE: return a(FG_PINK,  GLYPH_OCCUPIED);  // solid purple block
+                default:          return a(FG_WHITE, GLYPH_OCCUPIED);  // solid white on booked
             }
-        } else {
-            // User scheme: green=available (solid), red=unavailable (solid)
-            if (cs == CellStatus.AVAILABLE) return a(FG_GREEN, GLYPH_OCCUPIED);  // solid available
-            return a(FG_RED, GLYPH_OCCUPIED);  // solid unavailable
         }
+        // User scheme: green = available (solid), red = unavailable (solid)
+        if (cs == CellStatus.AVAILABLE) return a(FG_GREEN, GLYPH_OCCUPIED);
+        return a(FG_RED, GLYPH_OCCUPIED);
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────

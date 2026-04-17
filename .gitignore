@@ -42,3 +42,12 @@ target/
 
 ### Release artefacts (kept out of repo) ###
 HotelBooking-*.zip
+
+### Runtime data files — auto-seeded on first run; not source ###
+/Users
+/Rooms
+/Bookings
+/Errors
+/Users.backup.*
+/Rooms.backup.*
+/Bookings.backup.*

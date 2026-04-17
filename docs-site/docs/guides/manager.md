@@ -95,51 +95,75 @@ Press any key to continue...
 
 ### Edit a Room
 
+Arrow-key selectors pick both the target room and the field to edit:
+
 ```
 ╔══════════════════════════════════════╗
-║     EDIT ROOM                        ║
+║              EDIT ROOM               ║
 ╚══════════════════════════════════════╝
 
-  All Rooms:
-  
-  1. R101 | Single   | $59.99/night
-  2. R102 | Double   | $89.99/night
-  3. R103 | Triple   | $119.99/night
+  ● R101  Single  $60/n  1p
+  ● R102  Double  $90/n  2p
+▸ R105  Suite   $200/n 2p
+  ● R106  Single  $75/n  1p
+  ↑↓ Navigate  Enter Select  Esc Cancel
 
-Select room (1-3, Esc to go back): 2
-
-Editing R102 (Double, $89.99/night, AVAILABLE)
-
-Choose property to edit:
-  1. Capacity
-  2. Price
-  3. Type
-  4. Status
-
-Choice: 2
-
-New nightly price: 94.99
-
-✔ Room R102 updated!
+  Price  ($199.99/night)
+  Type   (Suite)
+▸ Status (AVAILABLE)
+  ↑↓ Navigate  Enter Select  Esc Cancel
 ```
+
+Pick **Price** → enter a new amount. Pick **Type** → arrow through Single/Double/Triple/Quad/Suite. Pick **Status** → arrow between AVAILABLE and MAINTENANCE.
+
+### Scheduling Maintenance
+
+Picking **MAINTENANCE** under *Status* opens a small date-range prompt, instead of flipping a permanent flag:
+
+```
+▸ MAINTENANCE
+  ↑↓ Navigate  Enter Select  Esc Cancel
+
+Maintenance start date (dd-MM-yyyy, Esc to go back): 20-04-2026
+Maintenance end date   (dd-MM-yyyy, Esc to go back): 23-04-2026
+
+⠙ Scheduling maintenance...
+✔ Maintenance scheduled for R105: 20-04-2026 → 23-04-2026 (3 nights).
+  The room stays AVAILABLE outside this window. Check the calendar or
+  cancel the booking to clear it.
+```
+
+Under the hood, the system records a dated `MAINTENANCE` booking — the same shape the calendar's `M` hotkey has always produced. Benefits:
+
+- **No permanently stuck rooms.** The block expires on the end date automatically.
+- **Visible on the calendar.** The window shows as a purple range, with the cursor rendering as a solid purple block when it lands on a maintenance cell.
+- **Clearable.** Cancel the maintenance booking to free the room up early.
+
+If you want a room off-service indefinitely, pick a far-future end date.
 
 ### Delete a Room
 
+Before confirming, the system shows the full blast radius — every booking attached to the room, bucketed by status. If any are active or upcoming you'll see a loud warning.
+
 ```
 ╔══════════════════════════════════════╗
-║    DELETE ROOM                       ║
+║            DELETE ROOM               ║
 ╚══════════════════════════════════════╝
 
-  Select room to delete (1-3, Esc to go back): 1
+  Room    : R105   Suite   $199.99/night   AVAILABLE
+  Bookings: 3 total  (1 checked-in, 1 upcoming, 1 past, 0 cancelled)
+  ✘  This room has 2 active/upcoming booking(s). Deleting will remove
+     every booking linked to it.
 
-  ⚠ Delete R101 permanently?
-  
-  Confirm? (yes/no): yes
-  
-  ✔ Room R101 deleted!
+Type 'yes' to confirm delete R105 (Esc to go back): yes
+
+⠙ Deleting room...
+✔ Room R105 deleted (removed 3 linked booking(s)).
 ```
 
-**Warning:** Ensure the room has no active bookings before deletion.
+**How it cascades:** deletion removes the room **and** every booking that references it, writing both files atomically. If the disk write fails partway, you'll see a warning pointing at the Errors log — no half-committed state.
+
+Prefer `MAINTENANCE` with a date range if you want to take the room off-service temporarily; deletion is destructive.
 
 ## Staff Management
 
@@ -270,41 +294,68 @@ Press any key to continue...
 
 Complete overview of all bookings with revenue per booking.
 
-## View Statistics
+## Booking Statistics
 
-Select **"4. View statistics"**:
+Select **"4. View statistics"** for a multi-section operations dashboard with inline bar charts:
 
 ```
 ╔══════════════════════════════════════╗
-║    STATISTICS                        ║
+║         BOOKING STATISTICS           ║
 ╚══════════════════════════════════════╝
 
-  Total Bookings        : 47
-  Confirmed Bookings    : 12
-  Checked In            : 3
-  Checked Out           : 32
-  
-  Total Revenue (all-time): $9,847.23
-  Average Booking Value  : $209.30
-  Average Stay Length    : 2.4 nights
-  
-  Occupancy by Room Type:
-    Single    : 8 bookings
-    Double    : 18 bookings
-    Triple    : 12 bookings
-    Quad      : 7 bookings
-    Suite     : 2 bookings
+  ── OVERVIEW ───────────────────────────────
+  Bookings    10  total
+  Rooms        9  total
+  Today       ██████░░░░░░░░░░░░░░   2/9  (22%)
 
-─────────────────────────────────────────
+  ── BOOKING STATUS ─────────────────────────
+  ● Confirmed       ██████░░░░░░░░░░░░░░    3   (30%)
+  ● Checked in      ████░░░░░░░░░░░░░░░░    2   (20%)
+  ● Checked out     ██████░░░░░░░░░░░░░░    3   (30%)
+  ● Cancelled       ██░░░░░░░░░░░░░░░░░░    1   (10%)
+  ● Maintenance     ██░░░░░░░░░░░░░░░░░░    1   (10%)
 
-Press any key to continue...
+  ── REVENUE ────────────────────────────────
+  Realised    $1,230.45   completed stays
+  Booked      $2,400.00   upcoming + in-house
+  Lost        $  150.00   cancellations
+  ─────────────────────────────────────────────
+  Total       $3,780.45
+
+  ── OCCUPANCY — NEXT 7 DAYS ────────────────
+  Fri Apr 17 (today)   ██████████████░░░░░░   6/9  (67%)
+  Sat Apr 18           ████████████░░░░░░░░   5/9  (56%)
+  Sun Apr 19           ██████░░░░░░░░░░░░░░   3/9  (33%)
+  Mon Apr 20           ████████░░░░░░░░░░░░   4/9  (44%)
+  Tue Apr 21           ██████████░░░░░░░░░░   5/9  (56%)
+  Wed Apr 22           ██████████░░░░░░░░░░   5/9  (56%)
+  Thu Apr 23           ████████░░░░░░░░░░░░   4/9  (44%)
+
+  ── TOP ROOMS BY REVENUE ───────────────────
+  1.  R103    $840.00    1 stay
+  2.  R102    $450.00    2 stays
+  3.  R101    $180.00    2 stays
 ```
 
-Use these metrics for:
-- Monthly/seasonal performance reports
-- Room type popularity analysis
-- Revenue projections
-- Staffing and capacity planning
+### Section Reference
+
+| Section | What it tells you |
+|---|---|
+| **Overview** | Total booking count, room inventory size, and a live today-occupancy bar. |
+| **Booking Status** | Proportional breakdown of every booking in the system across five states. Each row's bar matches the colour of its dot. |
+| **Revenue** | *Realised* = completed (CHECKED_OUT) stays. *Booked* = future value locked in (CONFIRMED + CHECKED_IN). *Lost* = revenue forfeited to cancellations. *Total* = Realised + Booked. |
+| **Next 7 Days** | Day-by-day occupancy heat map, starting from today. Colours go cyan → green → yellow → red as the day fills up. |
+| **Top Rooms** | The five highest-grossing rooms (realised + booked revenue), with stay counts. |
+
+### How occupancy is computed
+
+The Overview and Next-7-Days sections call directly into the same cell-resolver used by the interactive calendar (`OccupancyCalendar.cellFor(...)`), so the numbers on this screen always agree with what you'd see navigating the calendar yourself. Rooms in MAINTENANCE or occupied by any non-cancelled booking count as "occupied" for the day.
+
+### Using the dashboard
+
+- **Heat colours are the fastest read.** A week that glances cyan is quiet; one that glances red is nearly full. You don't need to read the numbers to spot a problem day.
+- **Lost vs. Realised** is the headline KPI — a growing Lost line signals friction in the booking flow or an aggressive cancellation pattern worth investigating.
+- **Top Rooms by Revenue** surfaces both high-priced and high-demand rooms, pointing at where repricing or capacity changes will have the biggest impact.
 
 ## Interactive Occupancy Calendar
 

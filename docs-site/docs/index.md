@@ -1,8 +1,8 @@
 # Hotel Room Booking System
 
-A cross-platform CLI application for managing hotel room reservations, built with Java. Features role-based access control, interactive occupancy calendar, and secure authentication.
+A cross-platform CLI application for managing hotel room reservations, built with Java. Features role-based access control, an interactive occupancy calendar, secure authentication, and a manager analytics dashboard.
 
-**[⬇ Download Program (v1.4)](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.zip)** — Requires Java 11+ • **[View all releases](/releases)**
+**[⬇ Download Program (v1.6)](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.zip)** — Requires Java 22+ • **[View all releases](/releases)**
 
 ## Overview
 
@@ -42,13 +42,18 @@ The Hotel Room Booking System is a terminal-based application with four distinct
 - Create, edit, delete, and manage room inventory
 - Room types: Single, Double, Triple, Quad, Suite
 - Capacity tracking and nightly pricing
-- Maintenance status tracking
-- Real-time occupancy visualization
+- **Scheduled maintenance windows** — pick start + end dates from the Edit Room flow (or press `M` in the calendar) and the room is automatically blocked for that range
+- Real-time occupancy visualisation
+
+### Manager Analytics
+- **Booking Statistics dashboard** — overview, booking-status distribution with inline bar charts, revenue breakdown (Realised / Booked / Lost / Total), 7-day occupancy heat map, and top-earning rooms
+- **Room-deletion impact preview** — see every active, upcoming, past, and cancelled booking attached to a room before confirming deletion
 
 ### Data Management
 - **File-based persistence** — no database required
-- CSV-format data files (human-readable and editable)
-- Automatic data validation and error logging
+- CSV-format data files, strict 5-field schema, UTF-8 pinned
+- **Atomic writes** (`Files.move(... ATOMIC_MOVE)`) — a crash mid-write never leaves a half-written file
+- Automatic data validation with malformed-line logging to `Errors`
 - Booking lifecycle management: CONFIRMED → CHECKED_IN → CHECKED_OUT
 
 ## Quick Start
@@ -72,7 +77,8 @@ These accounts are pre-loaded on first run:
 | `reception` | `reception` | Reception |
 | `user1` | `user1` | User |
 
-Additional demo accounts available via the optional seed script (after first run).
+On first launch the system also seeds **9 rooms (R101–R109)** and a realistic mix of past, current, and upcoming bookings for `user1` — dates are computed relative to today so the demo is always current.
+
 See [Getting Started](/getting-started) for details.
 
 ---

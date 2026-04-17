@@ -14,8 +14,8 @@
  *   - the TERM environment variable is "dumb"
  *   - NO_COLOR is set (https://no-color.org)
  */
+import java.util.List;
 import java.util.Scanner;
-import java.util.Vector;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
@@ -69,6 +69,9 @@ public class CLI {
         // and a proper name (xterm-256color, windows, etc.) when VT is available.
         return !"dumb".equals(TERMINAL.getType());
     }
+
+    /** Whether the current terminal supports ANSI escape codes (colours, cursor moves). */
+    public static boolean supportsAnsi() { return ANSI_SUPPORTED; }
 
     /** Functional interface for raw-mode bodies that may throw checked exceptions. */
     @FunctionalInterface
@@ -281,9 +284,6 @@ public class CLI {
                         } else {
                             while (reader.read(10L) >= 0) { /* drain unknown sequence */ }
                         }
-                    } else if (ch == 'e' || ch == 'q') {
-                        System.out.println();
-                        return -1;
                     } else {
                         continue;
                     }
@@ -330,11 +330,11 @@ public class CLI {
      * Shows room number, type, price, capacity, and status dot.
      * Returns selected Room or null on ESC.
      */
-    public static Room selectRoom(Vector<Room> rooms, String title, Scanner scanner) {
+    public static Room selectRoom(List<Room> rooms, String title, Scanner scanner) {
         return selectRoom(rooms, title, scanner, 0);
     }
 
-    public static Room selectRoom(Vector<Room> rooms, String title, Scanner scanner, int initialSelection) {
+    public static Room selectRoom(List<Room> rooms, String title, Scanner scanner, int initialSelection) {
         if (rooms.isEmpty()) return null;
 
         if (rawModeAvailable()) {
@@ -365,9 +365,6 @@ public class CLI {
                         } else {
                             while (reader.read(10L) >= 0) { /* drain */ }
                         }
-                    } else if (ch == 'e' || ch == 'q') {
-                        System.out.println();
-                        return -1;
                     } else if (ch == 'k') {
                         selected = (selected - 1 + rooms.size()) % rooms.size();
                     } else if (ch == 'j') {
@@ -409,7 +406,7 @@ public class CLI {
     }
 
     /** Render the room selector list with the currently highlighted item in magenta. */
-    private static void renderRoomList(Vector<Room> rooms, String title, int selected) {
+    private static void renderRoomList(List<Room> rooms, String title, int selected) {
         System.out.println();
         for (int i = 0; i < rooms.size(); i++) {
             Room r = rooms.get(i);
@@ -472,7 +469,12 @@ public class CLI {
     // ── Raw-mode menu choice reader ─────────────────────────────────────
     /**
      * Read a menu choice as a single keypress (no Enter needed).
-     * Returns "1"–"9" for digit keys, or "ESC" when Escape (or 'e'/'q') is pressed.
+     * Returns "1"–"9" for digit keys, {@code "C"} for the Calendar hotkey,
+     * or {@code "ESC"} when Escape is pressed.
+     *
+     * <p>In raw mode only Escape cancels. The dumb-terminal fallback still accepts
+     * the literal input {@code e} as ESC because IDE consoles cannot transmit a
+     * real Escape byte.
      */
     public static String readChoice(Scanner fallbackScanner) {
         String result = withRawMode(() -> {
@@ -486,7 +488,6 @@ public class CLI {
                     continue; // arrow / function key — keep waiting
                 }
                 if (ch >= '1' && ch <= '9') return String.valueOf((char) ch);
-                if (ch == 'e' || ch == 'q') return "ESC";
                 if (ch == 'C' || ch == 'c') return "C";
                 // ignore other keys
             }
@@ -495,7 +496,7 @@ public class CLI {
 
         System.out.print(prompt("Choice: "));
         String input = fallbackScanner.nextLine().trim();
-        if (input.equalsIgnoreCase("e")) return "ESC";
+        if (input.equalsIgnoreCase("e")) return "ESC"; // dumb-terminal cancel fallback
         return input;
     }
 

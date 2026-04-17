@@ -1,6 +1,45 @@
 # Releases
 
-## v1.5 - April 17, 2026 (Current)
+## v1.6 — April 17, 2026 (Current)
+
+**Download:**
+- [HotelBooking-v1.6.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.tar.gz) (macOS/Linux)
+- [HotelBooking-v1.6.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.zip) (Windows)
+
+### Highlights
+- 🛡 **Hardened data layer** — strict 5-field CSV parsing with malformed-line logging, UTF-8 pinned for all file I/O, atomic writes via `Files.move(... REPLACE_EXISTING, ATOMIC_MOVE)`.
+- 🧰 **Unified seeding** — the `seed.sh` / `seed.bat` helpers have been retired; `SeedManager.java` is now the single source of demo data. Bookings are generated relative to today so the calendar always shows a live mix of past / current / upcoming stays.
+- 🪟 **Windows-ready launchers** — `run.sh` / `run.bat` work whether invoked from the repo root or from inside `dist/`. The old `cd .../dist` hardcode that broke the dist-copied launcher is gone.
+- 📅 **Scheduled maintenance in the edit flow** — picking **MAINTENANCE** under *Edit room → Status* now prompts for start + end dates and writes a dated MAINTENANCE booking (same shape the calendar's `M` hotkey has always produced). Maintenance can no longer get stuck past its end date.
+- 📊 **Redesigned Booking Statistics dashboard** for managers: overview, booking-status bar chart, revenue breakdown (Realised / Booked / Lost / Total), 7-day occupancy heat map, and top-earning rooms — all inline in the terminal.
+- 🎯 **Room-deletion impact preview** — before deleting a room, managers now see a breakdown of every booking attached to it and a warning if any are active/upcoming. Deletion cascades through linked bookings.
+- 🎛 **Calendar cursor refinements** — cursor-on-booked now renders solid **white** (vs. the solid-green idle cell) so it's actually visible; cursor-on-maintenance renders solid **purple** (was dotted).
+- ⌨ **Single universal cancel key** — `e` / `q` no longer act as cancel shortcuts in raw mode, freeing them as regular input. ESC is the only cancel key in a real terminal. The `e` sentinel remains in the dumb-terminal fallback because IDE consoles can't transmit a real Escape byte.
+
+### Tech & code quality
+- `Vector` replaced with `ArrayList` / `List` across the codebase (10 files, zero behavioural change).
+- Dedicated `CLI.supportsAnsi()` helper — no more string-equality hacks for ANSI detection.
+- Unified date format (strict `dd-MM-uuuu`) across `DateInput`, `OccupancyCalendar`, and storage — lenient parsing that silently accepted malformed input is gone.
+- Test suite bumped to **84 tests passing**; flipped two tests that previously *asserted* the silent-accept-malformed-line bug.
+- README: new **Data Files & Concurrency** and **Keyboard Reference** sections.
+
+### Bug fixes
+- 🔧 Polluted `Bookings` file (24 stale rows from broken seed scripts) cleaned out.
+- 🔧 CSV drift between the Java writers and the shell seeders — the root cause that corrupted the bookings file — fixed at the source.
+- 🔧 `GuestMenu` no longer freezes on a blank screen after a cancelled registration.
+- 🔧 Calendar cursor invisible on booked rows (solid-green-on-solid-green) — fixed.
+
+### System requirements
+- **Java:** 22 or later (bundled JLine build targets a modern JDK)
+- **Terminal:** Any modern terminal (macOS Terminal, Windows Terminal 10+, PowerShell 7+, iTerm2, etc.)
+- **Disk:** ~1.3 MB
+
+### Known limitations
+- Single-instance only. There is no file locking — running two copies against the same data directory risks last-write-wins collisions. Close the app on machine A before launching it on machine B.
+
+---
+
+## v1.5 — April 17, 2026
 
 **Download:**
 - [HotelBooking-v1.5.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.5/HotelBooking-v1.5.tar.gz) (macOS/Linux)
@@ -24,7 +63,7 @@
 
 ---
 
-## v1.4 - April 17, 2026
+## v1.4 — April 17, 2026
 
 **Download:**
 - [HotelBooking-v1.4.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.tar.gz) (macOS/Linux)
@@ -42,9 +81,9 @@
 
 ---
 
-## v1.3 - April 17, 2026
+## v1.3 — April 17, 2026
 
-**Download:** 
+**Download:**
 - [HotelBooking-v1.3.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.tar.gz) (macOS/Linux)
 - [HotelBooking-v1.3.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip) (Windows)
 
@@ -82,4 +121,4 @@ See [Getting Started](/getting-started.md) for detailed installation instruction
 
 ## Previous Versions
 
-This is the first public release. For development history, see the [GitHub commit log](https://github.com/steveapo/untitled-group-final-project/commits/main).
+For full development history, see the [GitHub commit log](https://github.com/steveapo/untitled-group-final-project/commits/main).

@@ -2,7 +2,7 @@
 
 ## Universal ESC Behavior
 
-**ESC (Escape key) always cancels and returns to the previous state**, no matter what you're doing:
+**ESC (Escape key) always cancels and returns to the previous state**, no matter what you're doing. **ESC is the only cancel key in a real terminal** — letters are never reserved, so `e`, `q`, and every other character are free as legitimate input (e.g. a username or password containing `e` works as expected).
 
 | Context | Action |
 |---------|--------|
@@ -12,6 +12,10 @@
 | **Password entry** | Cancel password input and return to previous menu |
 | **Confirmation dialog** | Cancel action and return to previous menu |
 | **List selection** | Cancel selection and return to previous menu |
+
+### IDE console fallback
+
+IDE consoles (IntelliJ, VS Code's built-in terminal) and piped stdin cannot transmit a real Escape byte. In that environment only, typing the single letter `e` on its own line acts as a cancel sentinel. Real terminals (macOS Terminal, iTerm2, Windows Terminal, PowerShell 7+, Linux tty/xterm) use the native ESC key and leave `e` fully available as input.
 
 ### Examples
 
@@ -157,11 +161,21 @@ Invalid input shows error and **re-prompts the same field** (doesn't cancel):
 
 ### Color Meanings
 
-- **Green (██)** = Available (can be selected)
-- **Red (██)** = Booked/occupied (cannot be selected)
-- **Pink (██)** = Maintenance (cannot be selected)
-- **Dotted (░░)** = Normal appearance (not selected)
-- **Solid (██)** = Currently selected cell (your cursor)
+**Idle cells** (not under the cursor):
+
+- **Dotted green (░░)** = Available
+- **Solid green (██)** = Booked (staff view)
+- **Dotted red (░░)** = Unavailable (user view)
+- **Dotted pink / purple (▒▒)** = Maintenance
+
+**Cursor cells** (the currently-selected cell):
+
+- **Solid green (██)** on an available day
+- **Solid white (██)** on a booked day — contrasts against the solid-green idle booking so the cursor never disappears as you navigate across occupied rooms
+- **Solid purple (██)** on a maintenance day
+- **Solid red (██)** on an unavailable day (user view)
+
+The cursor always uses a *different fill or colour* from the idle cell beneath it, so its position is visually unambiguous whatever status the underlying cell is.
 
 ---
 
@@ -200,12 +214,19 @@ This is intentional — you must explicitly press ESC to cancel, not just type a
 ## Quick Reference Card
 
 ### Always Available
-- **Esc** — Go back / Cancel / Logout
-- **Shift+?** — Help (not implemented, but ESC shows menu)
+- **Esc** — Go back / Cancel / Logout (the only cancel key in a real terminal)
 
 ### Menu Screens
-- **1-9** — Select menu option (single keypress, no Enter)
+- **1–9** — Select menu option (single keypress, no Enter)
+- **C** — Open the occupancy calendar (where offered)
 - **Esc** — Go back to parent menu or logout
+
+### Occupancy Calendar (staff)
+- **← → ↑ ↓** — Move by day / room
+- **Shift+← →** — Jump by week
+- **T** — Jump back to today
+- **M** — Start / end a maintenance date range
+- **Esc** — Back (or cancel an in-progress maintenance range)
 
 ### List Selection
 - **↑ ↓** — Navigate

@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- **Java 11** or later ([download from Adoptium](https://adoptium.net/))
+- **Java 22** or later ([download from Adoptium](https://adoptium.net/))
 
 Verify your Java installation:
 
@@ -14,14 +14,14 @@ java -version
 
 The easiest way to get started — everything is pre-packaged and ready to run.
 
-- **[📦 Download for macOS/Linux](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.tar.gz)**
-- **[📦 Download for Windows](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.zip)**
+- **[📦 Download for macOS/Linux](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.tar.gz)**
+- **[📦 Download for Windows](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.zip)**
 
 ### macOS / Linux Setup
 
 ```bash
 # Extract the archive
-tar -xzf HotelBooking-v1.4.tar.gz
+tar -xzf HotelBooking-v1.6.tar.gz
 
 # Run the application
 ./run.sh
@@ -30,8 +30,8 @@ tar -xzf HotelBooking-v1.4.tar.gz
 ### Windows Setup
 
 ```cmd
-# Extract HotelBooking-v1.4.zip (right-click → Extract All)
-# Open Command Prompt or PowerShell in the extracted folder
+# Extract HotelBooking-v1.6.zip (right-click → Extract All)
+# Open Command Prompt, PowerShell, or Windows Terminal in the extracted folder
 run.bat
 ```
 
@@ -39,9 +39,11 @@ run.bat
 
 | File | Purpose |
 |------|---------|
-| `HotelBooking.jar` | The application executable (requires Java 11+) |
+| `HotelBooking.jar` | The application executable (requires Java 22+) |
 | `run.sh` | Launch script for macOS / Linux |
 | `run.bat` | Launch script for Windows |
+
+Both launch scripts work whether invoked from the release folder directly or from a containing directory — they locate the JAR automatically.
 
 ## Option 2: Build from Source
 
@@ -62,90 +64,77 @@ This compiles all source files and packages them into `dist/HotelBooking.jar`.
 Run with:
 
 ```bash
-cd dist
-./run.sh               # macOS / Linux
-run.bat                # Windows
+./dist/run.sh          # macOS / Linux   (from the repo root)
+dist\run.bat           # Windows         (from the repo root)
+
+# or, if you prefer running from inside dist/:
+cd dist && ./run.sh
 ```
 
 ## First Run
 
-On first launch, the system automatically initializes with:
+On first launch, the system automatically seeds a live demo environment:
 
-- **3 default accounts:** 
+- **3 default accounts:**
   - `admin` / `admin` (Manager role)
   - `reception` / `reception` (Reception role)
   - `user1` / `user1` (User role)
-- **4 default rooms:** R101 (Single), R102 (Double), R103 (Triple), R104 (Quad)
-- **Empty bookings file** ready for reservations
+- **9 rooms** (R101–R109, one of each basic type plus a Suite and a Penthouse)
+- **Realistic bookings for `user1`** — a mix of past (CHECKED_OUT), current (CHECKED_IN), upcoming (CONFIRMED), and cancelled reservations, plus a scheduled MAINTENANCE window. Dates are computed relative to today, so the calendar always shows a live spread no matter when you first launch.
 
-⚠️ **Important:** Change default passwords immediately if deploying to a shared environment.
+⚠ **Important:** change the default passwords before using the system for anything beyond evaluation.
 
-### Adding Demo Data (Optional)
+### Resetting the demo
 
-The main application starts clean with minimal data. If you want to add optional demo accounts, rooms, and sample bookings for testing:
+To reset back to a fresh demo state at any time, delete the data files next to the JAR and relaunch — the seeder will recreate them:
 
-**macOS / Linux:**
 ```bash
-./seed.sh
+# From inside dist/
+rm -f Users Rooms Bookings Errors
+./run.sh
 ```
-
-**Windows:**
-```cmd
-seed.bat
-```
-
-This adds 5 extra user accounts (user2-user6), 4 additional rooms (R105-R108), and sample bookings showing various occupancy states.
 
 ## Data Files
 
 The application stores data in CSV files in the same directory as the JAR:
 
-| File | Contents |
-|------|----------|
-| `Users` | User accounts with hashed passwords and roles |
-| `Rooms` | Room inventory (number, type, price, capacity, status) |
-| `Bookings` | All reservations with status tracking |
-| `Errors` | Validation error log |
+| File       | Contents                                      |
+|------------|-----------------------------------------------|
+| `Users`    | Accounts (username, hashed password, role)    |
+| `Rooms`    | Room inventory (number, capacity, price, type, status) |
+| `Bookings` | Reservations (past, current, upcoming, cancellations, maintenance) |
+| `Errors`   | Malformed-line diagnostics and runtime warnings |
 
-These files are human-readable CSV format and can be edited with any text editor if needed.
+**Format guarantees**
 
-## Demo Accounts
+- Strict 5-field CSV for Rooms and Bookings; 7-field for Users. Malformed lines are logged to `Errors` and skipped, never silently accepted.
+- All files are read and written as **UTF-8** so round-trips between macOS/Linux (LF) and Windows (CRLF) are safe.
+- Writes are **atomic** (`Files.move(... REPLACE_EXISTING, ATOMIC_MOVE)`). A crash mid-write never leaves a half-written file.
 
-These accounts are pre-configured on first run:
+## Concurrency
 
-| Username | Password | Role |
-|----------|----------|------|
-| `admin` | `admin` | Manager |
-| `reception` | `reception` | Reception |
-| `user1` | `user1` | User |
-
-To add more demo accounts for testing, run the seed script:
-
-| Username | Password | Role |
-|----------|----------|------|
-| `user2` | `demo` | User |
-| `user3` | `demo` | User |
-| `user4` | `demo` | User |
-| `user5` | `demo` | User |
-| `user6` | `demo` | User |
+The app is **single-instance only** — there is no file locking. Running two copies against the same data directory can result in one instance silently overwriting the other's changes (last-write-wins). If you need to move the app between machines, close it on the first machine before launching it on the second.
 
 ## Troubleshooting
 
-### "Java not found"
-Ensure Java 11+ is installed and in your PATH:
+### "Java not found" or class-file version error
+Ensure Java **22 or later** is installed and in your `PATH`:
+
 ```bash
 java -version
 ```
 
+Most `UnsupportedClassVersionError` messages mean an older JDK is on the `PATH`.
+
 ### Application won't start on Windows
-- Try **Windows Terminal** or **PowerShell 7+** instead of cmd.exe
-- Legacy cmd.exe has limited color support but will still work
+- Prefer **Windows Terminal** or **PowerShell 7+** over legacy `cmd.exe` — both honour VT escape sequences for the colour UI.
+- Legacy `cmd.exe` still works but falls back to numbered menus and plain text.
+
+### Calendar rendering looks garbled
+Your terminal likely doesn't have a UTF-8 locale set. On Windows, `run.bat` already sets `chcp 65001` for you; on macOS/Linux this is usually the default. If you launch the JAR manually, ensure `-Dfile.encoding=UTF-8` is passed.
 
 ### Missing data files
-The application creates `Users`, `Rooms`, and `Bookings` files automatically on first run. If they're missing:
-1. Delete all data files
-2. Restart the application
-3. Files will be recreated
+If `Users`, `Rooms`, or `Bookings` is missing, the application recreates it on startup via the seeder. To force a full reset, delete the files next to the JAR and relaunch.
 
 ---
 

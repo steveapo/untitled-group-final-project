@@ -45,7 +45,7 @@ class DateInputTest {
     @DisplayName("room with overlapping booking is excluded")
     void overlappingBookingExcludesRoom() {
         // R101 booked 1-May to 5-May
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -61,7 +61,7 @@ class DateInputTest {
     @DisplayName("booking that ends before requested start does not conflict")
     void nonOverlappingBeforeIsAvailable() {
         // R101 booked 1-May to 5-May
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -76,7 +76,7 @@ class DateInputTest {
     @DisplayName("booking that starts after requested end does not conflict")
     void nonOverlappingAfterIsAvailable() {
         // R101 booked 10-May to 15-May
-        bookings.add(new Bookings(rooms.get(0), "10-5-2026", "15-5-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "10-05-2026", "15-05-2026", "alice", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -91,7 +91,7 @@ class DateInputTest {
     @DisplayName("check-out day allows new check-in on same day")
     void checkOutDayAllowsNewCheckIn() {
         // R101 booked 1-May to 5-May (check-out on 5th)
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -105,7 +105,7 @@ class DateInputTest {
     @Test
     @DisplayName("exact same dates as existing booking is rejected")
     void exactSameDatesRejected() {
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -121,7 +121,7 @@ class DateInputTest {
     @DisplayName("requested range fully inside existing booking is rejected")
     void requestInsideExistingBooking() {
         // R101 booked 1-May to 10-May
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "10-5-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "10-05-2026", "alice", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -136,7 +136,7 @@ class DateInputTest {
     @DisplayName("requested range fully wraps existing booking is rejected")
     void requestWrapsExistingBooking() {
         // R101 booked 3-May to 7-May
-        bookings.add(new Bookings(rooms.get(0), "3-5-2026", "7-5-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "03-05-2026", "07-05-2026", "alice", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -152,7 +152,7 @@ class DateInputTest {
     @Test
     @DisplayName("cancelled bookings do not block availability")
     void cancelledBookingsIgnored() {
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CANCELLED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CANCELLED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -169,8 +169,8 @@ class DateInputTest {
     @DisplayName("room with multiple non-overlapping bookings stays available in gap")
     void multipleBookingsGapAvailable() {
         // R101 booked 1-5 May and 10-15 May — gap on 5-10 May
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CONFIRMED"));
-        bookings.add(new Bookings(rooms.get(0), "10-5-2026", "15-5-2026", "bob", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "10-05-2026", "15-05-2026", "bob", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -185,8 +185,8 @@ class DateInputTest {
     @Test
     @DisplayName("room with multiple bookings — request overlaps second booking")
     void multipleBookingsOverlapsSecond() {
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CONFIRMED"));
-        bookings.add(new Bookings(rooms.get(0), "10-5-2026", "15-5-2026", "bob", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CONFIRMED"));
+        bookings.add(new Bookings(rooms.get(0), "10-05-2026", "15-05-2026", "bob", "CONFIRMED"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -235,7 +235,7 @@ class DateInputTest {
     @Test
     @DisplayName("CHECKED_IN booking blocks the room")
     void checkedInBookingBlocks() {
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CHECKED_IN"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CHECKED_IN"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(
@@ -249,7 +249,7 @@ class DateInputTest {
     @Test
     @DisplayName("CHECKED_OUT booking does not block the room")
     void checkedOutBookingDoesNotBlock() {
-        bookings.add(new Bookings(rooms.get(0), "1-5-2026", "5-5-2026", "alice", "CHECKED_OUT"));
+        bookings.add(new Bookings(rooms.get(0), "01-05-2026", "05-05-2026", "alice", "CHECKED_OUT"));
 
         Vector<Room> available = new Vector<>();
         dateInput.checkBookingsDate(

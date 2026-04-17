@@ -1,13 +1,13 @@
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.format.ResolverStyle;
 import java.util.Scanner;
-import java.util.Vector;
 
 public class UserMenu {
 
     public static void show(Scanner scanner, Account account,
-                            Vector<Room> rooms, Vector<Bookings> bookings,
+                            List<Room> rooms, List<Bookings> bookings,
                             Files file) throws Exception {
         while (true) {
             CLI.clearScreen();
@@ -36,7 +36,7 @@ public class UserMenu {
     }
 
     private static void bookRoom(Scanner scanner, Account account,
-                                  Vector<Room> rooms, Vector<Bookings> bookings,
+                                  List<Room> rooms, List<Bookings> bookings,
                                   Files file) throws Exception {
         // ── Step 1: number of guests ──────────────────────────────────────
         CLI.clearScreen();
@@ -86,13 +86,11 @@ public class UserMenu {
                 Main.pause(scanner);
                 return;
             } else {
-                // Invalid input - erase and re-prompt cleanly
+                // Invalid input — show the error, wait for a key, then scrub the cycle.
                 System.out.println(CLI.warning("Please enter 'yes' or 'no'."));
                 CLI.waitForKey(scanner);
-                // Clear the prompt cycle: 1 (prompt+input) + 1 (error) + 1 (press-key + newline) = 3 lines up
-                if (CLI.bold("X").equals("X")) {
-                    // ANSI not supported, fall through
-                } else {
+                // 1 (prompt+input) + 1 (error) + 1 (press-any-key) = 3 lines to clear.
+                if (CLI.supportsAnsi()) {
                     System.out.print("\033[3A\r\033[J");
                     System.out.flush();
                 }
@@ -111,7 +109,7 @@ public class UserMenu {
         Main.pause(scanner);
     }
 
-    private static void viewMyBookings(Account account, Vector<Bookings> bookings) {
+    private static void viewMyBookings(Account account, List<Bookings> bookings) {
         CLI.randomSpinner("Loading bookings");
         CLI.clearScreen();
         CLI.printBanner("MY BOOKINGS");
@@ -134,12 +132,12 @@ public class UserMenu {
     }
 
     private static void cancelBooking(Scanner scanner, Account account,
-                                       Vector<Bookings> bookings, Files file) {
+                                       List<Bookings> bookings, Files file) {
         CLI.clearScreen();
         CLI.printBanner("CANCEL A BOOKING");
         System.out.println();
 
-        Vector<Bookings> activeBookings = new Vector<>();
+        List<Bookings> activeBookings = new ArrayList<>();
         for (Bookings b : bookings) {
             if (b.getUsername().equals(account.getUsername())
                     && b.getStatus().equals("CONFIRMED")) {
