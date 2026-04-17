@@ -266,9 +266,23 @@ Press **C** at any menu to view the occupancy calendar:
   ...
 ```
 
-- **Green (██)** = Available
-- **Red (██)** = Booked
-- **Pink (██)** = Maintenance
+**Colour scheme (staff view):**
+- **Gray (░░)** = Available (no booking, no revenue)
+- **Green (██)** = Booked
+- **Pink/purple (▒▒)** = Maintenance
+
+### Calendar navigation
+
+| Key | Action |
+|-----|--------|
+| **← → ↑ ↓** | Move by day / room |
+| **Shift+← →** | Jump one week |
+| **Tab** | Jump forward one month |
+| **Shift+Tab** | Jump back one month |
+| **T** | Jump to today |
+| **M** | Mark start / end of a maintenance range |
+| **L** | Remove maintenance: anchor start (on a pink cell), navigate to end, press L again |
+| **Esc** | Back (or cancel an in-progress M or L operation) |
 
 Use for capacity planning and occupancy overview.
 

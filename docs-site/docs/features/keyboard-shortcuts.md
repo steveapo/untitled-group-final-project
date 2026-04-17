@@ -74,22 +74,24 @@ Power users can use Vim keys in addition to arrows:
 | **h** | Left (←) |
 | **j** | Down (↓) |
 | **k** | Up (↑) |
-| **l** | Right (→) |
+| **l** | Right (→) / Week forward (non-staff calendar) |
 | **H** | Shift+Left (week back) |
-| **L** | Shift+Right (week forward) |
+| **L** | **Staff calendar only:** remove maintenance from selected range |
 
 Works in menus and calendar navigation.
 
-### Week Navigation
+### Week & Month Navigation
 
-In occupancy calendar:
+In the occupancy calendar:
 
 | Key | Action |
 |-----|--------|
 | **Shift+←** | Jump back one week |
 | **Shift+→** | Jump forward one week |
+| **Tab** | Jump forward one month |
+| **Shift+Tab** | Jump back one month |
 
-Useful for quickly scanning availability across longer date ranges.
+Use Shift+Arrow for week-by-week scanning and Tab/Shift+Tab when you need to jump across months quickly.
 
 ---
 
@@ -156,6 +158,9 @@ Invalid input shows error and **re-prompts the same field** (doesn't cancel):
 | **↑ ↓ ← →** | Move one day at a time |
 | **Shift+→** | Jump forward one week |
 | **Shift+←** | Jump backward one week |
+| **Tab** | Jump forward one month |
+| **Shift+Tab** | Jump backward one month |
+| **T** | Jump to today |
 | **Enter** | Select the current date |
 | **Esc** | Cancel date selection and return |
 
@@ -224,9 +229,11 @@ This is intentional — you must explicitly press ESC to cancel, not just type a
 ### Occupancy Calendar (staff)
 - **← → ↑ ↓** — Move by day / room
 - **Shift+← →** — Jump by week
-- **T** — Jump back to today
-- **M** — Start / end a maintenance date range
-- **Esc** — Back (or cancel an in-progress maintenance range)
+- **Tab / Shift+Tab** — Jump forward / back one month
+- **T** — Jump to today
+- **M** — Start / confirm a maintenance date range
+- **L** — Remove maintenance: press on start of range, navigate to end, press L again
+- **Esc** — Back (or cancel an in-progress M or L operation)
 
 ### List Selection
 - **↑ ↓** — Navigate
@@ -236,6 +243,8 @@ This is intentional — you must explicitly press ESC to cancel, not just type a
 ### Calendar Navigation
 - **↑ ↓ ← →** — Move day-by-day
 - **Shift+← →** — Jump by week
+- **Tab / Shift+Tab** — Jump forward / back one month
+- **T** — Jump to today
 - **h/j/k/l** — Vim keybindings
 - **Enter** — Select date
 - **Esc** — Cancel

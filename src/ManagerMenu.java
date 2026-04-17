@@ -559,10 +559,13 @@ public class ManagerMenu {
                 LocalDate d = today.plusDays(i);
                 int occ = occupiedCount(rooms, bookings, d);
                 int pct = percent(occ, totalRooms);
-                String dateLabel = d.format(dayFmt);
-                String leader = (i == 0) ? CLI.bold(dateLabel) + CLI.dim(" (today)")
-                                         : CLI.dim(dateLabel);
-                System.out.printf("  %-32s  %s  %s%s%n",
+                // Pad to fixed 18 visible chars BEFORE applying ANSI so printf
+                // alignment is never thrown off by hidden escape-code bytes.
+                String datePadded = String.format("%-10s", d.format(dayFmt));
+                String leader = (i == 0)
+                        ? CLI.bold(datePadded) + CLI.dim(" (today)")  // 10 + 8 = 18 visible
+                        : CLI.dim(datePadded + "        ");             // 10 + 8 spaces = 18 visible
+                System.out.printf("  %s  %s  %s%s%n",
                         leader,
                         renderBar(pct, 20, heatColor(pct)),
                         CLI.bold(String.format("%d/%d", occ, totalRooms)),

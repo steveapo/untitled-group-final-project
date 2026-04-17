@@ -41,6 +41,7 @@ public class CLI {
     private static final Terminal TERMINAL = buildTerminal();
     private static final boolean ANSI_SUPPORTED = detectAnsiSupport();
 
+
     private static Terminal buildTerminal() {
         try {
             Terminal t = TerminalBuilder.builder()
@@ -677,6 +678,7 @@ public class CLI {
                         if (third == 'B') return "DOWN";
                         if (third == 'D') return "LEFT";
                         if (third == 'C') return "RIGHT";
+                        if (third == 'Z') return "SHIFT_TAB"; // Shift+Tab → ESC[Z
                         if (third == '1') { // potential modifier sequence
                             int semi = reader.read(50L);
                             int mod  = reader.read(50L);
@@ -693,8 +695,10 @@ public class CLI {
                     }
                     continue; // unrecognised — keep waiting
                 }
+                if (ch == '\t') return "TAB";
                 if (ch == 'T' || ch == 't') return "T";
                 if (ch == 'M' || ch == 'm') return "M";
+                if (ch == 'L' || ch == 'l') return "L";
                 if (ch == '\r' || ch == '\n') return "ENTER";
                 // all other keys ignored
             }
@@ -709,11 +713,13 @@ public class CLI {
             case "h": return "LEFT";
             case "l": return "RIGHT";
             case "H": return "SHIFT_LEFT";
-            case "L": return "SHIFT_RIGHT";
+            case "L": return "L";
             case "k": return "UP";
             case "j": return "DOWN";
             case "t": case "T": return "T";
             case "m": case "M": return "M";
+            case "tab":         return "TAB";
+            case "shift_tab":   return "SHIFT_TAB";
             default:  return "ESC";
         }
     }

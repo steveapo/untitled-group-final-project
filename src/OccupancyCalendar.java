@@ -127,9 +127,12 @@ public class OccupancyCalendar {
         LocalDate weekStart    = mondayOf(LocalDate.now());
         int       colCursor    = LocalDate.now().getDayOfWeek().getValue() - 1;
         int       rowCursor    = 0;
-        // Maintenance marking state (staff only)
+        // Maintenance marking state (M key, staff only)
         LocalDate maintStart   = null;
         int       maintRow     = -1;
+        // Maintenance clearing state (L key, staff only)
+        LocalDate clearStart   = null;
+        int       clearRow     = -1;
         String    statusMsg    = null;
 
         while (true) {
@@ -140,6 +143,12 @@ public class OccupancyCalendar {
             if (statusMsg != null) {
                 System.out.println("  " + statusMsg);
                 statusMsg = null;
+            }
+            if (clearStart != null) {
+                System.out.println("  " + CLI.magenta("Clear start: "
+                        + clearStart.format(DateTimeFormatter.ofPattern("EEE MMM d"))
+                        + " on " + rooms.get(clearRow).getRoomNumber()
+                        + "  \u2014 navigate to end date and press L, Esc to cancel"));
             }
             String key = CLI.readArrowOrKey(scanner);
             switch (key) {
@@ -153,6 +162,8 @@ public class OccupancyCalendar {
                     break;
                 case "SHIFT_LEFT":  weekStart = weekStart.minusWeeks(1); break;
                 case "SHIFT_RIGHT": weekStart = weekStart.plusWeeks(1);  break;
+                case "SHIFT_TAB": weekStart = mondayOf(weekStart.minusMonths(1)); break;
+                case "TAB":       weekStart = mondayOf(weekStart.plusMonths(1));  break;
                 case "UP":    if (rowCursor > 0) rowCursor--;                  break;
                 case "DOWN":  if (rowCursor < rooms.size() - 1) rowCursor++;   break;
                 case "T":
@@ -198,11 +209,61 @@ public class OccupancyCalendar {
                         maintRow = -1;
                     }
                     break;
+                case "L":
+                    if (!isStaff || file == null) { weekStart = weekStart.plusWeeks(1); break; }
+                    LocalDate lDay  = weekStart.plusDays(colCursor);
+                    Room      lRoom = rooms.get(rowCursor);
+                    if (clearStart == null) {
+                        // First L: anchor the start of the clear range
+                        if (cellFor(lRoom, lDay, bookings) != CellStatus.MAINTENANCE) {
+                            statusMsg = CLI.warning("Move cursor to a maintenance cell first");
+                            break;
+                        }
+                        clearStart = lDay;
+                        clearRow   = rowCursor;
+                        maintStart = null; maintRow = -1; // cancel any in-progress M
+                    } else {
+                        // Second L: must be same room
+                        if (rowCursor != clearRow) {
+                            statusMsg = CLI.warning("End date must be on the same room ("
+                                    + rooms.get(clearRow).getRoomNumber() + ")");
+                            break;
+                        }
+                        LocalDate from = clearStart.isBefore(lDay) ? clearStart : lDay;
+                        LocalDate to   = clearStart.isAfter(lDay)  ? clearStart : lDay;
+                        Room targetRoom = rooms.get(clearRow);
+                        boolean removed = false;
+                        java.util.Iterator<Bookings> it = bookings.iterator();
+                        while (it.hasNext()) {
+                            Bookings b = it.next();
+                            if (!"MAINTENANCE".equals(b.getStatus())) continue;
+                            if (!b.getRoom().getRoomNumber().equals(targetRoom.getRoomNumber())) continue;
+                            try {
+                                LocalDate ci = LocalDate.parse(b.getCheckIn(),  FMT);
+                                LocalDate co = LocalDate.parse(b.getCheckOut(), FMT);
+                                // overlaps [from, to] if booking starts on/before to AND ends after from
+                                if (!ci.isAfter(to) && co.isAfter(from)) { it.remove(); removed = true; }
+                            } catch (DateTimeParseException e) { /* skip malformed */ }
+                        }
+                        if (removed) {
+                            file.updateBookings(bookings);
+                            statusMsg = CLI.success("Maintenance cleared: " + targetRoom.getRoomNumber()
+                                    + " from " + from.format(DateTimeFormatter.ofPattern("MMM d"))
+                                    + " to " + to.format(DateTimeFormatter.ofPattern("MMM d")));
+                        } else {
+                            statusMsg = CLI.dim("No maintenance bookings found in that range.");
+                        }
+                        clearStart = null;
+                        clearRow   = -1;
+                    }
+                    break;
                 case "ESC":
                     if (maintStart != null) {
-                        maintStart = null;
-                        maintRow = -1;
+                        maintStart = null; maintRow = -1;
                         statusMsg = CLI.dim("Maintenance marking cancelled.");
+                    } else if (clearStart != null) {
+                        clearStart = null; clearRow = -1;
+                        statusMsg = CLI.dim("Maintenance clear cancelled.");
                     } else {
                         return;
                     }
@@ -248,7 +309,9 @@ public class OccupancyCalendar {
                     else { weekStart = weekStart.plusWeeks(1); colCursor = 0; }
                     break;
                 case "SHIFT_LEFT":  weekStart = weekStart.minusWeeks(1); break;
-                case "SHIFT_RIGHT": weekStart = weekStart.plusWeeks(1);  break;
+                case "SHIFT_RIGHT": case "L": weekStart = weekStart.plusWeeks(1); break;
+                case "SHIFT_TAB": weekStart = mondayOf(weekStart.minusMonths(1)); break;
+                case "TAB":       weekStart = mondayOf(weekStart.plusMonths(1));  break;
                 case "UP":   if (rowCursor > 0) rowCursor--;                  break;
                 case "DOWN": if (rowCursor < rooms.size() - 1) rowCursor++;   break;
                 case "T":
@@ -461,13 +524,13 @@ public class OccupancyCalendar {
                 // Pick mode (user booking): green=available, red=unavailable
                 System.out.println("  Legend:  "
                         + a(FG_GREEN,  GLYPH_AVAILABLE)  + " Available   "
-                        + a(FG_RED,    GLYPH_OCCUPIED)   + " Unavailable   "
+                        + a(FG_RED,    GLYPH_AVAILABLE)  + " Unavailable   "
                         + a(FG_YELLOW + UNDERLINE, GLYPH_AVAILABLE) + " Selected range");
             } else {
                 // User view mode: green=available, red=unavailable
                 System.out.println("  Legend:  "
                         + a(FG_GREEN, GLYPH_AVAILABLE)  + " Available   "
-                        + a(FG_RED,   GLYPH_OCCUPIED)   + " Unavailable");
+                        + a(FG_RED,   GLYPH_AVAILABLE)  + " Unavailable");
             }
         } else {
             System.out.println("  Legend:  .. Available  ## Booked/Unavailable  MM Maintenance");
@@ -477,19 +540,19 @@ public class OccupancyCalendar {
         System.out.println();
         if (pickMode) {
             String escLabel = checkIn != null ? "Clear check-in" : "Cancel";
-            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  \u2191\u2193 Room  Enter Select  Esc " + escLabel);
+            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  Tab/\u21e7Tab Month  \u2191\u2193 Room  Enter Select  Esc " + escLabel);
         } else if (maintRow >= 0) {
-            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  "
+            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  Tab/\u21e7Tab Month  "
                     + CLI.magenta("M End maintenance")
                     + "  Esc Cancel");
         } else if (isStaff && !pickMode) {
-            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  \u2191\u2193 Room  T Today  "
-                    + CLI.magenta("M Maintenance")
+            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  Tab/\u21e7Tab Month  \u2191\u2193 Room  T Today  "
+                    + CLI.magenta("M Mark  L Remove maint")
                     + "  Esc Back");
         } else {
-            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  \u2191\u2193 Room  T Today  Esc Back");
+            System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  Tab/\u21e7Tab Month  \u2191\u2193 Room  T Today  Esc Back");
         }
-        System.out.println("  " + CLI.dim("(vim: h l day  H L week  k j room  enter  t today  e back)"));
+        System.out.println("  " + CLI.dim("(vim: h l day  H week  k j room  L remove-maint  t today  e back)"));
     }
 
     // ── Row label ─────────────────────────────────────────────────────────
@@ -594,11 +657,11 @@ public class OccupancyCalendar {
      */
     private static String statusGlyph(CellStatus cs, boolean isStaff, boolean pickMode) {
         if (isStaff) {
-            // Staff scheme: green=available (dotted), green=any booking (solid), pink=maintenance (solid)
+            // Staff scheme: gray=available (dotted), green=any booking (solid), pink=maintenance (dotted)
             switch (cs) {
-                case AVAILABLE:   return a(FG_GREEN, GLYPH_AVAILABLE);  // dotted available
+                case AVAILABLE:   return a(FG_GRAY,  GLYPH_AVAILABLE);   // dotted gray — no revenue
                 case MAINTENANCE: return a(FG_PINK,  GLYPH_MAINTENANCE);  // solid maintenance
-                default:          return a(FG_GREEN, GLYPH_OCCUPIED);  // solid booking
+                default:          return a(FG_GREEN, GLYPH_OCCUPIED);     // solid booking
             }
         } else {
             // User scheme: green=available (dotted), red=unavailable (dotted in normal view)
@@ -623,7 +686,7 @@ public class OccupancyCalendar {
     private static String statusSolidGlyph(CellStatus cs, boolean isStaff, boolean pickMode) {
         if (isStaff) {
             switch (cs) {
-                case AVAILABLE:   return a(FG_GREEN, GLYPH_OCCUPIED);  // solid green on empty day
+                case AVAILABLE:   return a(FG_GRAY,  GLYPH_OCCUPIED);  // solid gray cursor on empty day
                 case MAINTENANCE: return a(FG_PINK,  GLYPH_OCCUPIED);  // solid purple block
                 default:          return a(FG_WHITE, GLYPH_OCCUPIED);  // solid white on booked
             }

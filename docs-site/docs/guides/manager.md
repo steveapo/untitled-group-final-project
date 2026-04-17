@@ -373,7 +373,26 @@ Press **C** at any menu:
   ...
 ```
 
-Navigate by month to:
+### Calendar navigation
+
+| Key | Action |
+|-----|--------|
+| **← → ↑ ↓** | Move by day / room |
+| **Shift+← →** | Jump one week |
+| **Tab** | Jump forward one month |
+| **Shift+Tab** | Jump back one month |
+| **T** | Jump to today |
+| **Esc** | Back to menu |
+
+### Marking maintenance (M key)
+
+Navigate to the start date on the target room row and press **M** — the calendar shows a pink range preview as you move. Navigate to the end date and press **M** again to confirm.
+
+### Removing maintenance (L key)
+
+Navigate to any cell in the maintenance block and press **L** (it must be a pink/maintenance cell). Navigate to the other end of the block and press **L** again to clear it. Esc cancels the operation at any point.
+
+Navigate across months to:
 - Plan maintenance windows
 - Identify occupancy trends
 - Plan seasonal staffing
