@@ -17,34 +17,71 @@ public class SeedManager {
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
     @SuppressWarnings("java:S2068")
     private static final String DEFAULT_ADMIN_PASSWORD = "admin";
+    @SuppressWarnings("java:S2068")
+    private static final String DEFAULT_RECEPTION_USERNAME = "reception";
+    @SuppressWarnings("java:S2068")
+    private static final String DEFAULT_RECEPTION_PASSWORD = "reception";
+    @SuppressWarnings("java:S2068")
+    private static final String DEFAULT_USER_USERNAME = "user1";
+    @SuppressWarnings("java:S2068")
+    private static final String DEFAULT_USER_PASSWORD = "user1";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
+     * Seed the default accounts: admin, receptionist, and user.
+     * Called automatically by Main on first run.
+     */
+    public static void seedDefaultAccounts(Files file) {
+        try {
+            // Admin account
+            hashAndCreateUser(file, DEFAULT_ADMIN_USERNAME, "Admin", "User",
+                    "admin@hotel.com", DEFAULT_ADMIN_PASSWORD, "MANAGER");
+
+            // Reception account
+            hashAndCreateUser(file, DEFAULT_RECEPTION_USERNAME, "Reception", "Staff",
+                    "reception@hotel.com", DEFAULT_RECEPTION_PASSWORD, "RECEPTION");
+
+            // User account
+            hashAndCreateUser(file, DEFAULT_USER_USERNAME, "John", "Doe",
+                    "user1@example.com", DEFAULT_USER_PASSWORD, "USER");
+        } catch (Exception e) {
+            System.err.println("Failed to seed accounts: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Hash password and create a user account in the Users file.
+     */
+    private static void hashAndCreateUser(Files file, String username, String firstName,
+                                         String lastName, String email, String password, String role) throws Exception {
+        byte[] saltBytes = new byte[16];
+        SECURE_RANDOM.nextBytes(saltBytes);
+
+        MessageDigest md = MessageDigest.getInstance("SHA-512");
+        md.update(saltBytes);
+        byte[] hashBytes = md.digest(password.getBytes(StandardCharsets.UTF_8));
+
+        String encodedHash = Base64.getEncoder().encodeToString(hashBytes);
+        String encodedSalt = Base64.getEncoder().encodeToString(saltBytes);
+
+        file.updateUsersFile(username, firstName, lastName, email, encodedHash, encodedSalt, role);
+    }
+
+    /**
      * Write the default admin account to the Users file.
-     * Called automatically by Main when no admin record exists.
+     * Kept for backward compatibility. Use seedDefaultAccounts() instead.
      */
     public static void seedAdmin(Files file) {
         try {
-            byte[] saltBytes = new byte[16];
-            SECURE_RANDOM.nextBytes(saltBytes);
-
-            MessageDigest md = MessageDigest.getInstance("SHA-512");
-            md.update(saltBytes);
-            byte[] hashBytes = md.digest(DEFAULT_ADMIN_PASSWORD.getBytes(StandardCharsets.UTF_8));
-
-            // Encode hash and salt as Base64 strings for CSV file storage
-            String encodedHash = Base64.getEncoder().encodeToString(hashBytes);
-            String encodedSalt = Base64.getEncoder().encodeToString(saltBytes);
-
-            file.updateUsersFile(DEFAULT_ADMIN_USERNAME, "Admin", "User",
-                    "admin@hotel.com", encodedHash, encodedSalt, "MANAGER");
+            hashAndCreateUser(file, DEFAULT_ADMIN_USERNAME, "Admin", "User",
+                    "admin@hotel.com", DEFAULT_ADMIN_PASSWORD, "MANAGER");
         } catch (Exception e) {
             System.err.println("Failed to seed admin account: " + e.getMessage());
         }
     }
 
     /**
-     * Create and seed the Rooms file with default rooms.
+     * Create and seed the Rooms file with default rooms (one of each type).
      * Called automatically by Main on first run.
      */
     public static void seedRooms(Files file) {
@@ -54,7 +91,6 @@ public class SeedManager {
             file.createNewRoom("R102", 2, 89.99, "Double", "AVAILABLE");
             file.createNewRoom("R103", 3, 119.99, "Triple", "AVAILABLE");
             file.createNewRoom("R104", 4, 149.99, "Quad", "AVAILABLE");
-            file.createNewRoom("R105", 2, 199.99, "Suite", "AVAILABLE");
         } catch (Exception e) {
             System.err.println("Failed to seed rooms: " + e.getMessage());
         }

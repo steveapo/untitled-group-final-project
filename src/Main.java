@@ -15,11 +15,11 @@ public class Main {
         Vector<Bookings> bookings = new Vector<>();
         Vector<Account>  users    = new Vector<>();
 
-        // Auto-seed admin account and data files on first run
+        // Auto-seed default accounts and data files on first run
         CLI.withSpinner("Initialising system", () -> {
             if (!file.adminExists()) {
                 file.createUsersFile();
-                SeedManager.seedAdmin(file);
+                SeedManager.seedDefaultAccounts(file);
             }
             if (!file.roomsFileExists()) {
                 SeedManager.seedRooms(file);

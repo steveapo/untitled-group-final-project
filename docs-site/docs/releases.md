@@ -1,6 +1,30 @@
 # Releases
 
-## v1.4 - April 17, 2026 (Current)
+## v1.5 - April 17, 2026 (Current)
+
+**Download:**
+- [HotelBooking-v1.5.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.5/HotelBooking-v1.5.tar.gz) (macOS/Linux)
+- [HotelBooking-v1.5.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.5/HotelBooking-v1.5.zip) (Windows)
+
+### Pre-Loaded Data
+- ✨ **3 pre-configured accounts:** admin, reception, user1
+- ✨ **4 default rooms:** One of each type (Single, Double, Triple, Quad)
+- ✨ **Clean initialization:** No unnecessary demo data cluttering the system
+- 🔧 **Optional seed script:** `./seed.sh` (or `seed.bat` on Windows) to add demo data and statistics
+
+### New Features
+- 🎯 **Lean first-run experience** - Start with exactly what you need
+- 🎯 **Optional demo data** - Run seed.sh after setup if you want sample bookings and extra rooms
+- 🎯 **Separate seed scripts** - Choose to populate demo data without cluttering the main application
+
+### System Requirements
+- **Java:** 11 or higher
+- **Terminal:** Any modern terminal (macOS Terminal, Windows Terminal, cmd.exe, etc.)
+- **Disk Space:** ~1.3 MB
+
+---
+
+## v1.4 - April 17, 2026
 
 **Download:**
 - [HotelBooking-v1.4.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.tar.gz) (macOS/Linux)

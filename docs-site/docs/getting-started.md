@@ -69,12 +69,32 @@ run.bat                # Windows
 
 ## First Run
 
-On first launch, the system automatically creates a default admin account if no `Users` file exists:
+On first launch, the system automatically initializes with:
 
-- **Username:** `admin`
-- **Password:** `admin`
+- **3 default accounts:** 
+  - `admin` / `admin` (Manager role)
+  - `reception` / `reception` (Reception role)
+  - `user1` / `user1` (User role)
+- **4 default rooms:** R101 (Single), R102 (Double), R103 (Triple), R104 (Quad)
+- **Empty bookings file** ready for reservations
 
-⚠️ **Important:** Change the admin password immediately if deploying to a shared environment.
+⚠️ **Important:** Change default passwords immediately if deploying to a shared environment.
+
+### Adding Demo Data (Optional)
+
+The main application starts clean with minimal data. If you want to add optional demo accounts, rooms, and sample bookings for testing:
+
+**macOS / Linux:**
+```bash
+./seed.sh
+```
+
+**Windows:**
+```cmd
+seed.bat
+```
+
+This adds 5 extra user accounts (user2-user6), 4 additional rooms (R105-R108), and sample bookings showing various occupancy states.
 
 ## Data Files
 
@@ -91,14 +111,23 @@ These files are human-readable CSV format and can be edited with any text editor
 
 ## Demo Accounts
 
-Try these pre-configured accounts (if you re-copy the provided data files):
+These accounts are pre-configured on first run:
 
 | Username | Password | Role |
 |----------|----------|------|
-| `user1` | `user1` | User (Guest) |
-| `user2` | `user1` | User (Guest) |
-| `reception` | `reception` | Reception (Staff) |
-| `admin` | `admin` | Manager (Admin) |
+| `admin` | `admin` | Manager |
+| `reception` | `reception` | Reception |
+| `user1` | `user1` | User |
+
+To add more demo accounts for testing, run the seed script:
+
+| Username | Password | Role |
+|----------|----------|------|
+| `user2` | `demo` | User |
+| `user3` | `demo` | User |
+| `user4` | `demo` | User |
+| `user5` | `demo` | User |
+| `user6` | `demo` | User |
 
 ## Troubleshooting
 

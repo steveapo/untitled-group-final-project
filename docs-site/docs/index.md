@@ -64,14 +64,16 @@ See [Getting Started](/getting-started) for full installation instructions.
 
 ## Demo Accounts
 
-Use these credentials to explore the system:
+These accounts are pre-loaded on first run:
 
 | Username | Password | Role |
 |----------|----------|------|
-| `user1` | `user1` | User |
-| `user2` | `user1` | User |
-| `reception` | `reception` | Reception |
 | `admin` | `admin` | Manager |
+| `reception` | `reception` | Reception |
+| `user1` | `user1` | User |
+
+Additional demo accounts available via the optional seed script (after first run).
+See [Getting Started](/getting-started) for details.
 
 ---
 

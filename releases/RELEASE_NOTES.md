@@ -1,35 +1,26 @@
-# Hotel Room Booking System - v1.4 Release
+# Hotel Room Booking System - v1.5 Release
 
 **Release Date:** April 17, 2026
 
 ## What's New
 
-### Critical Bug Fix
+### Pre-Loaded Minimal Data
+- ✅ **3 accounts pre-configured:** admin (Manager), reception (Reception), user1 (User)
+- ✅ **4 rooms pre-loaded:** One of each type (Single, Double, Triple, Quad)
+- ✅ **Clean start:** No unnecessary dummy data in the system
+- ✅ **Optional demo data:** `./seed.sh` (macOS/Linux) or `seed.bat` (Windows) to add sample bookings, extra rooms, and statistics
+
+### Simplified Initialization
+- ✅ **All three core accounts initialized on first run** - No need for manual setup
+- ✅ **Consistent data structure** - All files created automatically with proper seeding
+- ✅ **Flexible scaling:** Use seed scripts to add demo/test data without cluttering the main application
+
+### Previous Release (v1.4)
+
+#### Critical Bug Fix
 - ✅ **Auto-create data files**: Rooms and Bookings files now created automatically on first run
-- ✅ **Default room inventory**: 5 sample rooms (R101-R105) seeded on initialization
+- ✅ **Default room inventory**: Sample rooms seeded on initialization
 - ✅ **First-run experience**: No more crashes due to missing data files
-- **This resolves:** Windows users (and others) getting "Critical data files are missing. Exiting." error
-
-### Previous Release (v1.3)
-
-### Calendar & Booking Flow Refinements
-
-#### Occupancy Calendar
-- ✅ **Fixed header alignment**: Day names and date numbers now properly aligned with column separators
-- ✅ **Improved cell highlighting**: Selected cells now show solid green (available) or red (unavailable) glyphs
-- ✅ **Clean visual distinction**: Dotted glyphs (░░) for normal state, solid glyphs (██) for selected state
-- ✅ **Maintenance display**: Proper pink solid glyphs for maintenance status
-
-#### Booking Confirmation
-- ✅ **Input validation loop**: Invalid input no longer cancels the booking flow
-- ✅ **Clean re-prompting**: Error messages displayed with automatic cleanup on next input
-- ✅ **Flexible input**: Accepts 'y', 'yes', 'n', 'no' (case-insensitive)
-- ✅ **ESC support**: Press ESC to cancel at any time
-
-### Bug Fixes
-- Fixed UI creep: Confirmation prompt no longer loses lines with repeated invalid input
-- Fixed cell styling: Removed ANSI code layering that caused visibility issues
-- Fixed header-to-grid alignment: Column separators now consistent throughout
 
 ## Features
 
@@ -37,6 +28,7 @@
 - **User Booking**: Browse rooms, select dates visually, confirm bookings
 - **Staff Management**: View all bookings, manage occupancy across all rooms
 - **Admin Control**: Full system administration and data management
+- **Role-based Access Control**: Guest, User, Reception, Manager with distinct menus
 
 ### Interactive Calendar
 - Arrow keys (↑↓←→) for navigation
@@ -56,18 +48,20 @@
 - `HotelBooking.jar` - Executable application (requires Java 11+)
 - `run.sh` - Launch script for macOS/Linux
 - `run.bat` - Launch script for Windows
+- `seed.sh` - Optional seed script for demo data (macOS/Linux)
+- `seed.bat` - Optional seed script for demo data (Windows)
 
 ## Installation
 
 ### macOS/Linux
 ```bash
-tar -xzf HotelBooking-v1.0.tar.gz
+tar -xzf HotelBooking-v1.5.tar.gz
 ./run.sh
 ```
 
 ### Windows
 ```cmd
-Expand-Archive HotelBooking-v1.0.zip
+Expand-Archive HotelBooking-v1.5.zip
 cd dist
 run.bat
 ```
@@ -77,17 +71,45 @@ run.bat
 java -jar HotelBooking.jar
 ```
 
+### Adding Demo Data (Optional)
+
+After running the application at least once:
+
+**macOS/Linux:**
+```bash
+./seed.sh
+```
+
+**Windows:**
+```cmd
+seed.bat
+```
+
 ## System Requirements
 
 - **Java Runtime**: JDK 11 or higher
 - **Terminal**: Any modern terminal (macOS Terminal, Windows Terminal, cmd.exe)
-- **Disk Space**: ~2 MB for JAR file
+- **Disk Space**: ~1.3 MB for JAR file
+
+## Data Files
+
+On first run, the system automatically creates:
+
+| File | Contents |
+|------|----------|
+| `Users` | 3 pre-loaded accounts (admin, reception, user1) |
+| `Rooms` | 4 default rooms (R101-R104, one of each type) |
+| `Bookings` | Empty file, ready for reservations |
+| `Errors` | Error log (created as needed) |
+
+Running the optional seed script adds more accounts, rooms, and sample bookings.
 
 ## Known Limitations
 
 - Session data stored locally (not cloud-synced)
 - No concurrent user support (single-user application)
 - Date input limited to dd-MM-yyyy format
+- Seed scripts append to files (no duplicate checking)
 
 ## Support
 
