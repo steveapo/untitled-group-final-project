@@ -2,7 +2,7 @@
 
 A cross-platform CLI application for managing hotel room reservations, built with Java. Features role-based access control, interactive occupancy calendar, and secure authentication.
 
-**[⬇ Download Program (v1.3)](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip)** — Requires Java 11+ • **[View all releases](/releases)**
+**[⬇ Download Program (v1.4)](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.zip)** — Requires Java 11+ • **[View all releases](/releases)**
 
 ## Overview
 

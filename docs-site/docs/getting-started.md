@@ -14,14 +14,14 @@ java -version
 
 The easiest way to get started — everything is pre-packaged and ready to run.
 
-- **[📦 Download for macOS/Linux](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.tar.gz)**
-- **[📦 Download for Windows](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.3/HotelBooking-v1.3.zip)**
+- **[📦 Download for macOS/Linux](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.tar.gz)**
+- **[📦 Download for Windows](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.zip)**
 
 ### macOS / Linux Setup
 
 ```bash
 # Extract the archive
-tar -xzf HotelBooking-v1.3.tar.gz
+tar -xzf HotelBooking-v1.4.tar.gz
 
 # Run the application
 ./run.sh
@@ -30,7 +30,7 @@ tar -xzf HotelBooking-v1.3.tar.gz
 ### Windows Setup
 
 ```cmd
-# Extract HotelBooking-v1.3.zip (right-click → Extract All)
+# Extract HotelBooking-v1.4.zip (right-click → Extract All)
 # Open Command Prompt or PowerShell in the extracted folder
 run.bat
 ```

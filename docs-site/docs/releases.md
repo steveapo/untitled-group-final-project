@@ -1,5 +1,23 @@
 # Releases
 
+## v1.4 - April 17, 2026 (Current)
+
+**Download:**
+- [HotelBooking-v1.4.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.tar.gz) (macOS/Linux)
+- [HotelBooking-v1.4.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.4/HotelBooking-v1.4.zip) (Windows)
+
+### Critical Bug Fixes
+- 🔧 **Fixed first-run crash** - Rooms and Bookings files now auto-created on startup
+- 🔧 **Default room inventory** - 5 sample rooms (R101-R105) seeded automatically
+- 🔧 Resolves: "Critical data files are missing. Exiting." error on fresh installs
+
+### System Requirements
+- **Java:** 11 or higher
+- **Terminal:** Any modern terminal (macOS Terminal, Windows Terminal, cmd.exe, etc.)
+- **Disk Space:** ~1.3 MB
+
+---
+
 ## v1.3 - April 17, 2026
 
 **Download:** 

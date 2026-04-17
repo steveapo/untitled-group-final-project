@@ -1,8 +1,16 @@
-# Hotel Room Booking System - v1.3 Release
+# Hotel Room Booking System - v1.4 Release
 
 **Release Date:** April 17, 2026
 
 ## What's New
+
+### Critical Bug Fix
+- ✅ **Auto-create data files**: Rooms and Bookings files now created automatically on first run
+- ✅ **Default room inventory**: 5 sample rooms (R101-R105) seeded on initialization
+- ✅ **First-run experience**: No more crashes due to missing data files
+- **This resolves:** Windows users (and others) getting "Critical data files are missing. Exiting." error
+
+### Previous Release (v1.3)
 
 ### Calendar & Booking Flow Refinements
 
