@@ -339,9 +339,12 @@ public class CLI {
 
         if (rawModeAvailable()) {
             final int[] selectedHolder = { Math.max(0, Math.min(initialSelection, rooms.size() - 1)) };
+            // Save cursor position, render, then restore+clear on each update
             Integer raw = withRawMode(() -> {
                 NonBlockingReader reader = TERMINAL.reader();
                 int selected = selectedHolder[0];
+                // Save cursor position before first render
+                System.out.print("\033[s");
                 renderRoomList(rooms, title, selected);
                 while (true) {
                     int ch = reader.read();
@@ -372,8 +375,8 @@ public class CLI {
                     } else {
                         continue;
                     }
-                    int linesToClear = rooms.size() + 2;
-                    System.out.print("\033[" + linesToClear + "A");
+                    // Restore saved cursor position and clear everything below
+                    System.out.print("\033[u\033[J");
                     renderRoomList(rooms, title, selected);
                 }
             }, null);
@@ -411,15 +414,14 @@ public class CLI {
         for (int i = 0; i < rooms.size(); i++) {
             Room r = rooms.get(i);
             String dot = r.getStatus().equals("AVAILABLE") ? green("●") : red("●");
-            String info = String.format("%-6s | %-8s | %s/night | %dp | %s",
+            // Keep info short to avoid terminal line wrapping
+            String info = String.format("%-5s %-6s $%.0f/n %dp",
                     r.getRoomNumber(), r.getType(),
-                    String.format("$%.2f", r.getPrice()),
-                    r.getCapacity(),
-                    r.getStatus());
+                    r.getPrice(), r.getCapacity());
             if (i == selected) {
-                System.out.println(magenta("  ▸ ") + dot + "  " + magenta(info) + "\033[K");
+                System.out.println(magenta("  ▸ ") + dot + " " + magenta(info) + "\033[K");
             } else {
-                System.out.println(dim("    ") + dot + "  " + info + "\033[K");
+                System.out.println(dim("    ") + dot + " " + info + "\033[K");
             }
         }
         System.out.println(dim("  ↑↓ Navigate  Enter Select  Esc Cancel") + "\033[K");
