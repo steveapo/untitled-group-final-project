@@ -15,11 +15,8 @@
 #   - 3 accounts: admin, reception, user1
 #   - 4 rooms: R101 (Single), R102 (Double), R103 (Triple), R104 (Quad)
 #
-# This script adds (if you choose to run it):
-#   - 5 additional demo accounts (user2-user6)
-#   - 4 additional rooms (R105-R108: Suite and other types)
-#   - Sample bookings showing various occupancy states
-#   - Statistics for management dashboards
+# This script allows you to interactively add more accounts via the app,
+# and adds sample rooms and bookings for testing/demo purposes.
 #
 ###############################################################################
 
@@ -52,41 +49,45 @@ if [ ! -f "$DATA_DIR/Users" ] || [ ! -f "$DATA_DIR/Rooms" ] || [ ! -f "$DATA_DIR
     exit 1
 fi
 
-echo "This script will add optional dummy data to your system:"
-echo "  • 5 additional user accounts (user2-user6)"
-echo "  • 4 additional rooms (R105-R108)"
-echo "  • Sample bookings for demo/testing"
+# Check if seed data already exists
+if grep -q "user2" "$DATA_DIR/Users" 2>/dev/null; then
+    echo -e "${YELLOW}⚠ Seed data already exists${NC} (user2 account found)"
+    echo
+    printf "Reset and reseed? (yes/no): "
+    IFS= read -r reseed_response
+    reseed_response=$(printf '%s' "$reseed_response" | sed 's/[[:space:]]*$//')
+
+    if [[ "$reseed_response" =~ ^[Yy][Ee][Ss]?$ ]]; then
+        echo "Backing up and cleaning seed data..."
+        cp "$DATA_DIR/Users" "$DATA_DIR/Users.backup.$(date +%s)" 2>/dev/null || true
+
+        # Remove only the seeded demo accounts (user2-user6) and rooms (R105+)
+        grep -v "^user[2-6]," "$DATA_DIR/Users" > "$DATA_DIR/Users.tmp" && mv "$DATA_DIR/Users.tmp" "$DATA_DIR/Users"
+        grep -v "^R10[5-9]," "$DATA_DIR/Rooms" > "$DATA_DIR/Rooms.tmp" && mv "$DATA_DIR/Rooms.tmp" "$DATA_DIR/Rooms"
+        # Clean bookings with demo users
+        awk '!/^R10[1-9],user[2-6],/' "$DATA_DIR/Bookings" > "$DATA_DIR/Bookings.tmp" && mv "$DATA_DIR/Bookings.tmp" "$DATA_DIR/Bookings"
+        echo -e "${GREEN}✓ Cleaned up existing seed data${NC}"
+    else
+        echo "Seeding skipped."
+        exit 0
+    fi
+fi
+
+echo "This script will add optional demo data:"
+echo "  • 5 additional rooms (R105-R109)"
+echo "  • Sample bookings for testing/demo"
+echo
+echo "To add new user accounts, use the application's registration feature"
+echo "or run: echo 'password' | java -cp \"$JAR_FILE\" SeedManager"
 echo
 printf "Continue? (yes/no): "
 IFS= read -r response
-# Remove any trailing whitespace and carriage returns
 response=$(printf '%s' "$response" | sed 's/[[:space:]]*$//')
 
 if [[ ! "$response" =~ ^[Yy][Ee][Ss]?$ ]]; then
     echo "Seeding cancelled."
     exit 0
 fi
-
-echo
-echo -e "${GREEN}Adding dummy accounts...${NC}"
-
-# Create sample user accounts with hashed passwords
-# Format: username,firstName,lastName,email,hashedPassword,salt,role
-# All use password "demo" for demo purposes
-# (In production, these should have strong passwords)
-
-# Password hashing would require Java, so we'll provide a helper class
-# For now, we'll create accounts via the CLI if needed, or provide CSV format
-
-cat >> "$DATA_DIR/Users" << 'EOF'
-user2,Jane,Smith,user2@example.com,kl4cHXFePVPDY6DyMFKJcN5nKKJLd1tYcGTqvKqyU1+klYhIo0i5EJNs5c2Hj0/r0dPcJJxGFXG3gMzPVnH71g==,lJvYwvF8NxKL4nP0Md5Gtg==,USER
-user3,Bob,Johnson,user3@example.com,kl4cHXFePVPDY6DyMFKJcN5nKKJLd1tYcGTqvKqyU1+klYhIo0i5EJNs5c2Hj0/r0dPcJJxGFXG3gMzPVnH71g==,lJvYwvF8NxKL4nP0Md5Gtg==,USER
-user4,Alice,Williams,user4@example.com,kl4cHXFePVPDY6DyMFKJcN5nKKJLd1tYcGTqvKqyU1+klYhIo0i5EJNs5c2Hj0/r0dPcJJxGFXG3gMzPVnH71g==,lJvYwvF8NxKL4nP0Md5Gtg==,USER
-user5,Charlie,Brown,user5@example.com,kl4cHXFePVPDY6DyMFKJcN5nKKJLd1tYcGTqvKqyU1+klYhIo0i5EJNs5c2Hj0/r0dPcJJxGFXG3gMzPVnH71g==,lJvYwvF8NxKL4nP0Md5Gtg==,USER
-user6,Diana,Miller,user6@example.com,kl4cHXFePVPDY6DyMFKJcN5nKKJLd1tYcGTqvKqyU1+klYhIo0i5EJNs5c2Hj0/r0dPcJJxGFXG3gMzPVnH71g==,lJvYwvF8NxKL4nP0Md5Gtg==,USER
-EOF
-
-echo -e "${GREEN}✓ Added 5 demo accounts (user2-user6, password: demo)${NC}"
 
 echo
 echo -e "${GREEN}Adding additional rooms...${NC}"
@@ -96,26 +97,21 @@ R105,2,199.99,Suite,AVAILABLE
 R106,1,75.00,Single-Deluxe,AVAILABLE
 R107,3,149.99,Triple-Deluxe,AVAILABLE
 R108,4,199.99,Quad-Premium,AVAILABLE
+R109,6,299.99,Penthouse,AVAILABLE
 EOF
 
-echo -e "${GREEN}✓ Added 4 additional rooms (R105-R108)${NC}"
+echo -e "${GREEN}✓ Added 5 additional rooms (R105-R109)${NC}"
 
 echo
 echo -e "${GREEN}Adding sample bookings for demonstration...${NC}"
 
-# Sample bookings: showing various states (CONFIRMED, CHECKED_IN, CHECKED_OUT)
-# Format: roomNumber,guestUsername,checkInDate,checkOutDate,totalPrice,status
-TODAY=$(date +%d-%m-%Y)
-TOMORROW=$(date -d "+1 day" +%d-%m-%Y)
-NEXT_WEEK=$(date -d "+7 days" +%d-%m-%Y)
-LAST_WEEK=$(date -d "-7 days" +%d-%m-%Y)
-WEEK_AGO=$(date -d "-3 days" +%d-%m-%Y)
-
-cat >> "$DATA_DIR/Bookings" << EOF
-R101,user2,$LAST_WEEK,$WEEK_AGO,120.00,CHECKED_OUT
-R102,user3,$TODAY,$TOMORROW,180.00,CHECKED_IN
-R103,user4,$TOMORROW,$NEXT_WEEK,840.00,CONFIRMED
-R105,user5,$LAST_WEEK,$WEEK_AGO,400.00,CHECKED_OUT
+# Use fixed dates to avoid platform-specific date math issues
+# Bookings in different states: CHECKED_OUT, CHECKED_IN, CONFIRMED
+cat >> "$DATA_DIR/Bookings" << 'EOF'
+R101,user1,10-04-2026,13-04-2026,240.00,CHECKED_OUT
+R102,admin,15-04-2026,17-04-2026,180.00,CHECKED_IN
+R103,reception,18-04-2026,25-04-2026,840.00,CONFIRMED
+R105,user1,20-04-2026,22-04-2026,400.00,CONFIRMED
 EOF
 
 echo -e "${GREEN}✓ Added 4 sample bookings with various statuses${NC}"
@@ -126,10 +122,12 @@ echo -e "${GREEN}✓ Seeding complete!${NC}"
 echo -e "${BLUE}================================================${NC}"
 echo
 echo "Your system now has:"
-echo "  • 8 user accounts total (admin, reception, user1-user6)"
-echo "  • 8 rooms total (R101-R108)"
+echo "  • 3 base accounts (admin, reception, user1)"
+echo "  • 9 rooms total (R101-R109)"
 echo "  • 4 sample bookings for testing/demo"
 echo
-echo "Demo accounts use password 'demo' for testing."
+echo "To add more user accounts with proper password hashing:"
+echo "  echo 'mypassword' | java -cp \"dist/HotelBooking.jar\" SeedManager"
+echo
 echo "To access the system, run: ./dist/run.sh"
 echo
