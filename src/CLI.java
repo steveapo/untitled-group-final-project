@@ -370,12 +370,15 @@ public class CLI {
 
         if (rawModeAvailable()) {
             final int[] selectedHolder = { Math.max(0, Math.min(initialSelection, rooms.size() - 1)) };
-            // Save cursor position, render, then restore+clear on each update
+            // renderRoomList prints exactly (rooms.size() + 2) lines:
+            // one leading blank + one line per room + the navigation hint.
+            // We rewind by that many lines on each keypress — a *relative*
+            // move that survives terminal scrolling (xterm save/restore
+            // cursor does not, and duplicated the list on long inventories).
+            final int listLines = rooms.size() + 2;
             Integer raw = withRawMode(() -> {
                 NonBlockingReader reader = TERMINAL.reader();
                 int selected = selectedHolder[0];
-                // Save cursor position before first render
-                System.out.print("\033[s");
                 renderRoomList(rooms, title, selected);
                 while (true) {
                     int ch = reader.read();
@@ -407,7 +410,7 @@ public class CLI {
                     } else {
                         continue;
                     }
-                    System.out.print("\033[u\033[J");
+                    System.out.print("\033[" + listLines + "A");
                     renderRoomList(rooms, title, selected);
                 }
             }, null);
