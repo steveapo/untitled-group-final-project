@@ -40,7 +40,17 @@ public class CLI {
     // ── JLine terminal singleton ────────────────────────────────────────
     private static final Terminal TERMINAL = buildTerminal();
     private static final boolean ANSI_SUPPORTED = detectAnsiSupport();
+    // On Windows cmd.exe/conhost, arrow-key VT sequences are unreliable.
+    // Force the numbered+vim fallback path so navigation always works.
+    private static final boolean FORCE_FALLBACK = isWindowsCmd();
 
+    private static boolean isWindowsCmd() {
+        if (!System.getProperty("os.name", "").toLowerCase().contains("win")) return false;
+        if (TERMINAL == null) return true;
+        String type = TERMINAL.getType();
+        // Windows Terminal / PowerShell 7+ report "xterm-256color" or similar
+        return type == null || (!type.startsWith("xterm") && !type.startsWith("vt"));
+    }
 
     private static Terminal buildTerminal() {
         try {
@@ -59,7 +69,7 @@ public class CLI {
     }
 
     private static boolean rawModeAvailable() {
-        return TERMINAL != null && !"dumb".equals(TERMINAL.getType());
+        return !FORCE_FALLBACK && TERMINAL != null && !"dumb".equals(TERMINAL.getType());
     }
 
     private static boolean detectAnsiSupport() {
