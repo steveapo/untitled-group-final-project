@@ -1,6 +1,24 @@
 # Releases
 
-## v1.6.3 — April 18, 2026 (Current)
+## v1.6.4 — April 18, 2026 (Current)
+
+**Download:**
+- [HotelBooking-v1.6.4.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6.4/HotelBooking-v1.6.4.zip) (Windows)
+- [HotelBooking-v1.6.4.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6.4/HotelBooking-v1.6.4.tar.gz) (macOS/Linux)
+
+### Bug Fixes
+- **Maintenance clearing no longer nukes the whole range** — pressing `N` twice on the same day inside a 7-day maintenance block used to delete the entire block because overlapping MAINTENANCE records were removed wholesale. The clearing routine now splits maintenance bookings around the selected sweep: the pre-range and post-range segments are preserved as separate MAINTENANCE records, so only the cells you swept over disappear.
+- **Non-MAINTENANCE bookings inside the sweep are never touched** — you can drag across a range that mixes real bookings and maintenance, and only maintenance cells are cleared.
+- **Clear-range visual preview** — a cyan strike-through paints every MAINTENANCE cell the sweep will touch (mirroring the pink preview used by `M` Mark and the yellow one used by the booking picker). Non-maintenance cells inside the sweep render normally so you can see at a glance which days will be left alone.
+- **Status message reports the exact number of days cleared.**
+
+### Vim bindings exposed across selectors
+- **Edit a Room and role/status pickers now accept `k`/`j` for up/down** — previously only the room selector did, so Windows users who rely on vim keys had to keep switching strategies between views.
+- **Every hint line now advertises the vim alias next to the arrow glyph** — `↑↓ or k/j Navigate`, `← → or h/l Day`, `Shift+←→ or H/L Week`. Especially useful on Windows consoles where arrow key events are not always delivered to the JLine reader; vim navigation works unconditionally.
+
+---
+
+## v1.6.3 — April 18, 2026
 
 **Download:**
 - [HotelBooking-v1.6.3.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6.3/HotelBooking-v1.6.3.zip) (Windows)

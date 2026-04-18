@@ -2,7 +2,7 @@
 
 A cross-platform CLI application for managing hotel room reservations, built with Java. Features role-based access control, an interactive occupancy calendar, secure authentication, and a manager analytics dashboard.
 
-**[⬇ Download Program (v1.6.3)](/getting-started#option-1-download-the-release-recommended)** — Requires Java 22+ • **[View all releases](/releases)**
+**[⬇ Download Program (v1.6.4)](/getting-started#option-1-download-the-release-recommended)** — Requires Java 22+ • **[View all releases](/releases)**
 
 ## Overview
 
