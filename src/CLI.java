@@ -270,25 +270,28 @@ public class CLI {
                     if (ch == '\r' || ch == '\n') {
                         System.out.println();
                         return selected;
-                    } else if (ch == 27) { // ESC
-                        int next = reader.read(50L);
+                    } else if (ch == 27) { // ESC / VT100 arrow prefix
+                        int next = reader.read(150L);
                         if (next == -2) { // standalone ESC — cancel
                             System.out.println();
                             return -1;
                         }
                         if (next == '[') {
-                            int arrow = reader.read(50L);
+                            int arrow = reader.read(150L);
                             if (arrow == 'A')      selected = (selected - 1 + labels.length) % labels.length;
                             else if (arrow == 'B') selected = (selected + 1) % labels.length;
-                            // ignore C/D (left/right) and other CSI tails
                             while (reader.read(10L) >= 0) { /* drain */ }
                         } else {
                             while (reader.read(10L) >= 0) { /* drain unknown sequence */ }
                         }
+                    } else if (ch == 0xE0) { // Windows conhost arrow prefix
+                        int arrow = reader.read(150L);
+                        if (arrow == 0x48)      selected = (selected - 1 + labels.length) % labels.length;
+                        else if (arrow == 0x50) selected = (selected + 1) % labels.length;
                     } else {
                         continue;
                     }
-                    int linesToClear = labels.length + 2; // labels + hint + blank line
+                    int linesToClear = labels.length + 2;
                     System.out.print("\033[" + linesToClear + "A");
                     renderList(labels, title, selected);
                 }
@@ -352,20 +355,24 @@ public class CLI {
                     if (ch == '\r' || ch == '\n') {
                         System.out.println();
                         return selected;
-                    } else if (ch == 27) { // ESC
-                        int next = reader.read(50L);
+                    } else if (ch == 27) { // ESC / VT100 arrow prefix
+                        int next = reader.read(150L);
                         if (next == -2) {
                             System.out.println();
                             return -1;
                         }
                         if (next == '[') {
-                            int arrow = reader.read(50L);
+                            int arrow = reader.read(150L);
                             if (arrow == 'A')      selected = (selected - 1 + rooms.size()) % rooms.size();
                             else if (arrow == 'B') selected = (selected + 1) % rooms.size();
                             while (reader.read(10L) >= 0) { /* drain */ }
                         } else {
                             while (reader.read(10L) >= 0) { /* drain */ }
                         }
+                    } else if (ch == 0xE0) { // Windows conhost arrow prefix
+                        int arrow = reader.read(150L);
+                        if (arrow == 0x48)      selected = (selected - 1 + rooms.size()) % rooms.size();
+                        else if (arrow == 0x50) selected = (selected + 1) % rooms.size();
                     } else if (ch == 'k') {
                         selected = (selected - 1 + rooms.size()) % rooms.size();
                     } else if (ch == 'j') {
@@ -373,7 +380,6 @@ public class CLI {
                     } else {
                         continue;
                     }
-                    // Restore saved cursor position and clear everything below
                     System.out.print("\033[u\033[J");
                     renderRoomList(rooms, title, selected);
                 }
@@ -669,20 +675,30 @@ public class CLI {
             NonBlockingReader reader = TERMINAL.reader();
             while (true) {
                 int ch = reader.read();
-                if (ch == 27) { // ESC byte
-                    int next = reader.read(50L);
+                if (ch == 0xE0) { // Windows conhost arrow prefix
+                    int code = reader.read(150L);
+                    if (code == 0x48) return "UP";
+                    if (code == 0x50) return "DOWN";
+                    if (code == 0x4B) return "LEFT";
+                    if (code == 0x4D) return "RIGHT";
+                    if (code == 0x73) return "SHIFT_LEFT";
+                    if (code == 0x74) return "SHIFT_RIGHT";
+                    continue;
+                }
+                if (ch == 27) { // ESC byte / VT100 arrow prefix
+                    int next = reader.read(150L);
                     if (next == -2) return "ESC"; // standalone ESC (timeout)
                     if (next == '[') {
-                        int third = reader.read(50L);
+                        int third = reader.read(150L);
                         if (third == 'A') return "UP";
                         if (third == 'B') return "DOWN";
                         if (third == 'D') return "LEFT";
                         if (third == 'C') return "RIGHT";
                         if (third == 'Z') return "SHIFT_TAB"; // Shift+Tab → ESC[Z
                         if (third == '1') { // potential modifier sequence
-                            int semi = reader.read(50L);
-                            int mod  = reader.read(50L);
-                            int dir  = reader.read(50L);
+                            int semi = reader.read(150L);
+                            int mod  = reader.read(150L);
+                            int dir  = reader.read(150L);
                             if (semi == ';' && mod == '2') {
                                 if (dir == 'D') return "SHIFT_LEFT";
                                 if (dir == 'C') return "SHIFT_RIGHT";
