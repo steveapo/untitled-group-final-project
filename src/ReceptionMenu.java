@@ -266,6 +266,25 @@ public class ReceptionMenu {
             toCheckIn = confirmed.get(bookingIdx);
         }
 
+        // Block check-in if the room is under maintenance on the check-in date
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd-MM-uuuu")
+                .withResolverStyle(java.time.format.ResolverStyle.STRICT);
+        LocalDate checkInDate;
+        try {
+            checkInDate = LocalDate.parse(toCheckIn.getCheckIn(), fmt);
+        } catch (Exception e) {
+            checkInDate = LocalDate.now();
+        }
+        if (OccupancyCalendar.cellFor(toCheckIn.getRoom(), checkInDate, bookings)
+                == OccupancyCalendar.CellStatus.MAINTENANCE) {
+            System.out.println(CLI.warning(
+                    "[ERR_MAINTENANCE] Room " + toCheckIn.getRoom().getRoomNumber()
+                    + " is under maintenance on " + toCheckIn.getCheckIn()
+                    + ". Check-in is not allowed."));
+            Main.pause(scanner);
+            return;
+        }
+
         toCheckIn.setStatus("CHECKED_IN");
         file.updateBookings(bookings);
         CLI.randomSpinner("Checking in");

@@ -311,6 +311,10 @@ public class CLI {
                         int arrow = reader.read(150L);
                         if (arrow == 0x48)      selected = (selected - 1 + labels.length) % labels.length;
                         else if (arrow == 0x50) selected = (selected + 1) % labels.length;
+                    } else if (ch == 'k') {
+                        selected = (selected - 1 + labels.length) % labels.length;
+                    } else if (ch == 'j') {
+                        selected = (selected + 1) % labels.length;
                     } else {
                         continue;
                     }
@@ -347,7 +351,7 @@ public class CLI {
             String label  = (i == selected) ? magenta(labels[i]) : "  " + labels[i];
             System.out.println(prefix + label + "\033[K");
         }
-        System.out.println(dim("  ↑↓ Navigate  Enter Select  Esc Cancel") + "\033[K");
+        System.out.println(dim("  \u2191\u2193 or k/j Navigate  Enter Select  Esc Cancel") + "\033[K");
     }
 
     // ── Interactive room selector ───────────────────────────────────────
@@ -451,7 +455,7 @@ public class CLI {
                 System.out.println(dim("    ") + dot + " " + info + "\033[K");
             }
         }
-        System.out.println(dim("  ↑↓ Navigate  Enter Select  Esc Cancel") + "\033[K");
+        System.out.println(dim("  \u2191\u2193 or k/j Navigate  Enter Select  Esc Cancel") + "\033[K");
     }
 
     // ── Banner / divider helpers ─────────────────────────────────────────

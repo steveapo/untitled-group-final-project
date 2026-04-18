@@ -133,8 +133,12 @@ public class Account {
      * Returns {base64Hash, base64Salt}, or an empty array if the user types 'e' to cancel.
      */
     public String[] hashPassword(Scanner scanner) throws Exception {
-        System.out.print(CLI.prompt("Enter your password (Esc to go back): "));
-        String inputPassword = CLI.readPassword(scanner);
+        String inputPassword = CLI.promptPasswordUntilValid(
+            "Enter your password (Esc to go back): ", scanner,
+            s -> {
+                if (s.isEmpty()) return CLI.Result.err("[ERR_EMPTY] Password cannot be empty.");
+                return CLI.Result.ok(s);
+            });
         if (inputPassword == null) return new String[0];
 
         SecureRandom random = new SecureRandom();
@@ -160,6 +164,9 @@ public class Account {
         return CLI.promptUntilValid(
             "Enter your username (Esc to go back): ", scanner,
             s -> {
+                if (s.isEmpty()) {
+                    return CLI.Result.err("[ERR_EMPTY] Username cannot be empty.");
+                }
                 for (Account user : users) {
                     if (user.getUsername().equalsIgnoreCase(s)) {
                         file.writeErrors("Username already taken - " + getClass() + LINE_SUFFIX
@@ -183,7 +190,13 @@ public class Account {
             "Enter your username (Esc to go back): ", scanner,
             s -> {
                 for (Account user : users) {
-                    if (user.getUsername().equals(s)) return CLI.Result.ok(user);
+                    if (user.getUsername().equals(s)) {
+                        if ("INACTIVE".equals(user.getRole())) {
+                            return CLI.Result.err(
+                                "[ERR_AUTH] This account has been deactivated. Contact a manager.");
+                        }
+                        return CLI.Result.ok(user);
+                    }
                 }
                 return CLI.Result.err("[ERR_AUTH] Username not found.");
             });

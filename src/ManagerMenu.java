@@ -28,7 +28,7 @@ public class ManagerMenu {
 
             switch (choice) {
                 case "1": roomManagement(scanner, rooms, bookings, file);                break;
-                case "2": staffManagement(scanner, users, file);                         break;
+                case "2": staffManagement(scanner, users, file, account);                 break;
                 case "3": viewAllBookings(bookings); Main.pause(scanner);                break;
                 case "4": viewStats(rooms, bookings); Main.pause(scanner);               break;
                 case "C": OccupancyCalendar.show(scanner, rooms, bookings, true, file); break;
@@ -320,7 +320,8 @@ public class ManagerMenu {
     }
 
     // ─── Staff Management ──────────────────────────────────────────────
-    private static void staffManagement(Scanner scanner, List<Account> users, Files file)
+    private static void staffManagement(Scanner scanner, List<Account> users,
+                                         Files file, Account currentAccount)
             throws Exception {
         while (true) {
             CLI.clearScreen();
@@ -329,12 +330,14 @@ public class ManagerMenu {
             CLI.printMenuItem("1", "List all staff");
             CLI.printMenuItem("2", "Add receptionist");
             CLI.printMenuItem("3", "Deactivate staff account");
+            CLI.printMenuItem("4", "Reactivate staff account");
             CLI.printFooter("Back");
             String choice = CLI.readChoice(scanner);
             switch (choice) {
-                case "1": listAllStaff(users); Main.pause(scanner);         break;
-                case "2": addReceptionist(scanner, users, file);            break;
-                case "3": deactivateStaff(scanner, users, file);            break;
+                case "1": listAllStaff(users); Main.pause(scanner);                      break;
+                case "2": addReceptionist(scanner, users, file);                          break;
+                case "3": deactivateStaff(scanner, users, file, currentAccount);          break;
+                case "4": reactivateStaff(scanner, users, file);                          break;
                 case "ESC": return;
                 default:
                     System.out.println(CLI.warning("[ERR_OPTION] Invalid option."));
@@ -350,12 +353,16 @@ public class ManagerMenu {
         System.out.println();
         boolean found = false;
         for (Account u : users) {
-            if (u.getRole().equals("RECEPTION") || u.getRole().equals("MANAGER")) {
+            String role = u.getRole();
+            if (role.equals("RECEPTION") || role.equals("MANAGER") || role.equals("INACTIVE")) {
+                String roleLabel = role.equals("INACTIVE")
+                        ? CLI.dim("[INACTIVE]")
+                        : CLI.cyan(role);
                 System.out.printf("  %-15s | %s %s | %s | %s%n",
                         CLI.bold(u.getUsername()),
                         u.getFirstName(), u.getLastName(),
                         CLI.dim(u.getEmail()),
-                        CLI.cyan(u.getRole()));
+                        roleLabel);
                 found = true;
             }
         }
@@ -382,7 +389,8 @@ public class ManagerMenu {
         }
     }
 
-    private static void deactivateStaff(Scanner scanner, List<Account> users, Files file) {
+    private static void deactivateStaff(Scanner scanner, List<Account> users,
+                                          Files file, Account currentAccount) {
         CLI.clearScreen();
         CLI.printBanner("DEACTIVATE STAFF");
         System.out.println();
@@ -394,10 +402,22 @@ public class ManagerMenu {
                 for (Account u : users) {
                     if (u.getUsername().equals(s)
                             && (u.getRole().equals("RECEPTION") || u.getRole().equals("MANAGER"))) {
+                        if (u.getUsername().equals(currentAccount.getUsername())) {
+                            return CLI.Result.err("[ERR_SELF] You cannot deactivate your own account.");
+                        }
+                        // Enforce at least one active manager/owner remains
+                        if (u.getRole().equals("MANAGER")) {
+                            long activeManagers = users.stream()
+                                    .filter(a -> a.getRole().equals("MANAGER")).count();
+                            if (activeManagers <= 1) {
+                                return CLI.Result.err(
+                                    "[ERR_LAST_MANAGER] Cannot deactivate the last manager account.");
+                            }
+                        }
                         return CLI.Result.ok(u);
                     }
                 }
-                return CLI.Result.err("[ERR_NOT_FOUND] Staff member not found.");
+                return CLI.Result.err("[ERR_NOT_FOUND] Active staff member not found.");
             });
         if (target == null) return;
 
@@ -406,22 +426,70 @@ public class ManagerMenu {
                 + "  (" + target.getFirstName() + " " + target.getLastName()
                 + ", " + CLI.cyan(target.getRole()) + ")");
         System.out.println("  " + CLI.warning(
-                "Deactivation downgrades the account to USER. They keep their login "
-                + "but lose all staff capabilities."));
+                "Deactivation sets the account to INACTIVE. They will be blocked from logging in."));
         System.out.println();
         System.out.print(CLI.prompt("Type 'yes' to confirm (Esc to go back): "));
         String deactivateConfirm = CLI.readLine(scanner);
         if (deactivateConfirm == null) return;
         if (deactivateConfirm.equalsIgnoreCase("yes")) {
-            target.setRole("USER");
+            target.setRole("INACTIVE");
             boolean ok = file.updateUsersFileAll(users);
             CLI.randomSpinner("Deactivating account");
             System.out.println(ok
-                    ? CLI.success("Account deactivated (role set to USER).")
+                    ? CLI.success("Account deactivated (role set to INACTIVE).")
                     : CLI.warning("Deactivation applied in memory but disk write failed. Check the Errors log."));
         } else {
             System.out.println(CLI.dim("Deactivation cancelled."));
         }
+        Main.pause(scanner);
+    }
+
+    private static void reactivateStaff(Scanner scanner, List<Account> users, Files file) {
+        CLI.clearScreen();
+        CLI.printBanner("REACTIVATE STAFF");
+        System.out.println();
+
+        // Show inactive accounts
+        boolean anyInactive = false;
+        for (Account u : users) {
+            if (u.getRole().equals("INACTIVE")) {
+                System.out.printf("  %-15s | %s %s | %s%n",
+                        CLI.bold(u.getUsername()),
+                        u.getFirstName(), u.getLastName(),
+                        CLI.dim(u.getEmail()));
+                anyInactive = true;
+            }
+        }
+        if (!anyInactive) {
+            System.out.println(CLI.dim("  No inactive staff accounts."));
+            CLI.printDivider();
+            Main.pause(scanner);
+            return;
+        }
+        CLI.printDivider();
+
+        Account target = CLI.promptUntilValid(
+            "Username to reactivate (Esc to go back): ", scanner,
+            s -> {
+                for (Account u : users) {
+                    if (u.getUsername().equals(s) && u.getRole().equals("INACTIVE")) {
+                        return CLI.Result.ok(u);
+                    }
+                }
+                return CLI.Result.err("[ERR_NOT_FOUND] Inactive staff member not found.");
+            });
+        if (target == null) return;
+
+        String[] roles = {"RECEPTION", "MANAGER"};
+        int roleChoice = CLI.selectFromList(roles, "Assign role", scanner);
+        if (roleChoice == -1) return;
+
+        target.setRole(roles[roleChoice]);
+        boolean ok = file.updateUsersFileAll(users);
+        CLI.randomSpinner("Reactivating account");
+        System.out.println(ok
+                ? CLI.success("Account '" + target.getUsername() + "' reactivated as " + roles[roleChoice] + ".")
+                : CLI.warning("Reactivation applied in memory but disk write failed. Check the Errors log."));
         Main.pause(scanner);
     }
 

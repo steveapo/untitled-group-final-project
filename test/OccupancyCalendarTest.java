@@ -128,4 +128,102 @@ class OccupancyCalendarTest {
         assertEquals(OccupancyCalendar.CellStatus.AVAILABLE,
                 OccupancyCalendar.cellFor(roomA, today, bookings));
     }
+
+    // ── clearMaintenanceRange ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Clear single day from middle of a 7-day maintenance block splits it into two")
+    void clearOneDayFromMiddleSplitsBlock() {
+        Room room = availableRoom("R101");
+        LocalDate mon = LocalDate.of(2026, 5, 4);   // Monday
+        LocalDate nextMon = mon.plusDays(7);        // exclusive end
+        Vector<Bookings> bookings = new Vector<>();
+        bookings.add(booking(room, mon, nextMon, "MAINTENANCE"));
+
+        // User clears only Wednesday (day index 2)
+        LocalDate wed = mon.plusDays(2);
+        int days = OccupancyCalendar.clearMaintenanceRange(bookings, room, wed, wed.plusDays(1));
+
+        assertEquals(1, days, "should report one day cleared");
+        assertEquals(2, bookings.size(), "original block must be split into two");
+        // Monday through Tuesday (exclusive Wed)
+        assertEquals(fmt(mon),                bookings.get(0).getCheckIn());
+        assertEquals(fmt(wed),                bookings.get(0).getCheckOut());
+        // Thursday through Sunday (exclusive next Mon)
+        assertEquals(fmt(wed.plusDays(1)),    bookings.get(1).getCheckIn());
+        assertEquals(fmt(nextMon),            bookings.get(1).getCheckOut());
+    }
+
+    @Test
+    @DisplayName("Clear sweeping past the end trims the right edge only")
+    void clearPastEndTrimsRight() {
+        Room room = availableRoom("R101");
+        LocalDate mon = LocalDate.of(2026, 5, 4);
+        LocalDate nextMon = mon.plusDays(7);
+        Vector<Bookings> bookings = new Vector<>();
+        bookings.add(booking(room, mon, nextMon, "MAINTENANCE"));
+
+        // Clear Sat through next Tue (extends beyond the block)
+        LocalDate sat = mon.plusDays(5);
+        LocalDate nextTue = mon.plusDays(9); // exclusive
+        int days = OccupancyCalendar.clearMaintenanceRange(bookings, room, sat, nextTue);
+
+        assertEquals(2, days, "Sat + Sun are cleared (Mon/Tue of next week weren't maintenance)");
+        assertEquals(1, bookings.size());
+        assertEquals(fmt(mon), bookings.get(0).getCheckIn());
+        assertEquals(fmt(sat), bookings.get(0).getCheckOut());
+    }
+
+    @Test
+    @DisplayName("Clear range fully containing a block removes it entirely")
+    void clearFullyContainingRangeRemovesBlock() {
+        Room room = availableRoom("R101");
+        LocalDate mon = LocalDate.of(2026, 5, 4);
+        LocalDate wed = mon.plusDays(2);
+        Vector<Bookings> bookings = new Vector<>();
+        bookings.add(booking(room, mon, wed, "MAINTENANCE"));
+
+        // Sweep covers the entire block and then some
+        int days = OccupancyCalendar.clearMaintenanceRange(bookings, room,
+                mon.minusDays(1), wed.plusDays(2));
+
+        assertEquals(2, days);
+        assertTrue(bookings.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Clear range never touches non-MAINTENANCE bookings sharing the sweep")
+    void clearPreservesRealBookings() {
+        Room room = availableRoom("R101");
+        LocalDate mon = LocalDate.of(2026, 5, 4);
+        Vector<Bookings> bookings = new Vector<>();
+        bookings.add(booking(room, mon,            mon.plusDays(2), "MAINTENANCE")); // Mon-Tue
+        bookings.add(booking(room, mon.plusDays(2), mon.plusDays(4), "CONFIRMED"));  // Wed-Thu real stay
+        bookings.add(booking(room, mon.plusDays(4), mon.plusDays(6), "MAINTENANCE")); // Fri-Sat
+
+        // Sweep Mon through Sun inclusive
+        int days = OccupancyCalendar.clearMaintenanceRange(bookings, room, mon, mon.plusDays(7));
+
+        assertEquals(4, days, "both maintenance segments wiped (2 + 2 days)");
+        // Confirmed booking survives, untouched
+        assertEquals(1, bookings.size());
+        assertEquals("CONFIRMED", bookings.get(0).getStatus());
+        assertEquals(fmt(mon.plusDays(2)), bookings.get(0).getCheckIn());
+        assertEquals(fmt(mon.plusDays(4)), bookings.get(0).getCheckOut());
+    }
+
+    @Test
+    @DisplayName("Clear range with no overlapping maintenance returns zero")
+    void clearNoOverlapIsNoOp() {
+        Room room = availableRoom("R101");
+        LocalDate mon = LocalDate.of(2026, 5, 4);
+        Vector<Bookings> bookings = new Vector<>();
+        bookings.add(booking(room, mon, mon.plusDays(2), "MAINTENANCE"));
+
+        int days = OccupancyCalendar.clearMaintenanceRange(bookings, room,
+                mon.plusDays(5), mon.plusDays(7));
+
+        assertEquals(0, days);
+        assertEquals(1, bookings.size()); // untouched
+    }
 }
