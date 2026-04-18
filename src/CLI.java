@@ -40,23 +40,35 @@ public class CLI {
     // ── JLine terminal singleton ────────────────────────────────────────
     private static final Terminal TERMINAL = buildTerminal();
     private static final boolean ANSI_SUPPORTED = detectAnsiSupport();
-    // On Windows cmd.exe/conhost, arrow-key VT sequences are unreliable.
-    // Force the numbered+vim fallback path so navigation always works.
-    private static final boolean FORCE_FALLBACK = isWindowsCmd();
 
-    private static boolean isWindowsCmd() {
-        if (!System.getProperty("os.name", "").toLowerCase().contains("win")) return false;
-        if (TERMINAL == null) return true;
-        String type = TERMINAL.getType();
-        // Windows Terminal / PowerShell 7+ report "xterm-256color" or similar
-        return type == null || (!type.startsWith("xterm") && !type.startsWith("vt"));
-    }
-
+    /**
+     * Build the JLine Terminal.
+     *
+     * <p>JLine 3.26+ auto-selects the best terminal provider at runtime:
+     * <ul>
+     *   <li><b>macOS / Linux</b>: {@code ExecPty} (termios via stty).</li>
+     *   <li><b>Windows 10/11 (Terminal or cmd.exe)</b>: {@code FfmWinSysTerminal}
+     *       when {@code --enable-native-access=ALL-UNNAMED} is passed (see run.bat),
+     *       falling back to {@code JniWinSysTerminal}. Both use the native
+     *       Win32 console API and translate {@code KEY_EVENT_RECORD}s into
+     *       VT-style byte sequences (ESC[A/B/C/D for arrows), so the same
+     *       raw-mode reader works on every platform.</li>
+     *   <li><b>Windows 8 legacy conhost</b>: {@code JniWinSysTerminal} still
+     *       emits VT sequences even without {@code ENABLE_VIRTUAL_TERMINAL_INPUT},
+     *       because JLine does the translation in userspace.</li>
+     *   <li><b>IDE consoles / piped stdin</b>: {@code DumbTerminal} — the
+     *       {@link #rawModeAvailable} check skips raw mode in that case.</li>
+     * </ul>
+     *
+     * <p>{@code dumb(true)} only applies when JLine cannot attach a system
+     * terminal at all — it does NOT force a dumb terminal when a native one
+     * is available.
+     */
     private static Terminal buildTerminal() {
         try {
             Terminal t = TerminalBuilder.builder()
                     .system(true)
-                    .dumb(true)           // never throw — fall back gracefully in IDEs
+                    .dumb(true)           // IDE / piped-stdin fallback only
                     .encoding("UTF-8")
                     .build();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -69,15 +81,16 @@ public class CLI {
     }
 
     private static boolean rawModeAvailable() {
-        return !FORCE_FALLBACK && TERMINAL != null && !"dumb".equals(TERMINAL.getType());
+        return TERMINAL != null && !"dumb".equals(TERMINAL.getType());
     }
 
     private static boolean detectAnsiSupport() {
         if (System.getenv("NO_COLOR") != null) return false;
         if ("dumb".equals(System.getenv("TERM"))) return false;
         if (TERMINAL == null) return false;
-        // JLine returns "dumb" for IDE consoles and unsupported cmd.exe,
-        // and a proper name (xterm-256color, windows, etc.) when VT is available.
+        // JLine returns "dumb" for IDE consoles and unsupported consoles,
+        // and a proper name ("xterm-256color", "windows", "windows-256color")
+        // when a native VT-capable terminal is attached.
         return !"dumb".equals(TERMINAL.getType());
     }
 
@@ -673,12 +686,14 @@ public class CLI {
     // ── Arrow-key / hotkey reader ───────────────────────────────────────
     /**
      * Read a single navigation key for interactive views.
-     * Returns one of: "LEFT", "RIGHT", "SHIFT_LEFT", "SHIFT_RIGHT", "T", "ESC".
+     * Returns one of: "LEFT", "RIGHT", "UP", "DOWN", "SHIFT_LEFT", "SHIFT_RIGHT",
+     *   "TAB", "SHIFT_TAB", "ENTER", "T", "M", "N", "ESC".
      * Other keys are silently ignored (keeps waiting).
      *
-     * Raw-mode path: parses xterm/VT100 CSI escape sequences.
-     * Fallback path (dumb terminal / piped stdin): h=LEFT, l=RIGHT,
-     *   H=SHIFT_LEFT, L=SHIFT_RIGHT, t/T=T, e/empty=ESC.
+     * Raw-mode path: parses xterm/VT100 CSI escape sequences and Windows conhost
+     *   0xE0 arrow prefixes, plus vim bindings (h/l/k/j, H/L for week).
+     * Fallback path (dumb terminal / piped stdin): h=LEFT, l=RIGHT, k=UP, j=DOWN,
+     *   H=SHIFT_LEFT, L=SHIFT_RIGHT, t/T=T, m/M=M, n/N=N, e/empty=ESC.
      */
     public static String readArrowOrKey(Scanner fallbackScanner) {
         String result = withRawMode(() -> {
@@ -724,7 +739,14 @@ public class CLI {
                 if (ch == '\t') return "TAB";
                 if (ch == 'T' || ch == 't') return "T";
                 if (ch == 'M' || ch == 'm') return "M";
-                if (ch == 'L' || ch == 'l') return "L";
+                if (ch == 'N' || ch == 'n') return "N";
+                // Vim navigation: lowercase = step, uppercase = bigger step
+                if (ch == 'h') return "LEFT";
+                if (ch == 'l') return "RIGHT";
+                if (ch == 'k') return "UP";
+                if (ch == 'j') return "DOWN";
+                if (ch == 'H') return "SHIFT_LEFT";
+                if (ch == 'L') return "SHIFT_RIGHT";
                 if (ch == '\r' || ch == '\n') return "ENTER";
                 // all other keys ignored
             }
@@ -739,11 +761,12 @@ public class CLI {
             case "h": return "LEFT";
             case "l": return "RIGHT";
             case "H": return "SHIFT_LEFT";
-            case "L": return "L";
+            case "L": return "SHIFT_RIGHT";
             case "k": return "UP";
             case "j": return "DOWN";
             case "t": case "T": return "T";
             case "m": case "M": return "M";
+            case "n": case "N": return "N";
             case "tab":         return "TAB";
             case "shift_tab":   return "SHIFT_TAB";
             default:  return "ESC";

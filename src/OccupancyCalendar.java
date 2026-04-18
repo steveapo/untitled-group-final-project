@@ -130,7 +130,7 @@ public class OccupancyCalendar {
         // Maintenance marking state (M key, staff only)
         LocalDate maintStart   = null;
         int       maintRow     = -1;
-        // Maintenance clearing state (L key, staff only)
+        // Maintenance clearing state (N key, staff only)
         LocalDate clearStart   = null;
         int       clearRow     = -1;
         String    statusMsg    = null;
@@ -148,7 +148,7 @@ public class OccupancyCalendar {
                 System.out.println("  " + CLI.magenta("Clear start: "
                         + clearStart.format(DateTimeFormatter.ofPattern("EEE MMM d"))
                         + " on " + rooms.get(clearRow).getRoomNumber()
-                        + "  \u2014 navigate to end date and press L, Esc to cancel"));
+                        + "  \u2014 navigate to end date and press N, Esc to cancel"));
             }
             String key = CLI.readArrowOrKey(scanner);
             switch (key) {
@@ -209,12 +209,12 @@ public class OccupancyCalendar {
                         maintRow = -1;
                     }
                     break;
-                case "L":
-                    if (!isStaff || file == null) { weekStart = weekStart.plusWeeks(1); break; }
+                case "N":
+                    if (!isStaff || file == null) break;
                     LocalDate lDay  = weekStart.plusDays(colCursor);
                     Room      lRoom = rooms.get(rowCursor);
                     if (clearStart == null) {
-                        // First L: anchor the start of the clear range
+                        // First N: anchor the start of the clear range
                         if (cellFor(lRoom, lDay, bookings) != CellStatus.MAINTENANCE) {
                             statusMsg = CLI.warning("Move cursor to a maintenance cell first");
                             break;
@@ -223,7 +223,7 @@ public class OccupancyCalendar {
                         clearRow   = rowCursor;
                         maintStart = null; maintRow = -1; // cancel any in-progress M
                     } else {
-                        // Second L: must be same room
+                        // Second N: must be same room
                         if (rowCursor != clearRow) {
                             statusMsg = CLI.warning("End date must be on the same room ("
                                     + rooms.get(clearRow).getRoomNumber() + ")");
@@ -309,7 +309,7 @@ public class OccupancyCalendar {
                     else { weekStart = weekStart.plusWeeks(1); colCursor = 0; }
                     break;
                 case "SHIFT_LEFT":  weekStart = weekStart.minusWeeks(1); break;
-                case "SHIFT_RIGHT": case "L": weekStart = weekStart.plusWeeks(1); break;
+                case "SHIFT_RIGHT": weekStart = weekStart.plusWeeks(1); break;
                 case "SHIFT_TAB": weekStart = mondayOf(weekStart.minusMonths(1)); break;
                 case "TAB":       weekStart = mondayOf(weekStart.plusMonths(1));  break;
                 case "UP":   if (rowCursor > 0) rowCursor--;                  break;
@@ -547,12 +547,12 @@ public class OccupancyCalendar {
                     + "  Esc Cancel");
         } else if (isStaff && !pickMode) {
             System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  Tab/\u21e7Tab Month  \u2191\u2193 Room  T Today  "
-                    + CLI.magenta("M Mark  L Remove maint")
+                    + CLI.magenta("M Mark  N Remove maint")
                     + "  Esc Back");
         } else {
             System.out.println("  \u2190\u2192 Day  Shift+\u2190\u2192 Week  Tab/\u21e7Tab Month  \u2191\u2193 Room  T Today  Esc Back");
         }
-        System.out.println("  " + CLI.dim("(vim: h l day  H week  k j room  L remove-maint  t today  e back)"));
+        System.out.println("  " + CLI.dim("(vim: h l day  H L week  k j room  N remove-maint  t today  e back)"));
     }
 
     // ── Row label ─────────────────────────────────────────────────────────
