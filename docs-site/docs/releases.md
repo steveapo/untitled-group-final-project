@@ -1,26 +1,38 @@
 # Releases
 
-## v1.6.2 — April 18, 2026 (Current)
+## v1.6.3 — April 18, 2026 (Current)
+
+**Download:**
+- [HotelBooking-v1.6.3.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6.3/HotelBooking-v1.6.3.zip) (Windows)
+- [HotelBooking-v1.6.3.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6.3/HotelBooking-v1.6.3.tar.gz) (macOS/Linux)
+
+### Bug Fixes
+- **True cross-platform arrow navigation on Windows 8 → 11** — v1.6.2's "force fallback on non-xterm terminals" guard caught Windows Terminal and PowerShell 7+ as collateral damage because JLine reports their type as `"windows"`, not `"xterm"`. Raw mode is now trusted on every platform: JLine's native `FfmWinSysTerminal` / `JniWinSysTerminal` reads Win32 `KEY_EVENT_RECORD`s and translates them into VT escape sequences in userspace, so arrow keys now work identically on macOS, Linux, cmd.exe, Windows Terminal, and PowerShell. Every arrow call site is covered — list selectors (Edit a Room, role/status pickers, room selector) and the Occupancy Calendar. Conhost `0xE0` prefix handling is kept as a belt-and-braces safety net.
+- **Occupancy Calendar: `N` replaces `L` for Remove Maintenance** — lowercase `l` (vim "move day right") used to collide with the capital-`L` "remove maintenance" action because the reader normalised both to the same token. Remove-maintenance is now `N` (mnemonic: **N**o maintenance). `L` is restored to its vim convention as **Shift+Right → week forward**. Footer and vim hints updated to match.
+
+### Navigation reference (all platforms)
+
+| Key | Action |
+|-----|--------|
+| `←` / `→` or `h` / `l` | Day ← / → |
+| `Shift+←` / `Shift+→` or `H` / `L` | Week ← / → |
+| `Tab` / `Shift+Tab` | Month → / ← |
+| `↑` / `↓` or `k` / `j` | Room ↑ / ↓ |
+| `M` | Mark maintenance start / end |
+| `N` | Remove maintenance start / end |
+| `T` | Jump to today |
+| `Esc` or `e` | Back / cancel |
+
+---
+
+## v1.6.2 — April 18, 2026
 
 **Download:**
 - [HotelBooking-v1.6.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.zip) (Windows)
 - [HotelBooking-v1.6.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.tar.gz) (macOS/Linux)
 
 ### Bug Fix
-- **Arrow keys now work reliably on Windows cmd.exe** — raw VT100 sequence parsing was still unreliable in legacy conhost even after the v1.6.1 timeout fix. The fix detects Windows cmd.exe at startup (terminal type is not `xterm`-family) and forces the vim/numbered fallback path for all navigation. macOS, Linux, and Windows Terminal are completely unaffected.
-
-**Windows cmd.exe navigation reference:**
-
-| Key | Action |
-|-----|--------|
-| `h` / `l` | Move left / right (day) |
-| `H` | Move back one week |
-| `j` / `k` | Move down / up (room) |
-| `M` | Mark maintenance |
-| `L` | Remove maintenance |
-| `T` | Jump to today |
-| `e` | Back / cancel |
-| `1`–`9` | Select from numbered list |
+- **Arrow keys now work reliably on Windows cmd.exe** — raw VT100 sequence parsing was still unreliable in legacy conhost even after the v1.6.1 timeout fix. The fix detects Windows cmd.exe at startup (terminal type is not `xterm`-family) and forces the vim/numbered fallback path for all navigation. macOS, Linux, and Windows Terminal are completely unaffected. *(Superseded by v1.6.3, which restores raw-mode arrows on Windows Terminal and adds them to cmd.exe via JLine native translation.)*
 
 ---
 
