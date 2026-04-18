@@ -1,6 +1,46 @@
 # Releases
 
-## v1.6 — April 18, 2026 (Current)
+## v1.6.2 — April 18, 2026 (Current)
+
+**Download:**
+- [HotelBooking-v1.6.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.zip) (Windows)
+- [HotelBooking-v1.6.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.tar.gz) (macOS/Linux)
+
+### Bug Fix
+- **Arrow keys now work reliably on Windows cmd.exe** — raw VT100 sequence parsing was still unreliable in legacy conhost even after the v1.6.1 timeout fix. The fix detects Windows cmd.exe at startup (terminal type is not `xterm`-family) and forces the vim/numbered fallback path for all navigation. macOS, Linux, and Windows Terminal are completely unaffected.
+
+**Windows cmd.exe navigation reference:**
+
+| Key | Action |
+|-----|--------|
+| `h` / `l` | Move left / right (day) |
+| `H` | Move back one week |
+| `j` / `k` | Move down / up (room) |
+| `M` | Mark maintenance |
+| `L` | Remove maintenance |
+| `T` | Jump to today |
+| `e` | Back / cancel |
+| `1`–`9` | Select from numbered list |
+
+---
+
+## v1.6.1 — April 18, 2026
+
+**Download:**
+- [HotelBooking-v1.6.zip](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.zip) (Windows)
+- [HotelBooking-v1.6.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.tar.gz) (macOS/Linux)
+
+### Bug Fixes
+- **Windows arrow-key navigation partially restored** — increased the inter-byte ESC sequence timeout from 50 ms → 150 ms. Windows Terminal delivers VT100 bytes with slightly more latency than Unix, causing the arrow sequence to be silently dropped.
+- Added `0xE0` prefix handling for legacy Windows conhost (cmd.exe sends `0xE0 + scan-code` instead of `ESC [ A/B/C/D`).
+- Shift+Arrow (week navigation) was unaffected and continued to work throughout.
+
+### Docs
+- Homepage Download button now routes to the Getting Started page instead of directly to the `.zip`, so macOS/Linux users land on the correct setup instructions.
+
+---
+
+## v1.6 — April 18, 2026 (base release)
 
 **Download:**
 - [HotelBooking-v1.6.tar.gz](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.tar.gz) (macOS/Linux)
