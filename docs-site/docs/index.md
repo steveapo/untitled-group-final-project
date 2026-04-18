@@ -2,7 +2,7 @@
 
 A cross-platform CLI application for managing hotel room reservations, built with Java. Features role-based access control, an interactive occupancy calendar, secure authentication, and a manager analytics dashboard.
 
-**[⬇ Download Program (v1.6)](https://github.com/steveapo/untitled-group-final-project/releases/download/v1.6/HotelBooking-v1.6.zip)** — Requires Java 22+ • **[View all releases](/releases)**
+**[⬇ Download Program (v1.6)](/getting-started#option-1-download-the-release-recommended)** — Requires Java 22+ • **[View all releases](/releases)**
 
 ## Overview
 
@@ -58,14 +58,10 @@ The Hotel Room Booking System is a terminal-based application with four distinct
 
 ## Quick Start
 
-```bash
-# Download the latest release from GitHub
-# Extract and run:
-./run.sh          # macOS / Linux
-run.bat           # Windows
-```
+1. [Download the release](/getting-started#option-1-download-the-release-recommended) — choose `.tar.gz` (macOS/Linux) or `.zip` (Windows)
+2. Extract the archive and run `./run.sh` (macOS/Linux) or `run.bat` (Windows)
 
-See [Getting Started](/getting-started) for full installation instructions.
+See [Getting Started](/getting-started) for full setup instructions including Java requirements and troubleshooting.
 
 ## Demo Accounts
 
