@@ -31,8 +31,10 @@ tar -xzf HotelBooking-v1.6.4.tar.gz
 
 ```cmd
 # Extract HotelBooking-v1.6.4.zip (right-click → Extract All)
-# Open Command Prompt, PowerShell, or Windows Terminal in the extracted folder
-run.bat
+# Open PowerShell, or Windows Terminal in the extracted folder
+# Note: The functionalities work for CMD but there is formatting issues which expose the
+# ANSI color codes to the user, making it quite hard to navigate. 
+./run.bat
 ```
 
 ### Package Contents
